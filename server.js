@@ -45,5 +45,5 @@ const server = http.createServer((req, res) => {
   });
 });
 server.listen(PORT, () => {
-  console.log(`JANDOOR demo: http://localhost:${PORT}/`);
+  console.log(`M-Pass demo: http://localhost:${PORT}/`);
 });

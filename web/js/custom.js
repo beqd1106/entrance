@@ -4,7 +4,7 @@
  */
 import { ALL_PRESETS, getPreset } from '../../src/rules/presets.js';
 
-const KEY = 'jandoor.customPresets.v1';
+const KEY = 'mpass.customPresets.v1';
 
 // iOSアプリ（独自スキーム）などlocalStorageが使えない環境でも動くようにする
 let memory = null;

@@ -1,7 +1,7 @@
 # XcodeGen プロジェクト定義
 #   生成: cd ios && xcodegen generate
 # Macがなくても GitHub Actions（macOSランナー）でビルド〜TestFlight配信ができる。
-name: JANDOOR
+name: MPass
 options:
   bundleIdPrefix: com.beqd1106
   deploymentTarget:
@@ -19,7 +19,7 @@ settings:
     CODE_SIGN_STYLE: Manual
 
 targets:
-  JANDOOR:
+  MPass:
     type: application
     platform: iOS
     sources:
@@ -34,8 +34,8 @@ targets:
       path: Resources/Info.plist
     settings:
       base:
-        PRODUCT_NAME: JANDOOR
-        PRODUCT_BUNDLE_IDENTIFIER: com.beqd1106.jandoor
+        PRODUCT_NAME: MPass
+        PRODUCT_BUNDLE_IDENTIFIER: com.beqd1106.mpass
         INFOPLIST_FILE: Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # 端末ファミリはターゲット側で明示（iPad必須化の事故を避ける）

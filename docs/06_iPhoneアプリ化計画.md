@@ -32,7 +32,7 @@ web/css/style.css          横持ち専用レイアウト＋セーフエリア
 1. PCで `start.bat` を起動し、PCのIPアドレスを確認（例 `192.168.1.10`）
 2. iPhoneのSafariで `http://192.168.1.10:5173/web/` を開く
 3. 共有ボタン →「ホーム画面に追加」
-4. ホーム画面のJANDOORアイコンから起動 → **横向きにして対局**
+4. ホーム画面のM-Passアイコンから起動 → **横向きにして対局**
 
 > 本番では HTTPS が必要です（Service Worker と「ホーム画面に追加」の要件）。
 > Vercel / Cloudflare Pages に置けば自動でHTTPSになります。
@@ -59,7 +59,7 @@ web/css/style.css          横持ち専用レイアウト＋セーフエリア
 ```bash
 npm init -y
 npm i @capacitor/core @capacitor/cli @capacitor/ios
-npx cap init JANDOOR com.example.jandoor --web-dir=web
+npx cap init M-Pass com.example.mpass --web-dir=web
 npx cap add ios
 npx cap sync
 ```

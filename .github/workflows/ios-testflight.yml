@@ -20,9 +20,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUNDLE_ID: com.beqd1106.jandoor
-  SCHEME: JANDOOR
-  XCODE_PROJECT: ios/JANDOOR.xcodeproj
+  BUNDLE_ID: com.beqd1106.mpass
+  SCHEME: MPass
+  XCODE_PROJECT: ios/MPass.xcodeproj
 
 jobs:
   testflight:

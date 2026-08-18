@@ -1,7 +1,7 @@
 //
 //  BundleSchemeHandler.swift
 //
-//  アプリバンドル内の www/ を独自スキーム（jandoor://app/...）で配信する。
+//  アプリバンドル内の www/ を独自スキーム（mpass://app/...）で配信する。
 //  file:// では ES Modules が同一オリジン扱いにならず import が失敗するため、
 //  正規のスキームとして扱えるカスタムハンドラを用意している。
 //
@@ -10,7 +10,7 @@ import WebKit
 
 final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
 
-    static let scheme = "jandoor"
+    static let scheme = "mpass"
     static let host = "app"
 
     private let root: URL
