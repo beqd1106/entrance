@@ -20,9 +20,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUNDLE_ID: com.beqd1106.mpass
-  SCHEME: MPass
-  XCODE_PROJECT: ios/MPass.xcodeproj
+  BUNDLE_ID: com.beqd1106.entrance
+  SCHEME: Entrance
+  XCODE_PROJECT: ios/Entrance.xcodeproj
 
 jobs:
   testflight:

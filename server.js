@@ -45,5 +45,5 @@ const server = http.createServer((req, res) => {
   });
 });
 server.listen(PORT, () => {
-  console.log(`M-Pass demo: http://localhost:${PORT}/`);
+  console.log(`Entrance demo: http://localhost:${PORT}/`);
 });

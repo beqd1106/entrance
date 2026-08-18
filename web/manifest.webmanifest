@@ -1,6 +1,6 @@
 {
-  "name": "M-Pass エムパス",
-  "short_name": "M-Pass",
+  "name": "Entrance エントランス",
+  "short_name": "Entrance",
   "description": "その店のルールで、行く前に打てる。全国の雀荘のオンライン支店。",
   "start_url": "./index.html#/",
   "scope": "./",

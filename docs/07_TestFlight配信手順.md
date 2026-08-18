@@ -13,7 +13,7 @@ ios/
 ├── Sources/
 │   ├── AppDelegate.swift          起動と横持ち固定
 │   ├── GameViewController.swift   WKWebViewのシェル（外部リンクはSafariへ）
-│   └── BundleSchemeHandler.swift  同梱資産を mpass://app/... で配信
+│   └── BundleSchemeHandler.swift  同梱資産を entrance://app/... で配信
 ├── Resources/
 │   ├── Info.plist                 横持ち専用・全画面・ステータスバー非表示
 │   └── Assets.xcassets/           アプリアイコン・起動背景色
@@ -27,7 +27,7 @@ scripts/build-ios-www.js           web/ と src/ を ios/www へ構造ごとコ�
 **設計のポイント**
 
 - WebのUIとルールエンジンを**そのままアプリに同梱**しています。Web版を直せばアプリ版も直ります。
-- `file://` ではES Modulesの読み込みがブロックされるため、**独自スキーム（`mpass://app/`）**で配信しています（Capacitorと同じ考え方）。
+- `file://` ではES Modulesの読み込みがブロックされるため、**独自スキーム（`entrance://app/`）**で配信しています（Capacitorと同じ考え方）。
 - 通信は一切しません。**完全オフラインで対局できます**（外部フォントの参照もビルド時に除去）。
 - 横持ち固定・全画面・ホームインジケータ自動非表示。
 
@@ -40,11 +40,11 @@ scripts/build-ios-www.js           web/ と src/ を ios/www へ構造ごとコ�
 1. [App Store Connect](https://appstoreconnect.apple.com/) →「マイApp」→「＋」
 2. 入力内容
    - プラットフォーム：iOS
-   - 名前：`M-Pass`（表示名。重複不可）
+   - 名前：`Entrance`（表示名。重複不可）
    - プライマリ言語：日本語
-   - バンドルID：**`com.beqd1106.mpass`**
+   - バンドルID：**`com.beqd1106.entrance`**
      （先に [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list) で同じIDを登録しておきます）
-   - SKU：`mpass-001`
+   - SKU：`entrance-001`
 
 > バンドルIDを変える場合は `ios/project.yml` の `PRODUCT_BUNDLE_IDENTIFIER` と
 > `.github/workflows/ios-testflight.yml` の `BUNDLE_ID` の**両方**を書き換えてください。
@@ -89,8 +89,8 @@ openssl genrsa -out cert_key.pem 2048
 cd C:\Users\user\Downloads\JANDOOR   # フォルダ名は任意
 git init
 git add .
-git commit -m "M-Pass 初回コミット"
-gh repo create beqd1106/mpass --private --source=. --push
+git commit -m "Entrance 初回コミット"
+gh repo create beqd1106/entrance --private --source=. --push
 
 # 配信（ワークフローは「ファイル名」で指定する）
 gh workflow run ios-testflight.yml -f version=1.0.0
@@ -101,7 +101,7 @@ gh run watch
 
 1. エンジンの自動テスト（58件＋シミュレーション）→ **失敗したら配信しない**
 2. `web/` `src/` を `ios/www/` へ配置
-3. XcodeGenで `MPass.xcodeproj` を生成
+3. XcodeGenで `Entrance.xcodeproj` を生成
 4. 証明書・プロビジョニングを自動取得（初回は証明書も作成）
 5. IPAをビルド（ビルド番号は `github.run_number` を自動採番）
 6. TestFlightへアップロード

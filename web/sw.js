@@ -2,7 +2,7 @@
  * sw.js - オフライン対応のサービスワーカー
  * アプリシェルとエンジンを事前キャッシュし、機内モードでも対局できるようにする。
  */
-const CACHE = 'mpass-v1';
+const CACHE = 'entrance-v1';
 const ASSETS = [
   './',
   './index.html',
