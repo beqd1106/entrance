@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JANDOOR 企画書 ／ 打ってから、行く。</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14161a; --ink-2:#2b3038; --ink-3:#5a616b; --ink-4:#8b929c;
+  --paper:#f7f8fa; --paper-2:#ffffff; --paper-3:#eef1f5;
+  --brass:#0ea672; --brass-2:#10b981; --brass-3:#d9f7ec;
+  --felt:#10564a; --felt-2:#16705e; --felt-3:#0a3229;
+  --red:#e5484d; --line:rgba(20,22,26,.08); --line-2:rgba(20,22,26,.16);
+  --serif:'Inter','Noto Sans JP',system-ui,-apple-system,'Hiragino Sans',sans-serif;
+  --sans:'Inter','Noto Sans JP',system-ui,-apple-system,'Hiragino Sans',sans-serif;
+  --mono:'SFMono-Regular',Consolas,monospace;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.85;-webkit-text-size-adjust:100%}
+h1,h2,h3,h4{font-family:var(--sans);font-weight:700;line-height:1.3;margin:0;letter-spacing:-.02em}
+a{color:var(--brass);text-decoration:none;border-bottom:1px solid rgba(165,129,60,.3)}
+.wrap{width:min(980px,calc(100% - 44px));margin-inline:auto}
+.sec{padding:clamp(44px,6vw,78px) 0;border-top:1px solid var(--line)}
+.eyebrow{font-size:11px;letter-spacing:.24em;color:var(--brass);font-weight:600}
+.sec-no{font-family:var(--mono);font-size:11px;color:var(--brass);letter-spacing:.1em}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:26px}
+.sec-title{font-size:clamp(21px,2.8vw,30px)}
+.lead{color:var(--ink-3);margin:6px 0 0}
+.muted{color:var(--ink-3)}
+.tiny{font-size:12.5px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* hero */
+.hero{position:relative;padding:clamp(64px,10vw,120px) 0 clamp(44px,6vw,74px);overflow:hidden;
+  background:linear-gradient(170deg,#fdfcfa,var(--paper))}
+.hero::before{content:'';position:absolute;inset:-20% -10% auto -10%;height:70%;pointer-events:none;
+  background:radial-gradient(40% 60% at 20% 30%,rgba(16,185,129,.16),transparent 70%),
+             radial-gradient(40% 60% at 80% 20%,rgba(99,102,241,.14),transparent 70%);filter:blur(10px)}
+.hero>*{position:relative}
+.hero h1{font-size:clamp(32px,6vw,60px);letter-spacing:.02em;margin-top:12px}
+.hero .sub{font-size:clamp(15px,1.7vw,18px);color:var(--ink-3);margin-top:18px;max-width:44em}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px}
+.chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:999px;background:var(--paper-3);
+  color:var(--ink-3);font-size:11.5px;letter-spacing:.03em}
+.chip-brass{background:var(--brass-3);color:#076a4b}
+.chip-felt{background:#eef0ff;color:#4338ca}
+.chip-red{background:#fee4e4;color:#b42318}
+/* blocks */
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:22px 24px;
+  box-shadow:0 1px 2px rgba(23,25,28,.05),0 2px 10px rgba(23,25,28,.04)}
+.card h4{font-size:15.5px;margin-bottom:8px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-3)}
+.card .n{font-family:var(--mono);font-size:11px;color:var(--brass);letter-spacing:.1em}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink-4);font-weight:500;font-size:12px}
+tbody tr:hover{background:rgba(165,129,60,.045)}
+.hl{background:rgba(165,129,60,.09)!important}
+.strike{color:var(--ink-4);text-decoration:line-through;font-size:12.5px}
+.to{color:#047857;font-weight:700}
+.flow{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;margin-top:8px}
+.flow .step{flex:1 1 120px;background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center;font-size:12.5px}
+.flow .step.key{background:linear-gradient(160deg,var(--felt-2),var(--felt));color:#f1ebde;border-color:transparent}
+.flow .step b{display:block;font-family:var(--serif);font-size:14px;margin-bottom:4px}
+.bar{display:flex;align-items:center;gap:10px;margin:7px 0}
+.bar .lb{width:150px;font-size:12.5px;flex:0 0 auto}
+.bar .track{flex:1;height:16px;background:var(--paper-3);border-radius:8px;overflow:hidden}
+.bar .fill{height:100%;background:linear-gradient(90deg,var(--brass-2),var(--brass));border-radius:8px}
+.bar .vl{width:52px;text-align:right;font-family:var(--mono);font-size:12.5px}
+.stack-diagram{background:var(--felt-3);color:#e6ded0;border-radius:16px;padding:22px;font-family:var(--mono);font-size:12.5px;line-height:2;overflow-x:auto}
+.stack-diagram .lv{display:block;white-space:nowrap}
+.stack-diagram .hlx{color:var(--brass-2)}
+.pill{display:inline-block;padding:2px 9px;border-radius:6px;background:var(--paper-3);font-size:11.5px;margin:2px 3px 2px 0}
+.ok{color:#047857;font-weight:700}
+.ng{color:var(--red);font-weight:600}
+.note{border-left:3px solid var(--brass);background:var(--brass-3);color:#5d4715;padding:14px 18px;border-radius:0 8px 8px 0;font-size:13px}
+.big{font-family:var(--serif);font-size:clamp(26px,4vw,40px);letter-spacing:.02em}
+.kpi{display:flex;gap:26px;flex-wrap:wrap;margin-top:10px}
+.kpi div{min-width:120px}
+.kpi .v{font-family:var(--mono);font-size:26px;color:var(--brass)}
+.kpi .k{font-size:11.5px;color:var(--ink-4)}
+.foot{border-top:1px solid var(--line);padding:32px 0 60px;color:var(--ink-4);font-size:12px}
+ul{padding-left:20px;margin:8px 0}
+li{margin-bottom:5px;font-size:13.5px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:680px){.two-col{grid-template-columns:1fr}.bar .lb{width:104px}}
+@media print{.sec{page-break-inside:avoid}body{font-size:12px}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">ONLINE BRANCH FOR MAHJONG PARLORS</div>
+    <h1>打ってから、行く。</h1>
+    <p class="sub">
+      全国の雀荘が、それぞれのハウスルールを設定した「オンライン支店」を持つプラットフォーム。
+      ユーザーは来店前に、その店のルールで実際に1半荘打てます。
+      目的はオンライン麻雀ではなく、<strong>実店舗への送客</strong>です。
+    </p>
+    <div class="badge-row">
+      <span class="chip chip-brass">実際に動く試作アプリ同梱</span>
+      <span class="chip chip-felt">四麻・三麻 CPU対戦</span>
+      <span class="chip chip-felt">ハウスルール22プリセット</span>
+      <span class="chip">白ポッチ／アリス／割れ目／特殊牌／五等サンマ／東天紅系</span>
+      <span class="chip chip-brass">iPhone横持ち対応・PWA</span>
+      <span class="chip chip-red">ポイントはすべて非換金</span>
+    </div>
+    <div class="kpi">
+      <div><div class="v">58</div><div class="k">単体テスト（全成功）</div></div>
+      <div><div class="v">9,900</div><div class="k">CPU自動対局の局数</div></div>
+      <div><div class="v">0</div><div class="k">整合性エラー</div></div>
+      <div><div class="v">22</div><div class="k">ルールプリセット</div></div>
+    </div>
+  </div>
+</header>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">01</span>
+      <div><h2 class="sec-title">この企画の本質</h2>
+      <p class="lead">麻雀アプリではなく、雀荘の集客・体験設計プロダクトです。</p></div></div>
+    <p class="big" style="margin-bottom:18px">初来店を止めているのは<br>「強さ」ではなく「分からなさ」。</p>
+    <div class="grid g2">
+      <div class="card">
+        <div class="n">USER</div><h4>ユーザーが行けない理由</h4>
+        <ul>
+          <li>その店のルールが分からない（白ポッチ？　北抜き？）</li>
+          <li>知らないルールで場を止めるのが怖い</li>
+          <li>客層・雰囲気が事前に分からない</li>
+          <li>特殊ルールは練習する場がない</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="n">STORE</div><h4>店舗が困っていること</h4>
+        <ul>
+          <li>新規が入ってこない／常連が固定化</li>
+          <li>毎回スタッフが口頭でルール説明している</li>
+          <li>ルールの独自性が差別化に使えていない</li>
+          <li>オンラインで「体験」を渡す手段がない</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:20px">
+      この不安は、ルールを<strong>読ませても</strong>消えません。<strong>打たせると</strong>消えます。
+      JANDOORは「その店のルールで実際に1半荘打てる」ことを、来店前の標準体験にします。
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">02</span>
+      <div><h2 class="sec-title">目指す体験</h2>
+      <p class="lead">中心にあるのは3番目。ここが来店転換率を決めます。</p></div></div>
+    <div class="flow">
+      <div class="step"><b>①</b>店を発見<br><span class="tiny muted">ルール条件で検索</span></div>
+      <div class="step"><b>②</b>ルールを見る<br><span class="tiny muted">一般との差分だけ</span></div>
+      <div class="step key"><b>③</b>ルールを体験<br><span class="tiny">その店の設定でCPU対戦</span></div>
+      <div class="step"><b>④</b>雰囲気を知る<br><span class="tiny muted">スタッフ・料金・客層</span></div>
+      <div class="step"><b>⑤</b>交流する<br><span class="tiny muted">将来：店別ルーム</span></div>
+      <div class="step"><b>⑥</b>来店する<br><span class="tiny muted">QRチェックイン</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">03</span>
+      <div><h2 class="sec-title">既存サービスとの違い</h2>
+      <p class="lead">雀魂とは競合しません。雀魂で覚えた人が、実店舗デビューする時に開くアプリです。</p></div></div>
+    <table>
+      <thead><tr><th></th><th>ネット麻雀（雀魂・MJ等）</th><th>雀荘検索サイト</th><th style="color:var(--brass)">JANDOOR</th></tr></thead>
+      <tbody>
+        <tr><th>目的</th><td>オンラインで遊ばせ続ける</td><td>店舗情報を引く</td><td class="hl"><strong>実店舗へ送客する</strong></td></tr>
+        <tr><th>ルール</th><td>標準固定</td><td>テキスト記載のみ</td><td class="hl"><strong>データとして定義され、実際に動く</strong></td></tr>
+        <tr><th>ローカルルール</th><td>非対応</td><td>記載のみ（未記載も多い）</td><td class="hl"><strong>体験できる</strong></td></tr>
+        <tr><th>収益源</th><td>ユーザー課金</td><td>掲載料</td><td class="hl">店舗サブスク＋送客</td></tr>
+        <tr><th>滞在時間</th><td>長いほど良い</td><td>短い</td><td class="hl">短くてよい（来店が成功）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">04</span>
+      <div><h2 class="sec-title">差別化：ルールが「動くデータ」であること</h2>
+      <p class="lead">ゲームエンジンは店の名前を一切知りません。店の追加＝データ1件の追加です。</p></div></div>
+    <div class="two-col">
+      <div>
+        <div class="stack-diagram">
+          <span class="lv hlx">店舗ルールプリセット（データ）</span>
+          <span class="lv">      ↓</span>
+          <span class="lv">ルール設定（全項目のスキーマ）</span>
+          <span class="lv">      ↓</span>
+          <span class="lv">ルールエンジン</span>
+          <span class="lv">  基本 / ドラ / 役 / 特殊牌 / 祝儀 / カスタム</span>
+          <span class="lv">      ↓</span>
+          <span class="lv">ゲームエンジン</span>
+          <span class="lv">  牌 / 手番 / 行動 / 手役 / 点数</span>
+        </div>
+        <p class="tiny muted" style="margin-top:10px">
+          普通に作ると、店が増えるたびに作り直しになります。
+          最初からルールをデータにしたので、2店舗目以降は設定を1件足すだけです。
+        </p>
+      </div>
+      <div>
+        <div class="card">
+          <h4>同じコードで、設定だけでこれだけ変わる</h4>
+          <p class="tiny">CPU自動対局による実測（平均打点／翻）</p>
+          <div style="margin-top:14px">
+            <div class="bar"><span class="lb">競技ルール風</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="vl">2.47</span></div>
+            <div class="bar"><span class="lb">一般四麻（赤3）</span><span class="track"><span class="fill" style="width:40%"></span></span><span class="vl">3.27</span></div>
+            <div class="bar"><span class="lb">特殊牌館</span><span class="track"><span class="fill" style="width:54%"></span></span><span class="vl">4.40</span></div>
+            <div class="bar"><span class="lb">五等サンマ館</span><span class="track"><span class="fill" style="width:84%"></span></span><span class="vl">6.90</span></div>
+            <div class="bar"><span class="lb">花牌重視五等</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="vl">8.19</span></div>
+          </div>
+          <p class="tiny muted" style="margin-top:12px">
+            これがそのまま「店ごとの打ち味の違い」です。設定変更のみ、コードは同一。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">05</span>
+      <div><h2 class="sec-title">ルール説明は自動生成される</h2>
+      <p class="lead">店が設定すると、初来店者向けの説明文ができあがります。書く手間はゼロです。</p></div></div>
+    <div class="two-col">
+      <div class="card">
+        <h4>一般ルールとの差分モード（主役）</h4>
+        <p class="tiny">「全部読め」ではなく「違うのはここだけ」</p>
+        <table>
+          <tbody>
+            <tr><th>対局の長さ</th><td><span class="strike">半荘戦</span> → <span class="to">東風戦</span></td></tr>
+            <tr><th>持ち点</th><td><span class="strike">25,000点</span> → <span class="to">35,000点</span></td></tr>
+            <tr><th>返し点</th><td><span class="strike">30,000点</span> → <span class="to">40,000点</span></td></tr>
+            <tr><th>表ドラ表示牌</th><td><span class="strike">1枚</span> → <span class="to">2枚</span></td></tr>
+            <tr><th>白ポッチ</th><td><span class="strike">なし</span> → <span class="to">あり</span></td></tr>
+            <tr><th>華牌（春夏秋冬）</th><td><span class="strike">なし</span> → <span class="to">あり</span></td></tr>
+          </tbody>
+        </table>
+        <p class="tiny muted" style="margin-top:8px">実出力：五等サンマ館は一般三麻と19項目だけ違う</p>
+      </div>
+      <div class="card">
+        <h4>全文モード（抜粋・実出力）</h4>
+        <ul>
+          <li>三人麻雀の東風戦です。</li>
+          <li>35,000点持ち40,000点返し、ウマは 0 / 0 / -20 です。</li>
+          <li>順位点のみの完全順位制です（素点は成績に反映されません）。</li>
+          <li>白ポッチが1枚入っています。リーチ後のツモ時にオールマイティ牌として使えます。</li>
+          <li>北は抜きドラです。他家が抜いた北でロンはできません。</li>
+          <li>華牌「春」：抜いた枚数×1BPを即時獲得（オール）</li>
+          <li>華牌「夏」：和了時に打点が1ランクアップ</li>
+          <li>華牌「秋」：5の牌がダブルドラになる</li>
+          <li>華牌「冬」：和了時にアリス発動（一致1枚あたり2BP）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">06</span>
+      <div><h2 class="sec-title">対応済みのハウスルール</h2>
+      <p class="lead">未知のルールも、設定だけで後から追加できます（WHEN / IF / THEN）。</p></div></div>
+    <div class="grid g3">
+      <div class="card"><div class="n">SPECIAL TILES</div><h4>特殊牌エンジン</h4>
+        <p>牌ごとに異なる効果を設定。</p>
+        <div style="margin-top:8px">
+          <span class="pill">ドラ+n</span><span class="pill">翻数+n</span><span class="pill">ボーナス+n</span>
+          <span class="pill">オールマイティ</span><span class="pill">打点ランクアップ</span><span class="pill">組み合わせ役</span>
+          <span class="pill">門前限定</span><span class="pill">リーチ時限定</span><span class="pill">ツモ/ロン限定</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">ALICE</div><h4>アリス／チューリップ</h4>
+        <p>ON/OFFではなく12項目を設定。</p>
+        <div style="margin-top:8px">
+          <span class="pill">開始位置</span><span class="pill">めくる順番</span><span class="pill">一致条件</span>
+          <span class="pill">現物＋両隣</span><span class="pill">継続</span><span class="pill">刻子の扱い</span>
+          <span class="pill">ツモ/ロン倍率</span><span class="pill">上限</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">SANMA</div><h4>五等サンマ系エンジン</h4>
+        <p>1店舗の再現ではなく、系統を作れる形。</p>
+        <div style="margin-top:8px">
+          <span class="pill">萬子2〜8抜き</span><span class="pill">常時ドラ2枚</span><span class="pill">北抜き</span>
+          <span class="pill">ツモ損/丸取り</span><span class="pill">完全順位制</span><span class="pill">沈みウマ</span>
+          <span class="pill">焼き鳥</span><span class="pill">トビ賞</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">FLOWER</div><h4>華牌エフェクト</h4>
+        <p>春夏秋冬それぞれに別の効果。</p>
+        <ul class="tiny" style="margin-top:6px">
+          <li>春：抜いた枚数分の即時ボーナス</li>
+          <li>夏：打点1ランクアップ</li>
+          <li>秋：5の牌がダブルドラ</li>
+          <li>冬：和了時にアリス発動</li>
+        </ul>
+      </div>
+      <div class="card"><div class="n">DICE</div><h4>サイコロチャンス</h4>
+        <p>汎用のボーナスエンジン。</p>
+        <div style="margin-top:8px">
+          <span class="pill">個数</span><span class="pill">発動条件</span><span class="pill">ゾロ目倍率</span>
+          <span class="pill">振り直し</span><span class="pill">ピンゾロ倍率</span><span class="pill">上限</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">SCORING</div><h4>点数体系の差し替え</h4>
+        <p>東天紅・ロケット三麻のように、点数の数え方そのものが違うルールにも対応。</p>
+        <div style="margin-top:8px">
+          <span class="pill">ロン1人分/ツモ2人分</span><span class="pill">点で計算</span>
+          <span class="pill">符固定</span><span class="pill">1翻でも倍満</span><span class="pill">常に東場</span>
+          <span class="pill">前局の和了者が親</span><span class="pill">ガリ（一五九萬抜き）</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">LOCAL YAKU</div><h4>ローカル役13種</h4>
+        <p>採用するかどうか、翻数か役満かを店舗が選べます。</p>
+        <div style="margin-top:8px">
+          <span class="pill">大車輪</span><span class="pill">大七星</span><span class="pill">三連刻</span>
+          <span class="pill">四連刻</span><span class="pill">一色三順</span><span class="pill">三風刻</span>
+          <span class="pill">五門斉</span><span class="pill">紅孔雀</span><span class="pill">百万石</span>
+          <span class="pill">人和</span><span class="pill">十三不塔</span><span class="pill">八連荘</span>
+        </div>
+      </div>
+      <div class="card"><div class="n">OTHERS</div><h4>その他</h4>
+        <div style="margin-top:8px">
+          <span class="pill">白ポッチ</span><span class="pill">割れ目</span><span class="pill">オープンリーチ</span>
+          <span class="pill">金牌</span><span class="pill">青牌</span><span class="pill">永久ドラ</span>
+          <span class="pill">喰いタン</span><span class="pill">完全先付け</span><span class="pill">切り上げ満貫</span>
+          <span class="pill">流し満貫</span><span class="pill">順位ビンタ</span><span class="pill">爆ドラ</span>
+          <span class="pill">全赤</span><span class="pill">属性ドラ（金＝2枚分）</span><span class="pill">イベント卓</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">07</span>
+      <div><h2 class="sec-title">MVPの選定</h2>
+      <p class="lead">最初から「打てる」を選ぶべき。B案は最短に見えて、2店舗目で作り直しになります。</p></div></div>
+    <table>
+      <thead><tr><th></th><th>A 検索・店舗ページのみ</th><th>B 1店舗限定の体験</th><th>C 検索＋ミニ体験</th><th style="color:var(--brass)">D 対局＋店舗プリセット</th></tr></thead>
+      <tbody>
+        <tr><th>提案時のインパクト</th><td>低</td><td>中</td><td>中</td><td class="hl"><strong>高</strong></td></tr>
+        <tr><th>価値検証のしやすさ</th><td>低（体験がない）</td><td>高（1店舗のみ）</td><td>中</td><td class="hl"><strong>高</strong></td></tr>
+        <tr><th>横展開</th><td>可</td><td class="ng">不可</td><td>可</td><td class="hl"><strong>可（設定追加のみ）</strong></td></tr>
+        <tr><th>実装状況</th><td>—</td><td>—</td><td>—</td><td class="hl ok">完了（本日お渡し）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">08</span>
+      <div><h2 class="sec-title">試作アプリでできること</h2>
+      <p class="lead">インストール不要。start.bat をダブルクリックするだけで起動します。スマホでも操作できます。</p></div></div>
+    <div class="grid g3">
+      <div class="card"><h4>対局</h4><p class="tiny">四麻・三麻／配牌・ツモ・打牌／ポン・チー・カン／リーチ・オープンリーチ／ロン・ツモ／北抜き／華牌の自動抜き／流局・連荘・本場・供託／点数計算・順位精算</p></div>
+      <div class="card"><h4>ハウスルール</h4><p class="tiny">白ポッチ／アリス／チューリップ／割れ目／オープンリーチ／焼き鳥／トビ賞／順位ビンタ／華牌エフェクト／サイコロチャンス／特殊牌／カスタムルール</p></div>
+      <div class="card"><h4>プラットフォーム</h4><p class="tiny">店舗ページ／ルール検索／2ルール比較／説明文の自動生成／店舗ルールエディタ／矛盾チェック／プリセット保存／QRチェックイン（デモ）</p></div>
+      <div class="card"><h4>デモ店舗</h4><p class="tiny">DEMO雀荘 四麻館（赤3・白ポッチ・アリス・青5索）／特殊牌館（宝石牌5種・割れ目・オープンリーチ）／五等サンマ館（華牌・北抜き・金5・サイコロチャンス・冬アリス）</p></div>
+      <div class="card"><h4>CPU</h4><p class="tiny">向聴数・受け入れ枚数を見て打牌／リーチ判断／鳴き判断／簡易ベタオリ（現物＞字牌＞端牌＞筋）／初心者・標準・上級の3段階</p></div>
+      <div class="card"><h4>iPhone対応</h4><p class="tiny">
+        <strong>横持ち前提</strong>で卓・河・手牌・行動ボタンが1画面に収まります。
+        Safariの「ホーム画面に追加」でアプリとして全画面起動し、
+        <strong>オフラインでも対局可能</strong>。App Store配布は同じコードのままCapacitorでラップできます。</p></div>
+      <div class="card"><h4>デバッグモード</h4><p class="tiny">次ツモの指定（白ポッチ・特殊牌・春夏秋冬）／アリス強制成立／サイコロ強制発動／CPU手牌表示／点数指定<br><span class="muted">デモで「たまたま出なかった」を防ぐための機能です</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">09</span>
+      <div><h2 class="sec-title">品質の裏付け</h2>
+      <p class="lead">ハウスルールは実戦で滅多に出ないため、テストがないと壊れても気づけません。</p></div></div>
+    <div class="two-col">
+      <div class="card">
+        <h4>自動テスト</h4>
+        <ul>
+          <li>単体テスト <strong>58件すべて成功</strong>（役・点数・フリテン・鳴き・流局・連荘・三麻差分・特殊ルール）</li>
+          <li>向聴数計算を素朴な全探索と照合 <strong>5,000ケース完全一致</strong></li>
+          <li>CPU自動対局 <strong>1,500対局／約9,900局</strong></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>不変条件（毎局チェック・全件0違反）</h4>
+        <ul class="tiny">
+          <li><span class="ok">0件</span> クラッシュ／局の進行停止</li>
+          <li><span class="ok">0件</span> 牌の増減（総数不一致）</li>
+          <li><span class="ok">0件</span> 同じ牌が5枚存在</li>
+          <li><span class="ok">0件</span> 点棒総和の不一致（供託込み）</li>
+          <li><span class="ok">0件</span> 0翻での和了（不可能な和了）</li>
+          <li><span class="ok">0件</span> 手牌枚数の異常</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">10</span>
+      <div><h2 class="sec-title">法務・運用リスク</h2>
+      <p class="lead">先に安全側で設計しています。ただし最終判断は<strong>要専門家確認</strong>です。</p></div></div>
+    <div class="two-col">
+      <div class="card" style="border-color:rgba(180,54,47,.3)">
+        <h4 class="ng">MVPで実装しないもの</h4>
+        <ul class="tiny">
+          <li>現金・金券を賭ける機能</li>
+          <li>対局結果に応じた金銭・景品の付与</li>
+          <li>換金可能ポイント／ポイントの譲渡・売買</li>
+          <li>送金・払い戻し</li>
+          <li>賭け金の設定</li>
+          <li>実金額・レートの表示</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(36,86,69,.3)">
+        <h4 class="ok">MVPで実装するもの</h4>
+        <ul class="tiny">
+          <li>BP（ゲーム内ポイント）＝<strong>非換金・ゲーム内専用</strong>。UIに常時明記</li>
+          <li>来店スタンプ／チェックイン／イベント参加記録</li>
+          <li>称号／来店回数／店舗別レベル（<strong>記録のみ・報酬なし</strong>）</li>
+          <li>人間同士の対戦を実装しない＝談合・複アカを構造的に回避</li>
+        </ul>
+      </div>
+    </div>
+    <table style="margin-top:18px">
+      <thead><tr><th>論点</th><th>内容</th><th>対応</th></tr></thead>
+      <tbody>
+        <tr><th>賭博罪</th><td>財物・財産上の利益を賭ける行為</td><td>金銭・賭け金の概念を実装しない</td></tr>
+        <tr><th>換金性ポイント</th><td>換金・譲渡可能なポイントはリスクが高い</td><td>非換金・譲渡不可・ゲーム内専用</td></tr>
+        <tr><th>景品表示法</th><td>景品類の限度額・有利誤認</td><td>物品の賞品を出さない（称号のみ）</td></tr>
+        <tr><th>資金決済法</th><td>前払式支払手段の届出等</td><td>有償ポイントを発行しない</td></tr>
+        <tr><th>風営法</th><td>実店舗は許可制</td><td>許可店舗のみ掲載。レート表記をしない</td></tr>
+        <tr><th>未成年・依存</th><td>18歳未満／長時間利用</td><td>年齢確認、プレイ時間表示、相談窓口の掲示</td></tr>
+        <tr><th>個人情報</th><td>会員情報・来店履歴</td><td>収集の最小化（来店は回数のみ）</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:18px">
+      特に注意：<strong>オンラインの成績と実店舗の特典を直結させない</strong>こと。
+      「オンラインで1位＝店で割引」は避け、「来店回数で称号」など行動ベースに留めます。
+      <br>本資料は論点整理であり法的助言ではありません。実施前に必ず弁護士等へご確認ください（<strong>要専門家確認</strong>）。
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">11</span>
+      <div><h2 class="sec-title">収益化とロードマップ</h2>
+      <p class="lead">ユーザーは無料。店舗の月額を本命に置きます。</p></div></div>
+    <div class="two-col">
+      <div class="card">
+        <h4>収益モデル</h4>
+        <table>
+          <tbody>
+            <tr><th>店舗サブスク（本命）</th><td>月5,000〜15,000円</td></tr>
+            <tr><th>初期セットアップ</th><td>3〜10万円</td></tr>
+            <tr><th>送客課金</th><td>100〜300円／チェックイン</td></tr>
+            <tr><th>上位掲載・特集</th><td>月5,000円〜</td></tr>
+            <tr><th>白ラベル提供</th><td>チェーン向け・要相談</td></tr>
+          </tbody>
+        </table>
+        <p class="tiny muted" style="margin-top:8px">1店舗 月1万円 × 100店舗＝月100万円。まず5〜10店舗での成立を検証。</p>
+      </div>
+      <div class="card">
+        <h4>ロードマップ</h4>
+        <table>
+          <tbody>
+            <tr><th>0 試作</th><td class="ok">完了（本日お渡し）</td></tr>
+            <tr><th>1 PoC</th><td>3〜4週：協力店1〜3店で公開・来店計測</td></tr>
+            <tr><th>2 正式版</th><td>8〜12週：Next.js＋Supabase・課金開始・CapacitorでApp Store配布</td></tr>
+            <tr><th>3 オンライン化</th><td>12週〜：客同士の対戦・観戦・イベント</td></tr>
+            <tr><th>4 拡大</th><td>全国展開・配信連携</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">12</span>
+      <div><h2 class="sec-title">デモの流れ（3〜5分）</h2>
+      <p class="lead">実機で見せる順番。特殊ルールはデバッグモードで確実に発生させます。</p></div></div>
+    <table>
+      <thead><tr><th style="width:34px">#</th><th>操作</th><th>見せどころ</th><th style="width:60px">所要</th></tr></thead>
+      <tbody>
+        <tr><th>1</th><td>一般四麻で1局打つ</td><td>普通の麻雀がちゃんと動く（リーチ・ポン・ロン）</td><td class="num">60秒</td></tr>
+        <tr><th>2</th><td>店舗一覧 → 四麻館 → 特殊牌館へ切替</td><td><strong>同じアプリで店ごとにルールが変わる</strong></td><td class="num">30秒</td></tr>
+        <tr><th>3</th><td>アリスON で和了</td><td>牌をめくって一致 → BPが伸びる</td><td class="num">40秒</td></tr>
+        <tr><th>4</th><td>エディタで特殊牌を追加 → 保存 → 遊ぶ</td><td><strong>その場で新ルールを作れる</strong></td><td class="num">50秒</td></tr>
+        <tr><th>5</th><td>五等サンマ館の店舗ページ</td><td>「一般三麻と違うのは19項目だけ」の差分表示</td><td class="num">30秒</td></tr>
+        <tr><th>6</th><td>「このルールで遊んでみる」</td><td>中心体験。1タップで店のルールに入る</td><td class="num">20秒</td></tr>
+        <tr><th>7</th><td>華牌「冬」を抜いて和了</td><td>冬→アリス、秋→ダブドラ、サイコロチャンス</td><td class="num">60秒</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:18px">
+      締めの一言：「今日お見せしたのは、ルールを差し替えられる“容れ物”です。
+      あとは、その店のルールを1件登録するだけで、その店のオンライン支店になります。」
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-no">13</span>
+      <div><h2 class="sec-title">次のアクション</h2>
+      <p class="lead">今日決めていただきたいのは1つだけ。最初に協力してもらえるお店をどこにするか。</p></div></div>
+    <div class="grid g2">
+      <div class="card"><h4>すぐ（今週）</h4><ul>
+        <li>試作を触っていただく</li>
+        <li>MVPの範囲を合意する</li>
+        <li>協力店の候補を1〜3店挙げていただく</li>
+      </ul></div>
+      <div class="card"><h4>次（2〜4週）</h4><ul>
+        <li>店舗ヒアリング（30分／店）</li>
+        <li>実ルールを設定に落とす</li>
+        <li>店舗ページを本番データで公開</li>
+        <li>店頭QR設置・来店計測を開始</li>
+      </ul></div>
+      <div class="card"><h4>並行して</h4><ul>
+        <li>弁護士確認（ポイント設計・掲載表現）<strong>要専門家確認</strong></li>
+        <li>料金モデルの検証</li>
+        <li>フェーズ2の技術移行計画</li>
+      </ul></div>
+      <div class="card"><h4>担当</h4><ul>
+        <li>当方：企画整理・技術設計・実装・ヒアリング設計</li>
+        <li>貴社：店舗リレーション・現場運用・意思決定</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div>JANDOOR 企画書 ／ 試作アプリ同梱版</div>
+    <div>デモ店舗（四麻館・特殊牌館・五等サンマ館）はすべて架空です。実在店舗のハウスルールを転載していません。</div>
+    <div>ゲーム内ポイント（BP）は非換金・ゲーム内専用です。法務に関する記述は論点整理であり、最終判断は専門家にご確認ください（要専門家確認）。</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>牌面プレビュー</title>
+<link rel="stylesheet" href="css/style.css">
+<style>body{padding:24px;background:#1b4034}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+h3{color:#eae4d6;font-size:13px;margin:10px 0 6px;letter-spacing:.1em}</style>
+</head><body>
+<div id="out"></div>
+<script type="module">
+import { tileEl } from './js/ui.js';
+const out = document.getElementById('out');
+const add = (title, list) => {
+  const h3 = document.createElement('h3'); h3.textContent = title; out.appendChild(h3);
+  const row = document.createElement('div'); row.className = 'row';
+  list.forEach(info => row.appendChild(tileEl(info, { size: 'lg' })));
+  out.appendChild(row);
+};
+const range = (a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+add('萬子', range(0,8).map(t=>({t})));
+add('筒子', range(9,17).map(t=>({t})));
+add('索子', range(18,26).map(t=>({t})));
+add('字牌', range(27,33).map(t=>({t})));
+add('花牌', range(34,37).map(t=>({t})));
+add('属性', [
+  {t:4,red:true},{t:13,red:true},{t:22,red:true},
+  {t:13,gold:true},{t:22,gold:true},
+  {t:22,blue:true},{t:9,star:true},{t:26,rainbow:true},
+  {t:31,dot:true},{t:22,sp:'blue5s'},{hidden:true}
+]);
+</script></body></html>

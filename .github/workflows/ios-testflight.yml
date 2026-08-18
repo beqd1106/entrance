@@ -1,0 +1,100 @@
+name: iOS TestFlight
+
+# 手動実行：gh workflow run ios-testflight.yml
+# （Macは不要。GitHubのmacOSランナーでビルドしてTestFlightへ配信します）
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "マーケティングバージョン（例 1.0.0）"
+        required: true
+        default: "1.0.0"
+      whats_new:
+        description: "テスターへのメモ（TestFlightのWhat to Test）"
+        required: false
+        default: "ハウスルール体験の初回ビルドです。横持ちでお試しください。"
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+env:
+  BUNDLE_ID: com.beqd1106.jandoor
+  SCHEME: JANDOOR
+  XCODE_PROJECT: ios/JANDOOR.xcodeproj
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: エンジンの自動テスト（失敗したら配信しない）
+        run: |
+          node test/run-tests.js
+          node test/verify-shanten.js 2000
+          node test/sim.js 5
+
+      - name: Web資産をアプリ同梱用に配置
+        run: node scripts/build-ios-www.js
+
+      - name: ツール導入（XcodeGen / codemagic-cli-tools）
+        run: |
+          brew install xcodegen
+          pip3 install --break-system-packages codemagic-cli-tools
+
+      - name: Xcodeプロジェクト生成
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: 署名（証明書・プロビジョニングを自動取得）
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          CERTIFICATE_PRIVATE_KEY: ${{ secrets.CERTIFICATE_PRIVATE_KEY }}
+        run: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles --project "$XCODE_PROJECT"
+
+      - name: IPAをビルド
+        run: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$SCHEME" \
+            -- \
+            MARKETING_VERSION=${{ inputs.version }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+
+      - name: TestFlightへアップロード
+        env:
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          app-store-connect publish \
+            --path "build/ios/ipa/*.ipa" \
+            --testflight \
+            --beta-build-localizations "[{\"locale\":\"ja\",\"whats_new\":\"${{ inputs.whats_new }}\"}]"
+
+      - name: 成果物を保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: |
+            build/ios/ipa/*.ipa
+            build/ios/xcodebuild-*.log
+          if-no-files-found: ignore
+          retention-days: 7

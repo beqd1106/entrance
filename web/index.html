@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10564a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JANDOOR">
+<meta name="mobile-web-app-capable" content="yes">
+<title>JANDOOR ／ 打ってから、行く。</title>
+<meta name="description" content="全国の雀荘がオンライン支店を持つプラットフォーム。店のハウスルールをそのままCPU対戦で体験してから来店できます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#/">
+      <span class="brand-mark">雀</span>JANDOOR
+    </a>
+    <div class="nav-links" id="navLinks">
+      <a href="#/" data-route="home">ホーム</a>
+      <a href="#/stores" data-route="stores">店舗をさがす</a>
+      <a href="#/compare" data-route="compare">ルール比較</a>
+      <a href="#/editor" data-route="editor">ルール編集</a>
+      <a href="#/play?preset=standard4" data-route="play">すぐ打つ</a>
+      <a href="../docs/proposal.html" target="_blank" rel="noopener">企画書</a>
+    </div>
+    <div class="grow"></div>
+    <div class="nav-note">デモ版／全ポイントは非換金</div>
+  </div>
+</nav>
+<main id="app"></main>
+<script type="module" src="js/app.js"></script>
+<script>
+  // ホーム画面に追加するとオフラインでも遊べる
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>

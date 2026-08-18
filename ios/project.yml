@@ -1,0 +1,44 @@
+# XcodeGen プロジェクト定義
+#   生成: cd ios && xcodegen generate
+# Macがなくても GitHub Actions（macOSランナー）でビルド〜TestFlight配信ができる。
+name: JANDOOR
+options:
+  bundleIdPrefix: com.beqd1106
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  JANDOOR:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      # www はフォルダ参照で丸ごと同梱する（web/ と src/ の相対パスを保つため）
+      - path: www
+        type: folder
+        buildPhase: resources
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
+    info:
+      path: Resources/Info.plist
+    settings:
+      base:
+        PRODUCT_NAME: JANDOOR
+        PRODUCT_BUNDLE_IDENTIFIER: com.beqd1106.jandoor
+        INFOPLIST_FILE: Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 端末ファミリはターゲット側で明示（iPad必須化の事故を避ける）
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_EMIT_LOC_STRINGS: NO

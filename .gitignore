@@ -1,0 +1,18 @@
+# ビルド生成物
+ios/www/
+ios/*.xcodeproj/
+build/
+DerivedData/
+
+# 署名関連（絶対にコミットしない）
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+cert_key.pem
+
+# OS/エディタ
+.DS_Store
+Thumbs.db
+.playwright-mcp/
+test/sim-result.txt

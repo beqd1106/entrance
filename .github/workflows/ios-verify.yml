@@ -1,0 +1,57 @@
+name: iOS ビルド検証
+
+# 署名なしでコンパイルだけ確認する（シークレット不要）。
+# Swiftの書き間違いやプロジェクト定義の崩れを、配信前に検出するためのもの。
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - "web/**"
+      - "src/**"
+      - "scripts/build-ios-www.js"
+      - ".github/workflows/ios-verify.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: エンジンの自動テスト
+        run: |
+          node test/run-tests.js
+          node test/sim.js 5
+
+      - name: Web資産を配置
+        run: node scripts/build-ios-www.js
+
+      - name: XcodeGen
+        run: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+
+      - name: シミュレータ向けにビルド（署名なし）
+        run: |
+          xcodebuild build \
+            -project ios/JANDOOR.xcodeproj \
+            -scheme JANDOOR \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty || xcodebuild build \
+            -project ios/JANDOOR.xcodeproj \
+            -scheme JANDOOR \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO

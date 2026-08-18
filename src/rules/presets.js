@@ -1,0 +1,648 @@
+/**
+ * presets.js - ルールプリセット
+ *
+ * 各プリセットは「既定値からの差分」だけを持つ。
+ * 店舗プリセットも同じ形なので、店舗設定を差し替えるだけで挙動が変わる。
+ */
+
+/** 五等サンマ系の共通ベース（特定店舗の再現ではなく、系統としての骨格） */
+const GOTO_BASE = {
+  game: {
+    players: 3, length: 'east', tobiEnd: true, tobiZeroIsEnd: true,
+    agariYame: false, tenpaiYame: false, maxKyoku: 16,
+  },
+  scoring: {
+    startingPoints: 35000, returnPoints: 40000,
+    useFu: false, roundUpMangan: true,
+    countedYakuman: true, countedYakumanHan: 13,
+    uma: [0, 0, -20], rankOnly: true, umaZeroSum: true,
+    shizumiUma: true, shizumiUmaValue: -10,
+  },
+  renchan: { dealerRepeat: 'tenpai' },
+  ryuukyoku: { notenPenalty: 3000, nagashiMangan: false },
+  sanma: {
+    removeManzu: true, northMode: 'nuki', kitaIsDora: true,
+    northIsYakuhai: false, northRonOk: false, kitaBonus: 1, tsumoLoss: true,
+  },
+  dora: {
+    indicators: 2, ura: true, kanDora: true, kanUra: true,
+    red: { '5p': 2, '5s': 2 }, gold: { '5p': 2, '5s': 2 }, goldIsDora: true,
+  },
+  flowers: {
+    enabled: true,
+    tiles: ['spring', 'summer', 'autumn', 'winter'],
+    isDora: false,
+    effects: {
+      spring: [{ type: 'bonusPerTile', value: 1, all: true }],
+      summer: [{ type: 'rankUp', value: 1 }],
+      autumn: [{ type: 'doubleDoraFives' }],
+      winter: [{ type: 'alice', value: 2 }],
+    },
+  },
+  local: {
+    shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 1 },
+    yakitori: { enabled: true, penalty: 5 },
+    tobiBonus: { enabled: true, value: 2 },
+    dice: {
+      enabled: true, count: 2,
+      triggers: ['yakuman', 'countedYakuman', 'fourKita', 'fourFlower', 'pocchiTsumo'],
+      rerollOnDoubles: true, doublesMultiplier: 2, pinzoroMultiplier: 10,
+      bonusPerPip: 1, target: 'winner', cap: 100,
+    },
+  },
+  bonus: {
+    enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
+    ippatsu: 1, ura: 1, aka: 1, gold: 1, pocchi: 1, kita: 1,
+    sanbaiman: 3, countedYakuman: 5, yakuman: 10, yakumanRonMultiplier: 2, tsumoAll: true,
+  },
+};
+
+const deep = (a, b) => {
+  if (b === undefined) return a;
+  if (typeof a !== 'object' || a === null || Array.isArray(a) || Array.isArray(b)) return b;
+  const o = { ...a };
+  for (const k of Object.keys(b)) o[k] = deep(a[k], b[k]);
+  return o;
+};
+
+export const PRESETS = [
+  // ---------------- 四麻系 ----------------
+  {
+    id: 'standard4',
+    name: '一般四麻',
+    category: '標準',
+    tags: ['四麻', '赤あり', '喰いタンあり'],
+    description: 'フリー雀荘で最も普及している東南戦。25000持ち30000返し・赤3枚・喰いタンあり後付けあり。',
+    rules: { meta: { id: 'standard4', name: '一般四麻' } },
+  },
+  {
+    id: 'competition4',
+    name: '競技ルール風',
+    category: '標準',
+    tags: ['四麻', '赤なし', '一発裏なし'],
+    description: '一発・裏ドラ・赤牌なし。喰いタンあり、供託は次局へ。順位点は素点重視。',
+    rules: {
+      meta: { id: 'competition4', name: '競技ルール風' },
+      scoring: { startingPoints: 30000, returnPoints: 30000, uma: [30, 10, -10, -30], okaToTop: false, roundUpMangan: false },
+      dora: { red: {}, ura: false, kanUra: false },
+      local: { openRiichi: { enabled: false } },
+      bonus: { enabled: false },
+      game: { agariYame: false, tobiEnd: false, westEntry: true },
+    },
+  },
+  {
+    id: 'mleague4',
+    name: 'Mリーグ風',
+    category: '標準',
+    tags: ['四麻', '赤3', 'トビなし'],
+    description: '25000持ち30000返し・ウマ10-30・赤3枚・トビなし・西入なし・同点は起家優先。',
+    rules: {
+      meta: { id: 'mleague4', name: 'Mリーグ風' },
+      scoring: { uma: [30, 10, -10, -30], okaToTop: true, roundUpMangan: false },
+      game: { tobiEnd: false, agariYame: true, westEntry: false },
+      dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
+      bonus: { enabled: false },
+    },
+  },
+  // ---------------- 三麻系 ----------------
+  {
+    id: 'standard3',
+    name: '一般三麻',
+    category: '標準',
+    tags: ['三麻', '北抜き', 'ツモ損なし'],
+    description: '35000持ち40000返しの三人麻雀。萬子2〜8抜き・北は抜きドラ・ツモ損なし。',
+    rules: {
+      meta: { id: 'standard3', name: '一般三麻' },
+      game: { players: 3, length: 'east_south' },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
+      sanma: { tsumoLoss: false },
+      dora: { red: { '5p': 1, '5s': 1 } },
+    },
+  },
+  {
+    id: 'kanto3',
+    name: '関東三麻風',
+    category: '地域',
+    tags: ['三麻', 'ツモ損あり', '東風'],
+    description: '東風戦・ツモ損あり・北は抜きドラ。テンポの速い関東系の三麻。',
+    rules: {
+      meta: { id: 'kanto3', name: '関東三麻風' },
+      game: { players: 3, length: 'east' },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
+      sanma: { tsumoLoss: true },
+      dora: { red: { '5p': 1, '5s': 1 } },
+    },
+  },
+  {
+    id: 'kansai3',
+    name: '関西三麻風',
+    category: '地域',
+    tags: ['三麻', '萬子あり', '北役牌'],
+    description: '萬子を抜かず北を役牌として扱う系統。ツモ損なし・喰いタンあり。',
+    rules: {
+      meta: { id: 'kansai3', name: '関西三麻風' },
+      game: { players: 3, length: 'east' },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
+      sanma: { removeManzu: false, northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false, tsumoLoss: false },
+      dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
+    },
+  },
+  // ---------------- 特殊ルール体験 ----------------
+  {
+    id: 'alice_demo',
+    name: 'アリス体験',
+    category: '特殊',
+    tags: ['四麻', 'アリス', '祝儀'],
+    description: '一般四麻＋アリス。門前和了時にドラ表示牌の隣をめくり、手牌と一致する限りBPが伸びる。',
+    rules: {
+      meta: { id: 'alice_demo', name: 'アリス体験' },
+      local: {
+        alice: {
+          enabled: true, requireMenzen: true, requireRiichi: false, start: 'nextDora',
+          matchTarget: 'hand', matchMode: 'exact', continueOnMatch: true, maxFlips: 4,
+          bonusPerMatch: 1, kotsuMode: 'each', max: 12,
+        },
+      },
+    },
+  },
+  {
+    id: 'tulip_demo',
+    name: 'チューリップ体験',
+    category: '特殊',
+    tags: ['四麻', 'チューリップ', '祝儀'],
+    description: 'アリスの拡張版。めくった牌の「現物＋両隣」まで一致扱いになるため成立率が大幅に上がる。',
+    rules: {
+      meta: { id: 'tulip_demo', name: 'チューリップ体験' },
+      local: {
+        tulip: {
+          enabled: true, requireMenzen: true, start: 'nextDora',
+          matchTarget: 'hand', matchMode: 'tulip', continueOnMatch: true, maxFlips: 4,
+          bonusPerMatch: 1, kotsuMode: 'one', max: 12,
+        },
+      },
+    },
+  },
+  {
+    id: 'wareme_demo',
+    name: '割れ目体験',
+    category: '特殊',
+    tags: ['四麻', '割れ目', 'オープンリーチ'],
+    description: 'サイコロで決まった1人の収支が2倍になる割れ目ルール。オープンリーチも採用。',
+    rules: {
+      meta: { id: 'wareme_demo', name: '割れ目体験' },
+      local: {
+        wareme: { enabled: true, multiplier: 2 },
+        openRiichi: { enabled: true, han: 1, bonus: 1 },
+      },
+    },
+  },
+  {
+    id: 'special_tiles_demo',
+    name: '特殊牌体験',
+    category: '特殊',
+    tags: ['四麻', '特殊牌', '白ポッチ'],
+    description: '牌ごとに異なる効果を持つ特殊牌ルール。青5索・銀5筒・翠發などを1セットで体験できる。',
+    rules: {
+      meta: { id: 'special_tiles_demo', name: '特殊牌体験' },
+      local: { shiroPocchi: { enabled: true, count: 1, mode: 'both', bonus: 2 } },
+      specialTiles: [
+        {
+          id: 'blue5s', name: '青5索', tile: '5s', count: 1, color: 'blue',
+          effects: [{ type: 'bonus', value: 2 }], conditions: {},
+        },
+        {
+          id: 'silver5p', name: '銀5筒', tile: '5p', count: 1, color: 'silver',
+          effects: [{ type: 'dora', value: 2 }], conditions: {},
+        },
+        {
+          id: 'emerald5m', name: '翠5萬', tile: '5m', count: 1, color: 'green',
+          effects: [{ type: 'han', value: 1 }, { type: 'bonus', value: 1 }], conditions: { menzenOnly: true },
+        },
+        {
+          id: 'topaz_haku', name: '琥珀白', tile: '5z', count: 1, color: 'gold',
+          effects: [{ type: 'almighty' }, { type: 'bonus', value: 3 }],
+          conditions: { tsumoOnly: true, riichiOnly: true },
+        },
+      ],
+      customRules: [
+        {
+          id: 'jewel_combo', name: 'ジュエルコンボ（青5索＋銀5筒）', when: 'win',
+          if: [{ fact: 'hasSpecial', id: 'blue5s' }, { fact: 'hasSpecial', id: 'silver5p' }],
+          then: [{ action: 'bonus', value: 5 }, { action: 'rankUp', value: 1 }],
+        },
+      ],
+    },
+  },
+  // ---------------- 点数体系そのものが異なる系統 ----------------
+  {
+    id: 'toutenkou3',
+    name: '東天紅風',
+    category: '地域',
+    tags: ['三麻', '東天紅', '常に東場', 'ガリ'],
+    description: '関東発の三人麻雀。点数の単位が「翻」ではなく「点」で、ロンは1人分・ツモは2人分。一萬五萬九萬と北がガリ（抜きドラ）。常に東場で、前局の和了者が次局の親になります。',
+    rules: {
+      meta: { id: 'toutenkou3', name: '東天紅風' },
+      game: {
+        players: 3, length: 'east', alwaysEast: true, dealerRule: 'winner',
+        tobiEnd: false, hakoshita: true, agariYame: false, maxKyoku: 16,
+      },
+      scoring: {
+        startingPoints: 0, returnPoints: 0, uma: [0, 0, 0], okaToTop: false,
+        useFu: false, mode: 'flat', riichiStick: 1,
+        flat: { fuFixed: 30, scale: 0.001, yakumanPoints: 50, promoteMinHan: 0, honbaPoints: 5, tsumoIsDouble: true },
+      },
+      ryuukyoku: { notenPenalty: 10, nagashiMangan: false },
+      renchan: { dealerRepeat: 'none' },
+      sanma: {
+        removeManzu: true, manzuKeep: ['1m', '5m', '9m'],
+        northMode: 'nuki', kitaIsDora: true, tsumoLoss: false,
+        extraNukiTiles: ['1m', '5m', '9m'], kitaBonus: 0,
+      },
+      dora: { indicators: 1, red: {}, gold: {} },
+      local: { yakitori: { enabled: true, penalty: 5 } },
+      bonus: {
+        enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
+        ippatsu: 1, ura: 1, aka: 0, gold: 0, pocchi: 0, kita: 0,
+        sanbaiman: 2, countedYakuman: 3, yakuman: 5,
+      },
+    },
+  },
+  {
+    id: 'rocket3',
+    name: 'ロケット三麻風',
+    category: '五等サンマ',
+    tags: ['三麻', 'インフレ', 'ロケット牌', '華牌'],
+    description: '東天紅系の点数体系にインフレ要素を足した三麻。40符固定・1翻でも倍満扱い・常時ドラ2枚・金牌とロケット牌・華牌の効果つき。',
+    rules: {
+      meta: { id: 'rocket3', name: 'ロケット三麻風' },
+      game: {
+        players: 3, length: 'east', alwaysEast: true, dealerRule: 'winner',
+        tobiEnd: false, agariYame: false, maxKyoku: 16,
+      },
+      scoring: {
+        startingPoints: 0, returnPoints: 0, uma: [0, 0, 0], okaToTop: false,
+        useFu: false, mode: 'flat', riichiStick: 1,
+        flat: {
+          fuFixed: 40, scale: 0.001, yakumanPoints: 32,
+          promoteMinHan: 1, promoteTo: 'baiman', honbaPoints: 5, tsumoIsDouble: true,
+        },
+      },
+      ryuukyoku: { notenPenalty: 10, nagashiMangan: false },
+      renchan: { dealerRepeat: 'none' },
+      sanma: { removeManzu: true, northMode: 'nuki', kitaIsDora: true, tsumoLoss: false, kitaBonus: 0 },
+      dora: { indicators: 2, red: {}, gold: { '5p': 1, '5s': 1 }, goldIsDora: true },
+      flowers: {
+        enabled: true, tiles: ['spring', 'summer', 'autumn', 'winter'], isDora: false,
+        effects: {
+          spring: [{ type: 'bonusPerTile', value: 5, all: true }],
+          summer: [{ type: 'rankUp', value: 1 }],
+          autumn: [{ type: 'doubleDoraFives' }],
+          winter: [{ type: 'alice', value: 5 }],
+        },
+      },
+      local: {
+        shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 5 },
+        dice: {
+          enabled: true, count: 2,
+          triggers: ['yakuman', 'countedYakuman', 'fourKita', 'fourFlower', 'pocchiTsumo'],
+          rerollOnDoubles: true, doublesMultiplier: 2, pinzoroMultiplier: 4,
+          bonusPerPip: 5, target: 'winner', cap: 200,
+        },
+        yakitori: { enabled: true, penalty: 10 },
+      },
+      specialTiles: [
+        {
+          id: 'rocket_p', name: 'ロケット5筒', tile: '5p', count: 1, color: 'rainbow',
+          activationTiming: 'win', description: '和了時に大きなボーナス',
+          effects: [{ type: 'bonus', value: 20 }], conditions: {},
+        },
+        {
+          id: 'rocket_s', name: 'ロケット5索', tile: '5s', count: 1, color: 'rainbow',
+          activationTiming: 'win', effects: [{ type: 'bonus', value: 20 }], conditions: {},
+        },
+        {
+          id: 'rocket_kita', name: 'ロケット北', tile: '4z', count: 1, color: 'rainbow',
+          activationTiming: 'win', effects: [{ type: 'bonus', value: 20 }], conditions: {},
+        },
+      ],
+      bonus: {
+        enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
+        ippatsu: 5, ura: 5, aka: 5, gold: 5, pocchi: 5, kita: 0,
+        sanbaiman: 10, countedYakuman: 15, yakuman: 15, yakumanRonMultiplier: 1, tsumoAll: false,
+      },
+    },
+  },
+  {
+    id: 'zenaka3',
+    name: '全赤三麻風',
+    category: '特殊',
+    tags: ['三麻', '全赤', 'インフレ'],
+    description: '5がすべて赤牌の三人麻雀。常に打点が高く、短時間で大きく動きます。',
+    rules: {
+      meta: { id: 'zenaka3', name: '全赤三麻風' },
+      game: { players: 3, length: 'east' },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
+      sanma: { tsumoLoss: false },
+      dora: { indicators: 1, red: { '5p': 4, '5s': 4 } },
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
+    },
+  },
+  {
+    id: 'bakudora4',
+    name: '爆ドラ四麻風',
+    category: '特殊',
+    tags: ['四麻', '爆ドラ', '青牌', '金牌'],
+    description: '表ドラ表示牌を3枚めくる爆ドラ設定。青5索はドラ1枚分、金5筒はドラ2枚分として数えます。',
+    rules: {
+      meta: { id: 'bakudora4', name: '爆ドラ四麻風' },
+      game: { players: 4, length: 'east' },
+      scoring: { roundUpMangan: true, countedYakumanHan: 11 },
+      dora: {
+        indicators: 1, bakuDora: 2,
+        red: { '5m': 1, '5p': 1, '5s': 1 },
+        gold: { '5p': 1 }, blue: { '5s': 1 },
+        attributeDora: { red: 1, gold: 2, blue: 1, star: 1, rainbow: 3 },
+      },
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },
+    },
+  },
+  {
+    id: 'localyaku4',
+    name: 'ローカル役採用ルール',
+    category: '特殊',
+    tags: ['四麻', 'ローカル役', '大車輪', '三連刻'],
+    description: '大車輪・三連刻・一色三順・五門斉・人和などのローカル役を採用した四麻。役が増えるぶん手作りの狙い方が変わります。',
+    rules: {
+      meta: { id: 'localyaku4', name: 'ローカル役採用ルール' },
+      localYaku: [
+        { id: 'daisharin', enabled: true, yakuman: 1 },
+        { id: 'daichisei', enabled: true, yakuman: 1 },
+        { id: 'sanrenkou', enabled: true, han: 2 },
+        { id: 'surenkou', enabled: true, yakuman: 1 },
+        { id: 'isshoku_sanjun', enabled: true, han: 2 },
+        { id: 'sanfuuko', enabled: true, han: 2 },
+        { id: 'gomonsei', enabled: true, han: 2 },
+        { id: 'benikujaku', enabled: true, yakuman: 1 },
+        { id: 'hyakumangoku', enabled: true, yakuman: 1 },
+        { id: 'renho', enabled: true, han: 5 },
+        { id: 'shiisanputo', enabled: true, yakuman: 1 },
+        { id: 'paarenchan', enabled: true, yakuman: 1 },
+      ],
+    },
+  },
+
+  // ---------------- 五等サンマ系 ----------------
+  {
+    id: 'goto_standard',
+    name: '標準五等サンマ風',
+    category: '五等サンマ',
+    tags: ['三麻', '華牌', '白ポッチ', 'サイコロチャンス'],
+    description: '萬子2〜8抜き・常時ドラ2枚・北抜き・春夏秋冬の華牌効果・白ポッチ・サイコロチャンスを備えた五等サンマ系の標準形。',
+    rules: deep(GOTO_BASE, { meta: { id: 'goto_standard', name: '標準五等サンマ風' } }),
+  },
+  {
+    id: 'goto_yuru',
+    name: 'ゆる五等サンマ風',
+    category: '五等サンマ',
+    tags: ['三麻', 'ツモ損なし', '華牌'],
+    description: 'ツモ損なし・30符固定・東南戦のゆるめ設定。祝儀は控えめで初心者でも大崩れしにくい。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_yuru', name: 'ゆる五等サンマ風' },
+      game: { length: 'east_south' },
+      sanma: { tsumoLoss: false },
+      local: { shiroPocchi: { enabled: false }, dice: { enabled: false } },
+      bonus: { ippatsu: 1, ura: 1, aka: 1, gold: 1, kita: 1, sanbaiman: 3, countedYakuman: 5, yakuman: 10 },
+    }),
+  },
+  {
+    id: 'goto_infla',
+    name: 'インフレ五等サンマ風',
+    category: '五等サンマ',
+    tags: ['三麻', 'インフレ', '切り上げ満貫'],
+    description: '赤金多め・切り上げ満貫・祝儀多めのインフレ設定。1局の振れ幅が非常に大きい。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_infla', name: 'インフレ五等サンマ風' },
+      dora: { indicators: 2, red: { '5p': 2, '5s': 2, '1p': 1 }, gold: { '5p': 2, '5s': 2 } },
+      scoring: { roundUpMangan: true, countedYakumanHan: 11 },
+      bonus: { ippatsu: 2, ura: 2, aka: 1, gold: 2, pocchi: 2, kita: 1, sanbaiman: 5, countedYakuman: 8, yakuman: 15 },
+    }),
+  },
+  {
+    id: 'goto_rocket',
+    name: 'ロケット五等風',
+    category: '五等サンマ',
+    tags: ['三麻', '東風', 'トビ賞大'],
+    description: '東風戦・トビ賞大・箱下なしの短期決戦型。1半荘あたりの所要時間が短い。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_rocket', name: 'ロケット五等風' },
+      game: { length: 'east', hakoshita: false, tobiEnd: true },
+      local: { tobiBonus: { enabled: true, value: 5 } },
+      scoring: { uma: [0, 0, -30], shizumiUmaValue: -15 },
+    }),
+  },
+  {
+    id: 'goto_flower',
+    name: '花牌重視五等風',
+    category: '五等サンマ',
+    tags: ['三麻', '華牌', '打点ランクアップ'],
+    description: '華牌の効果を強化。夏で2ランクアップ、春は1枚あたり2BP、冬アリスは3倍。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_flower', name: '花牌重視五等風' },
+      flowers: {
+        enabled: true, isDora: true,
+        effects: {
+          spring: [{ type: 'bonusPerTile', value: 2, all: true }],
+          summer: [{ type: 'rankUp', value: 2 }],
+          autumn: [{ type: 'doubleDoraFives' }, { type: 'dora', value: 1 }],
+          winter: [{ type: 'alice', value: 3 }],
+        },
+      },
+    }),
+  },
+  {
+    id: 'goto_pocchi',
+    name: '白ポッチ重視五等風',
+    category: '五等サンマ',
+    tags: ['三麻', '白ポッチ', 'オールマイティ'],
+    description: '白ポッチ2枚・常時オールマイティ・使用時BP大。逆転手段としての白ポッチを主役にした設定。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_pocchi', name: '白ポッチ重視五等風' },
+      local: {
+        shiroPocchi: { enabled: true, count: 2, mode: 'both', almightyCondition: 'any_tsumo', bonus: 3, isDora: true },
+      },
+      bonus: { pocchi: 3 },
+    }),
+  },
+  {
+    id: 'goto_dice',
+    name: 'サイコロチャンス重視五等風',
+    category: '五等サンマ',
+    tags: ['三麻', 'サイコロチャンス', '出目金'],
+    description: 'サイコロ3個・ゾロ目連鎖・ピンゾロ20倍。トリガーも広く、出目次第で一撃が生まれる。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'goto_dice', name: 'サイコロチャンス重視五等風' },
+      local: {
+        dice: {
+          enabled: true, count: 3,
+          triggers: ['yakuman', 'countedYakuman', 'fourKita', 'fourFlower', 'pocchiTsumo'],
+          rerollOnDoubles: true, doublesMultiplier: 3, pinzoroMultiplier: 20,
+          bonusPerPip: 1, target: 'winner', cap: 150,
+        },
+      },
+    }),
+  },
+];
+
+/** デモ店舗プリセット（架空店舗。実店舗のルールをそのまま転用しない） */
+export const STORE_PRESETS = [
+  {
+    id: 'store_yonma_kan',
+    name: 'DEMO雀荘 四麻館 ルール',
+    category: '店舗',
+    tags: ['四麻', '赤あり', '白ポッチ', 'アリス', '青5索'],
+    description: '一般四麻ベース。赤3枚＋白ポッチ1枚、アリスあり、青5索の特殊牌あり。初心者歓迎の看板ルール。',
+    rules: {
+      meta: { id: 'store_yonma_kan', name: 'DEMO雀荘 四麻館 ルール' },
+      game: { players: 4, length: 'east_south' },
+      scoring: { startingPoints: 25000, returnPoints: 30000, uma: [15, 5, -5, -15], roundUpMangan: true },
+      dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
+      local: {
+        shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 2 },
+        alice: {
+          enabled: true, requireMenzen: true, requireRiichi: false, start: 'nextDora',
+          matchTarget: 'hand', matchMode: 'exact', continueOnMatch: true, maxFlips: 4,
+          bonusPerMatch: 1, kotsuMode: 'each', max: 10,
+        },
+        openRiichi: { enabled: true, han: 1, bonus: 1 },
+      },
+      specialTiles: [
+        {
+          id: 'blue5s', name: '青5索', tile: '5s', count: 1, color: 'blue',
+          effects: [{ type: 'bonus', value: 2 }, { type: 'dora', value: 1 }], conditions: {},
+        },
+      ],
+      events: [
+        {
+          id: 'beginner_table', name: '初心者卓', enabled: true,
+          note: '赤牌を増やし、祝儀なしで気楽に打てる卓',
+          ruleOverrides: {
+            dora: { red: { '5m': 2, '5p': 2, '5s': 2 } },
+            bonus: { enabled: false },
+            local: { alice: { enabled: false } },
+          },
+        },
+        {
+          id: 'alice_fes', name: 'アリス祭', enabled: true,
+          note: 'アリスが副露でも成立し、一致1枚あたり3BP',
+          ruleOverrides: {
+            local: { alice: { requireMenzen: false, bonusPerMatch: 3, max: 20 } },
+          },
+        },
+      ],
+    },
+  },
+  {
+    id: 'store_tokushu_kan',
+    name: 'DEMO雀荘 特殊牌館 ルール',
+    category: '店舗',
+    tags: ['四麻', '特殊牌', '割れ目', 'オープンリーチ'],
+    description: '特殊牌ルール中心。宝石名の特殊牌を複数採用し、割れ目・オープンリーチも常時オン。',
+    rules: {
+      meta: { id: 'store_tokushu_kan', name: 'DEMO雀荘 特殊牌館 ルール' },
+      game: { players: 4, length: 'east' },
+      scoring: { roundUpMangan: true, countedYakumanHan: 11 },
+      // 5筒は「銀・ルビー・アメジスト」で3枚使うため、赤5筒は指定しない
+      dora: { red: { '5m': 1, '5s': 1 }, gold: {} },
+      local: {
+        wareme: { enabled: true, multiplier: 2 },
+        openRiichi: { enabled: true, han: 2, bonus: 2 },
+        shiroPocchi: { enabled: true, count: 1, mode: 'both', bonus: 2 },
+        dice: {
+          enabled: true, count: 2, triggers: ['yakuman', 'countedYakuman', 'pocchiTsumo'],
+          rerollOnDoubles: true, doublesMultiplier: 2, pinzoroMultiplier: 10, bonusPerPip: 1, target: 'winner', cap: 60,
+        },
+      },
+      specialTiles: [
+        { id: 'blue5s', name: '青5索（アクアマリン）', tile: '5s', count: 1, color: 'blue', effects: [{ type: 'bonus', value: 2 }], conditions: {} },
+        { id: 'silver5p', name: '銀5筒（シルバー）', tile: '5p', count: 1, color: 'silver', effects: [{ type: 'dora', value: 2 }], conditions: {} },
+        { id: 'ruby5p', name: '赤5筒（ルビー）', tile: '5p', count: 1, color: 'red', effects: [{ type: 'bonus', value: 1 }, { type: 'dora', value: 1 }], conditions: {} },
+        { id: 'emerald5m', name: '翠5萬（エメラルド）', tile: '5m', count: 1, color: 'green', effects: [{ type: 'han', value: 1 }, { type: 'bonus', value: 3 }], conditions: { menzenOnly: true } },
+        { id: 'topaz_haku', name: '琥珀白（トパーズ）', tile: '5z', count: 1, color: 'gold', effects: [{ type: 'almighty' }, { type: 'bonus', value: 3 }], conditions: { tsumoOnly: true } },
+        {
+          id: 'amethyst5p', name: 'アメジスト5筒', tile: '5p', count: 1, color: 'blue',
+          activationTiming: 'win', stacking: 'sum',
+          description: 'リーチ後はオールマイティ牌として使え、和了に含めるとBPを5獲得します。',
+          effects: [{ type: 'bonus', value: 5 }, { type: 'almighty' }],
+          conditions: { riichiOnly: true },
+        },
+      ],
+      events: [
+        {
+          id: 'almighty_day', name: 'オールマイティ解放デー', enabled: true,
+          note: '白ポッチがツモならいつでもオールマイティになる日',
+          ruleOverrides: {
+            local: { shiroPocchi: { almightyCondition: 'any_tsumo', bonus: 4 } },
+          },
+        },
+        {
+          id: 'wareme_day', name: '割れ目デー', enabled: true,
+          note: '全員割れ目。全ての支払いが2倍',
+          ruleOverrides: {
+            local: { wareme: { enabled: true, allPlayers: true, multiplier: 2 } },
+          },
+        },
+      ],
+      customRules: [
+        {
+          id: 'all_star', name: 'オールスター（特殊牌3種以上）', when: 'win',
+          if: [{ fact: 'hasSpecial', id: 'blue5s' }, { fact: 'hasSpecial', id: 'silver5p' }, { fact: 'hasSpecial', id: 'emerald5m' }],
+          then: [{ action: 'bonus', value: 10 }, { action: 'rankUp', value: 1 }, { action: 'dice' }],
+        },
+      ],
+    },
+  },
+  {
+    id: 'store_goto_kan',
+    name: 'DEMO雀荘 五等サンマ館 ルール',
+    category: '店舗',
+    tags: ['三麻', '五等サンマ', '華牌', '白ポッチ', '金5', 'サイコロチャンス', '冬アリス', '青5索'],
+    description: '35000持ち40000返し・常時ドラ2枚・北抜き・春夏秋冬・白ポッチ・金5・サイコロチャンス・冬アリス・青5索。全ボーナスはゲーム内非換金ポイント。',
+    rules: deep(GOTO_BASE, {
+      meta: { id: 'store_goto_kan', name: 'DEMO雀荘 五等サンマ館 ルール' },
+      // 5索は「金1・赤2・青1」で4枚。5筒は「金2・赤2」で4枚。
+      dora: { gold: { '5p': 2, '5s': 1 }, red: { '5p': 2, '5s': 2 } },
+      specialTiles: [
+        { id: 'blue5s', name: '青5索', tile: '5s', count: 1, color: 'blue', effects: [{ type: 'bonus', value: 2 }], conditions: {} },
+      ],
+      events: [
+        {
+          id: 'four_flower_challenge', name: '四華チャレンジ', enabled: true,
+          note: '華牌の効果が強化される日（春3BP・夏2ランクアップ・冬アリス4倍）',
+          ruleOverrides: {
+            flowers: {
+              effects: {
+                spring: [{ type: 'bonusPerTile', value: 3, all: true }],
+                summer: [{ type: 'rankUp', value: 2 }],
+                autumn: [{ type: 'doubleDoraFives' }],
+                winter: [{ type: 'alice', value: 4 }],
+              },
+            },
+          },
+        },
+      ],
+      customRules: [
+        {
+          id: 'four_flower_four_kita', name: '四華四北', when: 'win',
+          if: [{ fact: 'flower', op: '>=', value: 3 }, { fact: 'kita', op: '>=', value: 3 }],
+          then: [{ action: 'bonus', value: 20 }, { action: 'dice' }],
+        },
+      ],
+    }),
+  },
+];
+
+export const ALL_PRESETS = [...PRESETS, ...STORE_PRESETS];
+
+export function getPreset(id) {
+  return ALL_PRESETS.find((p) => p.id === id) || PRESETS[0];
+}
