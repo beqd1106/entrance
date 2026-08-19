@@ -267,7 +267,10 @@ function photoField(d, onChange) {
   };
   drawPreview();
 
-  const input = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp' });
+  const input = h('input', {
+    type: 'file', name: 'storePhoto', id: `storePhoto-${d.id}`,
+    accept: 'image/jpeg,image/png,image/webp',
+  });
   input.addEventListener('change', async () => {
     const file = input.files && input.files[0];
     if (!file) return;
