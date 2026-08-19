@@ -10,7 +10,7 @@ import { validateRules } from '../../src/rules/validator.js';
 import { h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl } from './ui.js';
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
-import { renderDashboard } from './dashboard.js';
+import { renderDashboard, recordCheckin } from './dashboard.js';
 import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
 import { artwork, emptyState } from './artwork.js';
 import { renderStoreEdit, resolveStore, primeServerStores } from './storeedit.js';
@@ -445,7 +445,7 @@ function viewStore(id) {
     h('div.card.card-pad',
       h('h4', { style: { marginBottom: '10px' } }, '来店（構想）'),
       h('div.row.gap-12', icon('qr', 34), h('div.tiny.muted', { text: '店頭QRで来店スタンプ・称号・来店回数を記録します（MVPでは記録のみ・報酬なし）。' })),
-      h('button.btn.btn-ghost.btn-sm', { style: { marginTop: '12px' }, text: 'チェックイン（デモ）', on: { click: (ev) => { ev.target.textContent = 'チェックイン済み（デモ表示）'; ev.target.disabled = true; } } }))));
+      checkinButton(s.id))));
 
   wrap.appendChild(h('div', { style: { marginTop: '30px' } },
     h('a.btn.btn-primary.btn-lg.btn-block', { href: `#/play?preset=${s.presetId}` }, icon('play', 15), 'このルールで遊んでみる')));
@@ -456,6 +456,20 @@ function viewStore(id) {
 /** 牌コードをタイプ番号に。未知のコードでも画面を壊さない。 */
 function safeType(code) {
   try { return codeToTypeLite(code); } catch { return 0; }
+}
+
+/**
+ * 来店チェックイン。記録するだけで、景品や金銭とは結び付けない。
+ * サーバに届かなくてもボタンの体験は変えない（店頭で止まらないことを優先する）。
+ */
+function checkinButton(storeId) {
+  const btn = h('button.btn.btn-ghost.btn-sm', { style: { marginTop: '12px' }, text: 'チェックイン（デモ）' });
+  btn.addEventListener('click', () => {
+    btn.disabled = true;
+    btn.textContent = 'チェックインしました';
+    recordCheckin(storeId);
+  });
+  return btn;
 }
 
 // 牌コード→タイプ（店舗ページの特殊牌表示用）

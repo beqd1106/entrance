@@ -33,6 +33,7 @@ jobs:
       - name: エンジンの自動テスト
         run: |
           node test/run-tests.js
+          node test/run-server-tests.js
           node test/sim.js 5
 
       - name: Web資産を配置
