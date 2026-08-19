@@ -51,6 +51,7 @@ export function renderGame(root, params) {
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
     closeOverlay();
+    closeTileInfo();
     G = null;
   };
 }
@@ -166,6 +167,55 @@ function toast(title, body, tone = 'amber') {
   G.dom.toasts.appendChild(el);
   setTimeout(() => { el.classList.add('out'); }, 2200);
   setTimeout(() => { el.remove(); }, 2700);
+}
+
+// ---------------------------------------------------------------------------
+// 牌の説明（長押し・右クリックで出す。「この店ではどういう牌か」を伝える）
+// ---------------------------------------------------------------------------
+function tileMeaning(info, s) {
+  const R = G.rules;
+  const lines = [];
+  if (info.dot) {
+    const p = R.local.shiroPocchi;
+    const cond = { always: 'いつでも', any_tsumo: 'ツモのとき', riichi_tsumo: 'リーチ後のツモのとき' }[p.almightyCondition];
+    lines.push(p.mode === 'bonus'
+      ? `白ポッチ。この店ではボーナス専用です（+${p.bonus}BP）。`
+      : `白ポッチ。${cond}、好きな牌の代わりに使えます（+${p.bonus}BP）。`);
+  }
+  if (info.sp) {
+    const def = (R.specialTiles || []).find((d) => d.id === info.sp);
+    if (def) lines.push(`${def.name}。${def.description || 'この店だけの特別な牌です。'}`);
+  }
+  if (info.red) lines.push('赤牌。持っているだけでドラが1枚増えます。');
+  if (info.gold) lines.push(`金牌。${R.dora.goldIsDora ? 'ドラとして数えます。' : 'ドラには数えませんが祝儀の対象です。'}`);
+  if (info.blue) lines.push('青牌。この店の特別な色の牌です。');
+  if (info.flower || info.t >= 34) lines.push('華牌。引くと自動で抜けて、すぐ次の牌を引きます。');
+  if ((s.doraTypes || []).includes(info.t)) lines.push('この局のドラです。持っていると打点が上がります。');
+  if (info.t === 30 && R.game.players === 3 && R.sanma.northMode === 'nuki') {
+    lines.push('北。手牌から抜くと抜きドラになります。');
+  }
+  if (!lines.length) lines.push('特別な効果のない牌です。');
+  return lines;
+}
+
+/** 牌の説明をその場に出す（画面を覆わない小さなポップ） */
+function showTileInfo(info, s, anchorEl) {
+  closeTileInfo();
+  const box = h('div.tile-pop',
+    h('div.tile-pop-head', tileEl(info, { size: 'sm' }), h('b', { text: info.name })),
+    h('div.tile-pop-body', tileMeaning(info, s).map((t) => h('p', { text: t }))));
+  document.body.appendChild(box);
+  const r = anchorEl.getBoundingClientRect();
+  const w = box.offsetWidth;
+  box.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))}px`;
+  box.style.top = `${Math.max(8, r.top - box.offsetHeight - 10)}px`;
+  G.dom.tilePop = box;
+  const close = (ev) => { if (!box.contains(ev.target)) closeTileInfo(); };
+  setTimeout(() => document.addEventListener('pointerdown', close, { once: true }), 0);
+}
+
+function closeTileInfo() {
+  if (G && G.dom && G.dom.tilePop) { G.dom.tilePop.remove(); G.dom.tilePop = null; }
 }
 
 function startGame() {
@@ -517,7 +567,7 @@ function drawMy(s) {
   const render = (t, gap) => {
     const id = pickable.get(keyOf(t));
     const can = id !== undefined;
-    return tileEl(t, {
+    const el = tileEl(t, {
       size: 'lg',
       gap,
       clickable: can,
@@ -526,6 +576,15 @@ function drawMy(s) {
       dim: !!selectable && !can,
       onClick: can ? () => onTileClick({ ...t, id }) : null,
     });
+    // 長押し／右クリックで「この店でのこの牌の意味」を出す
+    let timer = null;
+    const start = () => { timer = setTimeout(() => { timer = null; showTileInfo(t, s, el); }, 420); };
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    el.addEventListener('pointerdown', start);
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointerleave', cancel);
+    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); showTileInfo(t, s, el); });
+    return el;
   };
   tiles.forEach((t) => hand.appendChild(render(t, false)));
   if (drawnId) hand.appendChild(render(me.drawn, true));

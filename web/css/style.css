@@ -868,3 +868,17 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
 }
 .hue-swatch.on { border-color: var(--ink); transform: scale(1.06); }
 textarea { resize: vertical; min-height: 56px; }
+
+/* --- 牌の説明（長押し／右クリック） --- */
+.tile-pop {
+  position: fixed; z-index: 80; width: min(280px, calc(100vw - 24px));
+  background: var(--paper-2); color: var(--ink);
+  border-radius: var(--r-m); box-shadow: var(--shadow-3);
+  padding: 12px 14px; animation: popIn 0.16s var(--ease) both;
+}
+.tile-pop-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tile-pop-head b { font-size: 14px; }
+.tile-pop-body p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.7; color: var(--ink-2); }
+.tile-pop-body p:last-child { margin-bottom: 0; }
+@keyframes popIn { from { opacity: 0; transform: translateY(6px) scale(0.97); } }
+@media (prefers-reduced-motion: reduce) { .tile-pop { animation: none; } }
