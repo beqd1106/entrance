@@ -49,9 +49,15 @@ jobs:
           brew install xcodegen
           pip3 install --break-system-packages codemagic-cli-tools
 
-      - name: Xcodeプロジェクト生成
+      - name: Xcodeプロジェクト生成（バージョンを埋め込んでから）
         working-directory: ios
-        run: xcodegen generate
+        run: |
+          # build-ipa は追加のビルド設定を受け付けないため、定義側に書き込んでおく。
+          # 生成は1回だけ（署名の後に再生成すると provisioning profile 設定が消える）
+          sed -i '' "s/MARKETING_VERSION: .*/MARKETING_VERSION: \"${{ inputs.version }}\"/" project.yml
+          sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
+          grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml
+          xcodegen generate
 
       - name: 署名（証明書・プロビジョニングを自動取得）
         env:
@@ -67,15 +73,6 @@ jobs:
             --create
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
-
-      - name: バージョンを設定
-        working-directory: ios
-        run: |
-          # build-ipa は追加のビルド設定を受け付けないため、定義側に書き込んでから再生成する
-          sed -i '' "s/MARKETING_VERSION: .*/MARKETING_VERSION: \"${{ inputs.version }}\"/" project.yml
-          sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
-          xcodegen generate
-          grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml
 
       - name: IPAをビルド
         run: |
