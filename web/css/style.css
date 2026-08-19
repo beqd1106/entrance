@@ -670,3 +670,50 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .toasts { top: 46px; }
   .toast { padding: 7px 14px; font-size: 11.5px; }
 }
+
+/* --- 特殊牌テンプレート（ゼロから作らせない） --- */
+.tpl-head { font-size: 12px; color: var(--ink-4); margin: 14px 0 8px; letter-spacing: 0.04em; }
+.tpl-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.tpl-card {
+  text-align: left; padding: 12px 14px; border-radius: var(--r-m);
+  border: 1px solid var(--line); background: var(--paper-2); cursor: pointer;
+  display: flex; flex-direction: column; gap: 4px; transition: 0.16s var(--ease);
+}
+.tpl-card:hover { border-color: var(--brass-2); box-shadow: var(--shadow-1); transform: translateY(-1px); }
+.tpl-card b { font-size: 13.5px; color: var(--ink); }
+.tpl-card span { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+
+/* =========================================================================
+   初心者向けの補助表示（雀魂を参考に）
+   ・手牌のドラが光る → 1巡目にドラを切る事故を防ぐ
+   ・テンパイ時に待ち牌と「まだ見えていない枚数」を出す
+   ========================================================================= */
+.tile.is-dora {
+  box-shadow:
+    0 0 0 2px var(--brass-2),
+    0 0 12px rgba(16, 185, 129, 0.5),
+    0 2px 4px rgba(16, 24, 40, 0.14);
+}
+.tile.is-dora::before {
+  content: ''; position: absolute; top: 3px; right: 3px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--brass-2);
+  box-shadow: 0 0 0 1.5px #fff;
+}
+.waits {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.waits-label {
+  font-size: 10px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.62); flex: 0 0 auto;
+}
+.wait-item { display: flex; align-items: flex-end; gap: 2px; }
+.wait-left {
+  font-family: var(--mono); font-size: 10.5px; color: #6ee7b7; line-height: 1;
+}
+.wait-left.zero { color: rgba(255, 255, 255, 0.4); text-decoration: line-through; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .waits { padding: 2px 8px; gap: 4px; }
+  .waits-label { font-size: 9px; }
+  .wait-left { font-size: 9px; }
+}

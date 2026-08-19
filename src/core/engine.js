@@ -1269,6 +1269,109 @@ export class GameEngine {
     };
   }
 
+  /**
+   * 表示用：自分の待ち牌と「まだ見えていない残り枚数」
+   * 初心者が「あと何が来れば和了か」を掴めるようにするための情報。
+   */
+  viewerWaits(seat) {
+    const p = this.players[seat];
+    if (!p || !p.hand || !this.wall) return null;
+    // 13枚形（ツモ前）のときだけ出す
+    if (p.hand.length % 3 !== 1) return null;
+    const counts = countsFromTiles(p.hand);
+    if (shanten(counts, p.melds.length) !== 0) return null;
+    return this.waitDetail(waits(counts, p.melds.length), counts);
+  }
+
+  /** 表示用：指定の牌を切ったらどんな待ちになるか（切る前に確認できるようにする） */
+  waitsAfterDiscard(seat, tileId) {
+    const p = this.players[seat];
+    if (!p || !p.hand) return null;
+    const rest = p.hand.filter((t) => t.id !== tileId);
+    if (rest.length === p.hand.length) return null;
+    const counts = countsFromTiles(rest);
+    if (shanten(counts, p.melds.length) !== 0) return null;
+    return this.waitDetail(waits(counts, p.melds.length), counts);
+  }
+
+  /** 待ち牌に「まだ見えていない枚数」を添える */
+  waitDetail(list, myCounts) {
+    if (!list || !list.length) return null;
+    return list.map((t) => {
+      let seen = myCounts[t] || 0;
+      for (const q of this.players) {
+        for (const d of q.discards) if (d.t === t) seen++;
+        for (const m of q.melds) for (const x of m.tiles) if (x.t === t) seen++;
+      }
+      for (const ind of this.wall.doraIndicators) if (ind.t === t) seen++;
+      return { t, code: typeToCode(t), name: typeName(t), left: Math.max(0, 4 - seen) };
+    });
+  }
+
+  /**
+   * デバッグ：手牌を指定の形に近づける（山と交換するので牌の総数は保存される）
+   * 見せたい局面をデモで確実に作るための機能。
+   * @returns {number} 実際に差し替えられた枚数
+   */
+  debugSetHand(seat, codes) {
+    const p = this.players[seat];
+    const w = this.wall;
+    if (!p || !w) return 0;
+    const want = [];
+    for (const c of codes) {
+      try { want.push(codeToType(c)); } catch { /* 無効な指定は無視 */ }
+    }
+    let swapped = 0;
+    for (let i = 0; i < want.length && i < p.hand.length; i++) {
+      if (p.hand[i].t === want[i]) { swapped++; continue; }
+      let found = -1;
+      for (let j = w.drawIndex; j < w.liveEnd; j++) if (w.live[j].t === want[i]) { found = j; break; }
+      if (found < 0) continue;
+      const tmp = p.hand[i];
+      p.hand[i] = w.live[found];
+      w.live[found] = tmp;
+      swapped++;
+    }
+    p.hand = sortTiles(p.hand);
+    return swapped;
+  }
+
+  /**
+   * デバッグ：山にある牌だけを使って確実にテンパイ形を作る
+   * （刻子3つ＋対子2つ＝シャンポン待ち。牌は山と交換するので総数は保存される）
+   */
+  debugMakeTenpai(seat) {
+    const p = this.players[seat];
+    const w = this.wall;
+    if (!p || !w || p.melds.length) return false;
+    // 山に残っている枚数を数える
+    const avail = new Map();
+    for (let i = w.drawIndex; i < w.liveEnd; i++) {
+      const t = w.live[i].t;
+      if (t >= NUM_TYPES) continue;
+      avail.set(t, (avail.get(t) || 0) + 1);
+    }
+    const triples = [...avail.entries()].filter(([, n]) => n >= 3).map(([t]) => t);
+    const pairs = [...avail.entries()].filter(([, n]) => n >= 2).map(([t]) => t);
+    const want = [];
+    for (const t of triples.slice(0, 3)) want.push(t, t, t);
+    for (const t of pairs.filter((t) => !want.includes(t)).slice(0, 2)) want.push(t, t);
+    if (want.length < 13) return false;
+
+    for (let i = 0; i < 13; i++) {
+      if (p.hand[i].t === want[i]) continue;
+      let found = -1;
+      for (let j = w.drawIndex; j < w.liveEnd; j++) if (w.live[j].t === want[i]) { found = j; break; }
+      if (found < 0) return false;
+      const tmp = p.hand[i];
+      p.hand[i] = w.live[found];
+      w.live[found] = tmp;
+    }
+    p.hand = sortTiles(p.hand);
+    // 14枚形で向聴0＝どれかを切ればテンパイ
+    return shanten(countsFromTiles(p.hand), 0) === 0;
+  }
+
   snapshot(viewerSeat = 0) {
     const reveal = this.debug.showCpuHands || this.finished;
     return {
@@ -1278,6 +1381,9 @@ export class GameEngine {
       dora: this.wall ? this.wall.doraIndicators.map((t) => this.tileInfo(t)) : [],
       ura: this.finished && this.wall ? this.wall.uraIndicators.map((t) => this.tileInfo(t)) : [],
       wareme: this.wareme,
+      // 初心者向けの補助情報（雀魂のように、手牌のドラと待ち牌が分かるようにする）
+      doraTypes: this.wall ? this.doraTypes() : [],
+      waits: this.viewerWaits(viewerSeat),
       turn: this.turn,
       phase: this.phase,
       finished: this.finished,

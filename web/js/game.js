@@ -492,10 +492,24 @@ function drawMy(s) {
       : me.shanten === 0 ? { text: 'テンパイ', cls: 'tenpai' }
         : { text: `${me.shanten}向聴`, cls: '' };
   if (tag) {
-    G.dom.myArea.appendChild(h('div.row.center', { style: { marginTop: '6px' } },
-      h('div.shanten-tag', { class: tag.cls, text: tag.text })));
+    const row = h('div.row.center.gap-8', { style: { marginTop: '6px' } },
+      h('div.shanten-tag', { class: tag.cls, text: tag.text }));
+    // 待ち牌と「まだ見えていない枚数」を出す（初心者が一番知りたい情報）
+    // 牌を選んでいる最中は「その牌を切ったらどうなるか」を先に見せる
+    const picked = G.selectedTileId != null
+      ? G.engine.waitsAfterDiscard(0, G.selectedTileId) : null;
+    const waitList = picked || s.waits;
+    if (waitList && waitList.length) {
+      row.appendChild(h('div.waits',
+        h('span.waits-label', { text: picked ? 'これを切ると' : '待ち' }),
+        waitList.map((w) => h('div.wait-item',
+          tileEl({ t: w.t, name: w.name }, { size: 'xs' }),
+          h('span.wait-left', { class: w.left === 0 ? 'zero' : '', text: `${w.left}` })))));
+    }
+    G.dom.myArea.appendChild(row);
   }
 
+  const doraSet = new Set(s.doraTypes || []);
   const drawnId = me.drawn && !me.drawn.hidden ? me.drawn.id : null;
   const tiles = me.hand.filter((t) => t.id !== drawnId);
   const render = (t, gap) => {
@@ -505,6 +519,7 @@ function drawMy(s) {
       size: 'lg',
       gap,
       clickable: can,
+      dora: doraSet.has(t.t),
       selected: G.confirmDiscard && G.selectedTileId === id,
       dim: !!selectable && !can,
       onClick: can ? () => onTileClick({ ...t, id }) : null,
@@ -742,6 +757,10 @@ function buildDebugPanel() {
   grid.appendChild(btn('手牌に特殊牌を入れる', () => {
     const ok = G.engine.debugInjectToHand(0, (t) => !!t.sp || t.dot || t.gold);
     pushLog('rule', ok ? '［デバッグ］手牌に特殊牌／金牌／白ポッチを差し込み' : '［デバッグ］該当する牌がありません');
+  }));
+  grid.appendChild(btn('手牌をテンパイにする', () => {
+    const ok = G.engine.debugMakeTenpai(0);
+    pushLog('rule', ok ? '［デバッグ］手牌をテンパイ形に差し替えました' : '［デバッグ］山の残りが足りず作れませんでした');
   }));
   grid.appendChild(btn('自分を50000点に', () => {
     G.engine.debugSetPoints([50000]);

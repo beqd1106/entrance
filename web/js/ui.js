@@ -75,6 +75,7 @@ export function tileEl(info, opts = {}) {
   if (opts.gap) cls.push('tsumo-gap');
   if (opts.side) cls.push('side');
   if (opts.anim) cls.push(opts.anim);
+  if (opts.dora) cls.push('is-dora');
 
   const inner = h('div.tile-face', { html: tileFaceSVG(info.t) });
   const el = h(`div.${cls.join('.')}`, Object.assign({ title: info.name || '' }, opts.attrs), inner);

@@ -131,6 +131,69 @@ const GROUPS = [
   },
 ];
 
+/**
+ * 特殊牌テンプレート
+ *   「どんな効果を作れるのか」が分からない人向けに、代表的な形を用意する。
+ *   選ぶと中身が入った状態で追加され、あとから自由に編集できる。
+ */
+const SPECIAL_TEMPLATES = [
+  {
+    key: 'bonus', label: '持っているとボーナス',
+    desc: '手牌に入れて和了すると、ゲーム内ポイントがもらえます。いちばん簡単な形です。',
+    make: () => ({
+      name: '青5索', tile: '5s', count: 1, color: 'blue', activationTiming: 'win',
+      description: '和了に含めるとボーナスがもらえます。',
+      effects: [{ type: 'bonus', value: 2 }], conditions: {},
+    }),
+  },
+  {
+    key: 'dora', label: 'ドラが増える',
+    desc: '持っているだけでドラが増え、打点が上がります。',
+    make: () => ({
+      name: '銀5筒', tile: '5p', count: 1, color: 'silver', activationTiming: 'win',
+      description: 'ドラ2枚分として数えます。',
+      effects: [{ type: 'dora', value: 2 }], conditions: {},
+    }),
+  },
+  {
+    key: 'almighty', label: 'リーチ後はオールマイティ',
+    desc: 'リーチしたあとにツモると、好きな牌の代わりに使えます。逆転の起点になります。',
+    make: () => ({
+      name: '琥珀白', tile: '5z', count: 1, color: 'gold', activationTiming: 'win',
+      description: 'リーチ後のツモで、好きな牌として使えます。',
+      effects: [{ type: 'almighty' }, { type: 'bonus', value: 3 }],
+      conditions: { riichiOnly: true, tsumoOnly: true },
+    }),
+  },
+  {
+    key: 'han', label: '打点が上がる',
+    desc: '和了したときに翻が増えます。門前のときだけ有効にもできます。',
+    make: () => ({
+      name: '翠5萬', tile: '5m', count: 1, color: 'green', activationTiming: 'win',
+      description: '門前で和了すると1翻増えます。',
+      effects: [{ type: 'han', value: 1 }], conditions: { menzenOnly: true },
+    }),
+  },
+  {
+    key: 'draw', label: 'ツモった瞬間にボーナス',
+    desc: '和了しなくても、引いた瞬間にポイントが入ります。盛り上がりやすい形です。',
+    make: () => ({
+      name: '星1筒', tile: '1p', count: 1, color: 'star', activationTiming: 'draw',
+      description: '引いた瞬間にボーナスがもらえます。',
+      effects: [{ type: 'bonus', value: 5 }], conditions: {},
+    }),
+  },
+  {
+    key: 'alice', label: '和了するとアリス発動',
+    desc: '和了したあとに牌をめくるチャンスが生まれます。',
+    make: () => ({
+      name: '紫5索', tile: '5s', count: 1, color: 'blue', activationTiming: 'win',
+      description: '和了するとアリスが発動します。',
+      effects: [{ type: 'alice', value: 2 }], conditions: {},
+    }),
+  },
+];
+
 export function renderEditor(root, params) {
   const baseId = params.preset || 'standard4';
   const base = lookupPreset(baseId);
@@ -583,11 +646,25 @@ function renderLeft(left, state, onChange) {
         colorS, timing, h('div.grow'), del),
       effBox, condBox, descI));
   });
-  const addSp = h('button.btn.btn-sm.btn-ghost', { text: '＋特殊牌を追加' });
+  // テンプレートから追加（ゼロから作らせない）
+  sp.appendChild(h('div.tpl-head', { text: 'よくある形から追加' }));
+  const tplRow = h('div.tpl-grid');
+  for (const t of SPECIAL_TEMPLATES) {
+    const card = h('button.tpl-card',
+      h('b', { text: t.label }),
+      h('span', { text: t.desc }));
+    card.addEventListener('click', () => {
+      R.specialTiles.push({ id: `sp_${Date.now().toString(36)}`, ...t.make() });
+      onChange();
+    });
+    tplRow.appendChild(card);
+  }
+  sp.appendChild(tplRow);
+  const addSp = h('button.btn.btn-sm.btn-ghost', { style: { marginTop: '10px' }, text: '空の特殊牌を追加（自分で設定する）' });
   addSp.addEventListener('click', () => {
     R.specialTiles.push({
       id: `sp_${Date.now().toString(36)}`, name: '新しい特殊牌', tile: '5s', count: 1, color: 'blue',
-      effects: [{ type: 'bonus', value: 2 }], conditions: {},
+      activationTiming: 'win', effects: [{ type: 'bonus', value: 2 }], conditions: {},
     });
     onChange();
   });

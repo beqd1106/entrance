@@ -913,6 +913,46 @@ it('東天紅風では北以外（一萬・五萬・九萬）も抜ける', () =
 });
 
 // ===========================================================================
+describe('初心者向けの補助表示');
+
+it('テンパイ時に待ち牌と残り枚数が出る', () => {
+  const e = mkEngine();
+  const p = e.players[0];
+  p.hand = mk('2m 3m 4m 3p 4p 5p 6p 7p 8p 3s 4s 9p 9p');
+  p.melds = [];
+  const s = e.snapshot(0);
+  eq(s.players[0].shanten, 0, 'テンパイ');
+  ok(s.waits && s.waits.length === 2, '両面待ちで2種');
+  eq(s.waits.map((w) => w.code).sort(), ['2s', '5s'], '待ちは2索・5索');
+  ok(s.waits.every((w) => w.left >= 0 && w.left <= 4), '残り枚数が0〜4に収まる');
+});
+
+it('見えている牌の分だけ残り枚数が減る', () => {
+  const e = mkEngine();
+  const p = e.players[0];
+  p.hand = mk('2m 3m 4m 3p 4p 5p 6p 7p 8p 3s 4s 9p 9p');
+  p.melds = [];
+  const before = e.snapshot(0).waits.find((w) => w.code === '2s').left;
+  e.players[1].discards = mk('2s 2s');
+  const after = e.snapshot(0).waits.find((w) => w.code === '2s').left;
+  eq(after, before - 2, '河に2枚見えたら残りが2枚減る');
+});
+
+it('テンパイでなければ待ち牌は出ない', () => {
+  const e = mkEngine();
+  const p = e.players[0];
+  p.hand = mk('1m 3m 5m 7m 9m 1p 3p 5p 7p 9p 1s 3s 5s');
+  p.melds = [];
+  eq(e.snapshot(0).waits, null, '向聴が残っていれば非表示');
+});
+
+it('手牌のドラを判別できる情報が渡る', () => {
+  const e = mkEngine();
+  const s = e.snapshot(0);
+  ok(Array.isArray(s.doraTypes) && s.doraTypes.length >= 1, 'ドラの牌タイプが取れる');
+});
+
+// ===========================================================================
 console.log(`\n=== 結果: ${pass} 件成功 / ${fail} 件失敗 ===`);
 if (fail) {
   console.log('\n失敗一覧:');
