@@ -152,10 +152,11 @@ jobs:
         run: |
           IPA=$(find build/ios/ipa -name '*.ipa' | head -1)
           echo "Uploading: $IPA"
+          # 内部グループ「社内テスト」は全ビルドを自動で受け取る設定なので、
+          # ここで明示的に割り当てるとかえって失敗する（--beta-group は使わない）。
           app-store-connect publish \
             --path "$IPA" \
             --whats-new "${{ inputs.whats_new }}" \
-            --beta-group "社内テスト" \
             --max-build-processing-wait 20
 
       - name: 成果物を保存
