@@ -88,6 +88,12 @@ jobs:
           sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${{ steps.buildno.outputs.number }}\"/" project.yml
           grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml
           xcodegen generate
+          # Info.plist の $(MARKETING_VERSION) 等はビルド設定の解決順によって
+          # Xcode既定の 1.0 / 1 になることがある。実値を直接書き込んで確実にする。
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.version }}" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ steps.buildno.outputs.number }}" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist
 
       - name: 署名（証明書・プロビジョニングを自動取得）
         env:
