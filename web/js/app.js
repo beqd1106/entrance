@@ -12,6 +12,7 @@ import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
 import { renderDashboard } from './dashboard.js';
 import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
+import { artwork, emptyState } from './artwork.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -184,7 +185,16 @@ function viewStores(params) {
       h('div.label', { text: `${hits.length}件` }),
       h('div.grow'),
       h('a.btn.btn-sm.btn-ghost', { href: '#/compare', text: '2店舗を比較する' })));
-    result.appendChild(hits.length ? storeGrid(hits) : h('div.card.card-pad', { text: '条件に合う店舗がありません。条件を減らしてください。' }));
+    if (hits.length) {
+      result.appendChild(storeGrid(hits));
+    } else {
+      const reset = h('button.btn.btn-ghost', { text: '条件をすべて外す' });
+      reset.addEventListener('click', () => { state.active.clear(); render(); });
+      result.appendChild(emptyState(
+        '条件に合う店舗がありません',
+        '絞り込みを少し減らすと見つかるかもしれません。',
+        reset));
+    }
   };
   render();
   wrap.appendChild(filterBox);
@@ -245,10 +255,12 @@ function viewStore(id) {
       const box = h('div.card.card-pad');
       box.appendChild(h('p.tiny.muted', { style: { marginTop: '0' },
         text: '麻雀のルールは分かるけれど、この店の特殊ルールは初めて、という方向けの説明です。' }));
+      const ART_FOR = { 'アリス': 'alice', '華牌（春夏秋冬）': 'flower', '白ポッチ': 'pocchi' };
       for (const e of explainForBeginners(r)) {
         box.appendChild(h('div.easy-item',
           h('div.row.gap-8', { style: { marginBottom: '6px' } }, ruleChip(e.title, { strong: true })),
           h('p', { text: e.body }),
+          ART_FOR[e.title] ? artwork(ART_FOR[e.title]) : null,
           e.more ? h('details.easy-more', h('summary', { text: 'もう少し詳しく' }), h('p', { text: e.more })) : null));
       }
       holder.appendChild(box);

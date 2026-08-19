@@ -808,3 +808,46 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .ob-body { padding: 24px 20px 8px; }
   .ob-foot { padding: 14px 16px 18px; }
 }
+
+/* =========================================================================
+   説明イラスト（情報の邪魔をしない補強）
+   ========================================================================= */
+.aw { width: 100%; max-width: 340px; margin: 12px 0; }
+.aw.aw-small { max-width: 240px; }
+.aw svg { width: 100%; height: auto; overflow: visible; }
+.aw .aw-card { fill: #fff; stroke: rgba(20, 22, 26, 0.12); stroke-width: 1.5; }
+.aw .aw-card.dim { opacity: 0.45; }
+.aw .aw-bg { fill: var(--paper); }
+.aw .aw-mute { fill: #dfe3e9; }
+.aw .aw-lens { fill: var(--brass-2); }
+.aw .aw-red { fill: var(--red); }
+.aw .aw-stroke { stroke: var(--ink-4); stroke-width: 3; stroke-linecap: round; fill: none; }
+.aw .aw-arrow {
+  stroke: var(--ink-4); stroke-width: 2; stroke-linecap: round; fill: none;
+  marker-end: none;
+}
+.aw .aw-tile { fill: #fff; stroke: rgba(20, 22, 26, 0.14); stroke-width: 1.5; }
+.aw .aw-tile.back { fill: var(--felt-2); stroke: none; }
+.aw .aw-tile.hit { fill: #d9f7ec; stroke: var(--brass-2); stroke-width: 2; }
+.aw .aw-tile.flower { fill: #fef3c7; stroke: #e0b64a; stroke-width: 1.5; }
+.aw .aw-chip.teal { fill: #ccfbf1; }
+.aw .aw-chip.amber { fill: #fef3c7; }
+.aw .aw-chip.sky { fill: #e0f2fe; }
+.aw .aw-chip.violet { fill: #ede9fe; }
+.aw .aw-label {
+  font-family: var(--tile-serif); font-size: 17px; font-weight: 700;
+  fill: var(--ink); text-anchor: middle;
+}
+.aw .aw-label.light { fill: #fff; }
+.aw .aw-cap { font-size: 11px; fill: var(--ink-3); text-anchor: middle; }
+.aw .aw-cap.dark { fill: var(--ink-2); font-weight: 600; }
+
+/* 空状態 */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 48px 24px; background: var(--paper-2); border: 1px solid var(--line);
+  border-radius: var(--r-l);
+}
+.empty-state .aw { max-width: 220px; margin-bottom: 8px; }
+.empty-state h3 { font-size: 17px; }
+.empty-state p { color: var(--ink-3); font-size: 13.5px; margin: 8px 0 18px; }
