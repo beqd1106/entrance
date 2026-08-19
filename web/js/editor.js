@@ -670,6 +670,28 @@ function renderLeft(left, state, onChange) {
   });
   sp.appendChild(addSp);
   left.appendChild(sp);
+
+  // 設定項目が多いので、見出しへ飛べる目次を先頭に置く
+  left.insertBefore(sectionJump(left), left.firstChild);
+}
+
+/**
+ * 編集フォームの目次。カード内の h3 を拾って、そこへスクロールする。
+ * 店舗スタッフが「特殊牌だけ直したい」ときに、延々スクロールしなくて済むようにする。
+ */
+function sectionJump(left) {
+  const nav = h('div.editor-jump');
+  const heads = [...left.querySelectorAll('.card-pad > h3')];
+  heads.forEach((head, i) => {
+    const card = head.parentElement;
+    if (!card.id) card.id = `edsec-${i}`;
+    const b = h('button.jump-chip', { text: head.textContent });
+    b.addEventListener('click', () => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    nav.appendChild(b);
+  });
+  return nav;
 }
 
 function aliceDetail(R, path, onChange) {

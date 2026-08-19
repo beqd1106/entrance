@@ -63,18 +63,21 @@ jobs:
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
           # run_number だとアプリ側の実績とずれて 409（重複）になることがある。
-          # TestFlight にある最新のビルド番号を正として +1 する。
-          APP_ID=$(app-store-connect list-apps --bundle-id-identifier "$BUNDLE_ID" --json \
-            | python3 -c 'import json,sys; a=json.load(sys.stdin); print(a[0]["id"] if a else "")')
-          echo "app id: $APP_ID"
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || true)
-          echo "latest testflight build: ${LATEST:-なし}"
-          case "$LATEST" in
-            ''|*[!0-9]*) NEXT=${{ github.run_number }} ;;
-            *) NEXT=$((LATEST + 1)) ;;
-          esac
+          # App Store Connect にある最新のビルド番号を正として +1 する。
+          # 取得に失敗しても配信自体は止めない（run_number にフォールバック）。
+          set +e
+          app-store-connect apps list --bundle-id-identifier "$BUNDLE_ID" --json > apps.json 2>/dev/null
+          APP_ID=$(python3 -c "import json;print(json.load(open('apps.json'))[0]['id'])" 2>/dev/null)
+          echo "app id: ${APP_ID:-取得できず}"
+          LATEST=''
+          if [ -n "$APP_ID" ]; then
+            LATEST=$(app-store-connect get-latest-build-number "$APP_ID" 2>/dev/null | tr -dc '0-9')
+          fi
+          echo "latest build: ${LATEST:-なし}"
+          if [ -n "$LATEST" ]; then NEXT=$((LATEST + 1)); else NEXT=${{ github.run_number }}; fi
           echo "次のビルド番号: $NEXT"
           echo "number=$NEXT" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Xcodeプロジェクト生成（バージョンを埋め込んでから）
         working-directory: ios
