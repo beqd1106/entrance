@@ -30,8 +30,12 @@ targets:
         buildPhase: resources
       - path: Resources/Assets.xcassets
         buildPhase: resources
-    info:
-      path: Resources/Info.plist
+    # info: は書かないこと。
+    #   XcodeGen は info: があると Info.plist を「生成」して、
+    #   手で書いた Resources/Info.plist を丸ごと上書きしてしまう。
+    #   その結果 ITSAppUsesNonExemptEncryption・画面向き・表示名などが全部消え、
+    #   TestFlight で「インストール可能なビルドが無い」状態になっていた。
+    #   INFOPLIST_FILE だけを指すことで、書いたものがそのまま使われる。
     settings:
       base:
         # XcodeGen のターゲットプリセットが 1.0 / 1 を入れてしまうので、

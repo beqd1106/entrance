@@ -44,7 +44,7 @@
 
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
-  <!-- 資産はすべてアプリに同梱。外部通信は店舗SNSリンクをSafariで開く時のみ -->
+  <!-- 独自の暗号は使っていない。通信は標準のHTTPS(TLS)のみで、輸出規制の対象外 -->
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSAllowsArbitraryLoads</key>
