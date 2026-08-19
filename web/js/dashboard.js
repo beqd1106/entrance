@@ -14,6 +14,7 @@ import { STORES, getStore } from '../../src/data/stores.js';
 import { lookupPreset, loadCustomPresets } from './custom.js';
 import { resolveStore } from './storeedit.js';
 import { h, clear, icon, chip, ruleChip, sectionHead, stars } from './ui.js';
+import { hasServer, fetchStats, recordPlay as apiPlay, recordCheckin as apiCheckin } from './api.js';
 
 const KEY = 'houserule.storeStats.v1';
 
@@ -37,6 +38,8 @@ export function recordPlay(presetId) {
     all[store.id] = cur;
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch { /* 記録できなくても対局は続行する */ }
+  // サーバにも送る。届かなくても対局には影響させない。
+  if (hasServer()) apiPlay(store.id);
 }
 
 export function recordCheckin(storeId) {
@@ -47,6 +50,7 @@ export function recordCheckin(storeId) {
     all[storeId] = cur;
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch { /* 同上 */ }
+  if (hasServer()) apiCheckin(storeId);
 }
 
 // ---------------------------------------------------------------------------
@@ -160,11 +164,26 @@ export function renderDashboard(root, params) {
       h('button.btn.btn-publish', { text: ready ? '店舗ページを公開' : '公開する（未完了）', disabled: !ready }))));
 
   // --- 数値
+  const playCard = statCard('体験プレイ', stats.plays, '回', 'この店のルールで打たれた回数');
+  const checkinCard = statCard('来店チェックイン', stats.checkins, '件', '店頭QRから記録された来店');
   wrap.appendChild(h('div.stat-row', { style: { marginTop: '20px' } },
-    statCard('体験プレイ', stats.plays, '回', 'この店のルールで打たれた回数'),
-    statCard('来店チェックイン', stats.checkins, '件', '店頭QRから記録された来店'),
+    playCard, checkinCard,
     statCard('ハウスルールの違い', diffFromBaseline(rules).length, '項目', '一般ルールと違うところ'),
     statCard('初心者歓迎度', store.beginner, '／5', 'お客様に表示される目安')));
+
+  // サーバの集計が取れたら、端末内の数から差し替える。
+  // 取れなくても端末内の数がそのまま残るので、画面は必ず何かを表示する。
+  if (hasServer()) {
+    fetchStats(store.id).then((r) => {
+      if (!r.ok || !r.data) return;
+      setStat(playCard, r.data.plays);
+      setStat(checkinCard, r.data.checkins);
+      for (const c of [playCard, checkinCard]) {
+        const note = c.querySelector('.stat-note');
+        if (note) note.textContent = `${note.textContent}（全端末の合計）`;
+      }
+    });
+  }
 
   // --- 公開前チェック
   wrap.appendChild(h('div.rule-line'));
@@ -212,7 +231,9 @@ export function renderDashboard(root, params) {
   }
 
   wrap.appendChild(h('div.notice', { style: { marginTop: '26px' },
-    text: 'この画面の数値はデモ用に端末内へ記録したものです。本番では店舗ごとに集計されます。' }));
+    text: hasServer()
+      ? '体験プレイ数と来店数はサーバで集計しています。通信できないときは、この端末の記録を表示します。'
+      : 'この画面の数値はこの端末に記録したものです。サーバに接続すると全端末の合計になります。' }));
 
   root.appendChild(sec);
   return () => {};
@@ -241,6 +262,11 @@ function progressRing(done, total) {
       stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}" transform="rotate(-90 32 32)"/>
   </svg>`;
   return h('div.publish-ring', { html: svg }, h('span', { text: `${done}/${total}` }));
+}
+
+function setStat(card, value) {
+  const n = card.querySelector('.stat-value span');
+  if (n) n.textContent = String(value);
 }
 
 function statCard(label, value, unit, note) {
