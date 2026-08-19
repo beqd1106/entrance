@@ -467,7 +467,7 @@ function codeToTypeLite(code) {
 // ---------------------------------------------------------------------------
 function viewCompare(params) {
   const list = allPresetsWithCustom();
-  const state = { a: params.a || 'store_yonma_kan', b: params.b || 'store_goto_kan' };
+  const state = { a: params.a || 'store_yonma_kan', b: params.b || 'store_goto_kan', view: 'diff' };
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;
   wrap.appendChild(sectionHead('01', 'ルール比較', '2つのルールを並べて、違う項目だけを見つけられます。'));
@@ -487,19 +487,38 @@ function viewCompare(params) {
     const db = diffFromBaseline(rb);
     const labels = [...new Set([...da.map((d) => d.label), ...db.map((d) => d.label)])];
     const find = (list, label) => (list.find((d) => d.label === label) || null);
+    const rows = labels.map((label) => {
+      const x = find(da, label); const y = find(db, label);
+      const va = x ? x.to : '一般ルールどおり';
+      const vb = y ? y.to : '一般ルールどおり';
+      return { label, va, vb, same: va === vb };
+    });
+    const diffCount = rows.filter((r2) => !r2.same).length;
+    const sameCount = rows.length - diffCount;
+
+    // 何項目ちがうのかを先に伝える。表を読む前に結論が分かるようにする。
+    holder.appendChild(h('div.cmp-summary',
+      h('div.cmp-summary-num', h('strong', { text: String(diffCount) }), h('span', { text: '項目' })),
+      h('div.grow',
+        h('div.cmp-summary-title', { text: diffCount ? 'この2つで設定が違うところ' : '設定はすべて同じです' }),
+        h('p.tiny', { style: { margin: '3px 0 0' },
+          text: `一般ルールから変えている項目のうち、${sameCount}項目は2店とも同じ設定です。` })),
+      toggleRow([
+        { label: '違うところだけ', value: 'diff' },
+        { label: 'すべて', value: 'all' },
+      ], state.view, (val) => { state.view = val; render(); })));
+
+    const shown = state.view === 'all' ? rows : rows.filter((r2) => !r2.same);
     holder.appendChild(h('div.card.card-pad',
-      h('table.diff-table', h('tbody',
-        h('tr', h('th', { text: '項目' }),
-          h('td', { style: { fontWeight: '700' }, text: lookupPreset(state.a).name }),
-          h('td', { style: { fontWeight: '700' }, text: lookupPreset(state.b).name })),
-        labels.map((label) => {
-          const x = find(da, label); const y = find(db, label);
-          const same = (x ? x.to : '一般ルール') === (y ? y.to : '一般ルール');
-          return h('tr', { style: same ? {} : { background: 'rgba(165,129,60,.06)' } },
-            h('th', { text: label }),
-            h('td', { text: x ? x.to : '一般ルールどおり' }),
-            h('td', { text: y ? y.to : '一般ルールどおり' }));
-        })))));
+      h('table.diff-table.cmp-table', h('tbody',
+        h('tr.cmp-head', h('th', { text: '項目' }),
+          h('td', h('span.cmp-side.a', { text: lookupPreset(state.a).name })),
+          h('td', h('span.cmp-side.b', { text: lookupPreset(state.b).name }))),
+        shown.length ? shown.map((r2) => h(`tr${r2.same ? '.cmp-same' : '.cmp-diff'}`,
+          h('th', { text: r2.label }),
+          h('td', { text: r2.va }),
+          h('td', { text: r2.vb }))) : h('tr', h('td', { colspan: '3' },
+          h('p.tiny.muted', { style: { margin: '10px 0' }, text: '違うところはありません。' })))))));
     holder.appendChild(h('div.row.gap-12.wrapflex', { style: { marginTop: '18px' } },
       h('a.btn.btn-primary', { href: `#/play?preset=${state.a}`, text: `${lookupPreset(state.a).name}で遊ぶ` }),
       h('a.btn.btn-ghost', { href: `#/play?preset=${state.b}`, text: `${lookupPreset(state.b).name}で遊ぶ` })));
