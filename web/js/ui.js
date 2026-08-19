@@ -170,3 +170,32 @@ export function field(label, control, desc) {
 export function notice(text) {
   return h('div.notice', { text });
 }
+
+// ---------------------------------------------------------------------------
+// ルールタグの色分け
+//   店ごとの違いが「一目で楽しく」見えるように、意味でトーンを割り当てる。
+//   色だけに頼らないよう、文言はそのまま残す（アクセシビリティ）。
+// ---------------------------------------------------------------------------
+const TAG_TONE = [
+  [/白ポッチ|オールマイティ|青(牌|5)|ブルー/, 'sky'],
+  [/アリス|チューリップ|めくり/, 'coral'],
+  [/華牌|花牌|春|夏|秋|冬|金(牌|5)|ゴールド/, 'amber'],
+  [/五等|三麻|東天紅|ロケット|北抜き|抜きドラ|ガリ/, 'teal'],
+  [/特殊牌|ジュエル|宝石|アメジスト|爆ドラ|ローカル役/, 'violet'],
+  [/初心者|歓迎|禁煙|ノーレート|学生|女性/, 'mint'],
+  [/割れ目|赤あり|赤\d|全赤|オープンリーチ|インフレ/, 'rose'],
+  [/四麻|半荘|東風|喰いタン/, 'slate'],
+];
+
+/** タグ文字列から色調を決める */
+export function toneOf(label) {
+  for (const [re, tone] of TAG_TONE) if (re.test(label)) return tone;
+  return 'slate';
+}
+
+/** ルールタグ（色付きチップ）。アイコンは付けず、文言と色で識別する */
+export function ruleChip(label, opts = {}) {
+  const el = h(`span.chip.tag-${toneOf(label)}`, { text: label });
+  if (opts.strong) el.classList.add('tag-strong');
+  return el;
+}

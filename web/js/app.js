@@ -7,7 +7,7 @@ import { lookupPreset, allPresetsWithCustom } from './custom.js';
 import { resolveRules } from '../../src/rules/defaults.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { validateRules } from '../../src/rules/validator.js';
-import { h, clear, fmt, icon, stars, chip, sectionHead, toggleRow, notice, tileEl } from './ui.js';
+import { h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl } from './ui.js';
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
 
@@ -64,11 +64,17 @@ function viewHome() {
 
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;
-  wrap.appendChild(sectionHead('01', 'デモ店舗', '架空の3店舗。それぞれ実際に打てるハウスルールが設定されています。'));
+  // ルールから探す（このサービス独自の入口。地域より先に置く）
+  wrap.appendChild(sectionHead('01', 'ルールから探す', '気になる特殊ルールを選ぶと、それがある店だけが並びます。'));
+  const quick = ['白ポッチ', 'アリス', '華牌', '五等サンマ系', '特殊牌', '割れ目', 'オープンリーチ', 'サイコロチャンス', '初心者歓迎', '三麻', '四麻'];
+  wrap.appendChild(h('div.row.gap-8.wrapflex', { style: { marginBottom: '34px' } },
+    quick.map((t) => h(`a.chip.chip-btn.chip-lg.tag-${toneOf(t)}`, { href: `#/stores?f=${encodeURIComponent(t)}`, text: t }))));
+  wrap.appendChild(h('div.rule-line'));
+  wrap.appendChild(sectionHead('02', 'デモ店舗', '架空の3店舗。それぞれ実際に打てるハウスルールが設定されています。'));
   wrap.appendChild(storeGrid(STORES));
 
   wrap.appendChild(h('div.rule-line'));
-  wrap.appendChild(sectionHead('02', 'ルールプリセット', '店舗以外の系統ルールもそのまま試せます。設定を変えるとCPUの挙動・点数・祝儀まで変わります。'));
+  wrap.appendChild(sectionHead('03', 'ルールプリセット', '店舗以外の系統ルールもそのまま試せます。設定を変えるとCPUの挙動・点数・祝儀まで変わります。'));
   const grid = h('div.store-grid');
   for (const p of PRESETS) {
     const r = resolveRules(p.rules);
@@ -76,7 +82,7 @@ function viewHome() {
       h('div.row.gap-8', { style: { marginBottom: '8px' } }, chip(p.category, 'felt'), h('div.grow'), chip(`${r.game.players === 3 ? '三麻' : '四麻'}`)),
       h('h3', { style: { fontSize: '16px' }, text: p.name }),
       h('p.tiny.muted', { style: { margin: '6px 0 12px' }, text: p.description }),
-      h('div.row.gap-8.wrapflex', { style: { marginBottom: '14px' } }, p.tags.slice(0, 4).map((t) => chip(t))),
+      h('div.row.gap-8.wrapflex', { style: { marginBottom: '14px' } }, p.tags.slice(0, 4).map((t) => ruleChip(t))),
       h('div.row.gap-8',
         h('a.btn.btn-sm.btn-primary', { href: `#/play?preset=${p.id}`, text: 'このルールで遊ぶ' }),
         h('a.btn.btn-sm.btn-ghost', { href: `#/editor?preset=${p.id}`, text: '設定を見る' }))));
@@ -116,7 +122,7 @@ function storeGrid(list) {
         h('p.tiny.muted', { style: { margin: '4px 0 10px' }, text: s.catch }),
         h('div.row.gap-8', { style: { marginBottom: '10px' } },
           h('div.tiny.muted', { text: '初心者歓迎度' }), stars(s.beginner)),
-        h('div.row.gap-4.wrapflex', s.ruleHighlights.slice(0, 5).map((t) => chip(t, 'brass'))),
+        h('div.row.gap-4.wrapflex', s.ruleHighlights.slice(0, 5).map((t) => ruleChip(t))),
         h('div.tiny.muted', { style: { marginTop: '10px' }, text: shortSummary(r) }))));
   }
   return grid;
@@ -137,7 +143,7 @@ function viewStores(params) {
         h('div.tiny.muted', { style: { width: '84px', flex: '0 0 auto' }, text: f.label }));
       for (const o of f.options) {
         const on = state.active.has(o.value);
-        const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: o.value });
+        const c = h(`span.chip.chip-btn.tag-${toneOf(o.value)}`, { class: on ? 'on' : '', text: o.value });
         c.addEventListener('click', () => {
           if (on) state.active.delete(o.value); else state.active.add(o.value);
           render();
@@ -298,7 +304,7 @@ function viewStore(id) {
       h('div.tiny.muted', { style: { marginTop: '10px' }, text: s.beginnerNote })),
     h('div.card.card-pad',
       h('h4', { style: { marginBottom: '10px' } }, '雰囲気'),
-      h('div.row.gap-4.wrapflex', s.mood.map((m) => chip(m))),
+      h('div.row.gap-4.wrapflex', s.mood.map((m) => ruleChip(m))),
       h('h4', { style: { margin: '16px 0 8px' } }, 'スタッフ'),
       h('div.mini-list', s.staff.map((st) => h('div.mini-item',
         h('div.seat-wind', { text: st.name[0] }),

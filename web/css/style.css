@@ -83,9 +83,10 @@ svg { display: block; }
 .nav-inner { height: 100%; display: flex; align-items: center; gap: 28px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; letter-spacing: 0.02em; }
 .brand-mark {
-  width: 26px; height: 26px; border-radius: 5px;
+  width: 28px; height: 28px; border-radius: 9px;
   background: linear-gradient(150deg, var(--brass-2), var(--brass));
-  display: grid; place-items: center; color: #fff; font-size: 13px; font-family: var(--tile-serif);
+  display: grid; place-items: center; color: #fff;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
 }
 .nav-links { display: flex; gap: 22px; font-size: 13.5px; letter-spacing: 0.04em; }
 .nav-links a { color: var(--ink-3); padding: 4px 0; border-bottom: 1px solid transparent; transition: 0.2s var(--ease); }
@@ -341,15 +342,20 @@ svg { display: block; }
 .hero p { position: relative; color: var(--ink-3); max-width: 46em; }
 .store-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .store-photo {
-  height: 132px; position: relative; overflow: hidden;
-  background: linear-gradient(140deg, hsl(var(--hue) 26% 30%), hsl(var(--hue) 32% 16%));
+  height: 128px; position: relative; overflow: hidden;
+  background:
+    radial-gradient(80% 120% at 78% 10%, hsl(var(--hue) 88% 93%), transparent 60%),
+    linear-gradient(150deg, hsl(var(--hue) 72% 96%), hsl(var(--hue) 56% 88%));
   display: grid; place-items: center;
 }
 .store-photo::after {
   content: ''; position: absolute; inset: 0;
-  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.045) 0 2px, transparent 2px 9px);
+  background-image: radial-gradient(hsl(var(--hue) 45% 72% / 0.45) 1px, transparent 1px);
+  background-size: 16px 16px;
+  -webkit-mask-image: linear-gradient(200deg, #000, transparent 78%);
+  mask-image: linear-gradient(200deg, #000, transparent 78%);
 }
-.store-photo svg { width: 52px; height: 52px; color: rgba(240, 227, 200, 0.5); position: relative; }
+.store-photo svg { width: 46px; height: 46px; color: hsl(var(--hue) 52% 32%); position: relative; opacity: .9; }
 .store-name { font-size: 18px; }
 .stars { display: flex; gap: 2px; color: var(--brass); }
 .stars svg { width: 13px; height: 13px; }
@@ -607,4 +613,60 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   outline: 3px solid var(--brass-2);
   outline-offset: 2px;
   box-shadow: 0 10px 18px rgba(16, 185, 129, 0.35);
+}
+
+/* =========================================================================
+   ルールタグ（店ごとの違いを楽しく見せる）
+   ・色は意味の手がかり。文言でも判別できるので色覚に依存しない
+   ========================================================================= */
+.chip[class*='tag-'] { font-weight: 600; letter-spacing: 0.01em; }
+.tag-sky    { background: #e0f2fe; color: #075985; }
+.tag-coral  { background: #ffe8e0; color: #9a3412; }
+.tag-amber  { background: #fef3c7; color: #92400e; }
+.tag-teal   { background: #ccfbf1; color: #115e59; }
+.tag-violet { background: #ede9fe; color: #5b21b6; }
+.tag-mint   { background: #d9f7ec; color: #076a4b; }
+.tag-rose   { background: #ffe4e6; color: #9f1239; }
+.tag-slate  { background: #eef1f5; color: #475569; }
+.tag-strong { box-shadow: 0 0 0 1.5px currentColor inset; }
+
+/* 大きめのタグ（トップの「ルールから探す」入口） */
+.chip-lg { padding: 9px 18px; font-size: 13.5px; border-radius: 999px; }
+.chip-lg:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
+
+/* --- 対局前の確認 --- */
+.pregame-list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.pregame-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; border-radius: var(--r-m); background: var(--paper);
+  border: 1px solid var(--line);
+}
+.pregame-item > span { flex: 0 0 auto; }
+.pregame-item p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+
+/* --- 特殊効果のトースト（短く、邪魔しない） --- */
+.toasts {
+  position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 50; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px; white-space: nowrap;
+  padding: 10px 18px; border-radius: 999px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.96); color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  animation: toastIn 0.28s var(--ease) both;
+}
+.toast b { font-size: 13.5px; }
+.toast span { color: var(--ink-3); font-size: 12.5px; }
+.toast.out { animation: toastOut 0.45s var(--ease) both; }
+.toast-amber  { box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3); border-left: 4px solid #f59e0b; }
+.toast-rose   { box-shadow: 0 8px 24px rgba(229, 72, 77, 0.28); border-left: 4px solid var(--red); }
+.toast-violet { box-shadow: 0 8px 24px rgba(139, 92, 246, 0.28); border-left: 4px solid #8b5cf6; }
+.toast-sky    { box-shadow: 0 8px 24px rgba(56, 189, 248, 0.28); border-left: 4px solid #38bdf8; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-10px) scale(0.96); } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  .toasts { top: 46px; }
+  .toast { padding: 7px 14px; font-size: 11.5px; }
 }

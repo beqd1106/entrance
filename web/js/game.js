@@ -8,7 +8,7 @@ import { resolveRules, deepMerge } from '../../src/rules/defaults.js';
 import { lookupPreset } from './custom.js';
 import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
-import { h, clear, tileEl, tileRow, fmt, signed, icon, chip } from './ui.js';
+import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 
 const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, { label: '速い', v: 120 }];
 
@@ -46,7 +46,7 @@ export function renderGame(root, params) {
     seed: Date.now() % 100000,
   };
   buildDom(root);
-  startGame();
+  showPregame();
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
     closeOverlay();
@@ -67,6 +67,7 @@ function buildDom(root) {
   G.dom.logbox = h('div.logbox');
   G.dom.ruleCard = h('div.side-card.rule-summary');
   G.dom.debug = h('div.debug-panel.hide');
+  G.dom.toasts = h('div.toasts');
   G.dom.rotate = h('div.rotate-hint',
     h('span', { html: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 19h6"/></svg>' }),
     h('span', { text: '横向きにすると卓が広く使えます' }));
@@ -76,10 +77,94 @@ function buildDom(root) {
     h('div.table-main',
       h('div.board-scroll', G.dom.board, G.dom.myArea),
       h('div.side-panel', G.dom.ruleCard, G.dom.logbox)),
-    h('div.bottom-bar', G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug));
+    h('div.bottom-bar', G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug),
+    G.dom.toasts);
   root.appendChild(shell);
   G.dom.overlay = null;
   buildDebugPanel();
+}
+
+// ---------------------------------------------------------------------------
+// 対局前の確認（この店で押さえておくべき点だけを出す）
+// ---------------------------------------------------------------------------
+function pregamePoints() {
+  const R = G.rules;
+  const pts = [];
+  const push = (title, body, tone) => pts.push({ title, body, tone });
+
+  push(R.game.players === 3 ? '三人麻雀' : '四人麻雀',
+    `${{ east: '東風戦', east_south: '半荘戦', ikkyoku: '一局清算' }[R.game.length] || R.game.length}`
+    + (R.scoring.mode === 'flat' ? '／点数の数え方が特殊です' : `／${fmt(R.scoring.startingPoints)}点持ち${fmt(R.scoring.returnPoints)}点返し`),
+    'slate');
+
+  if (R.local.shiroPocchi.enabled) {
+    const cond = { always: 'いつでも', any_tsumo: 'ツモのとき', riichi_tsumo: 'リーチ後のツモのとき' }[R.local.shiroPocchi.almightyCondition];
+    push('白ポッチ', `白に赤い点が付いた特別な牌が${R.local.shiroPocchi.count}枚。${cond}、好きな牌の代わりに使えます。`, 'sky');
+  }
+  if (R.local.alice.enabled) {
+    push('アリス', '和了したあとに牌をめくります。手牌と同じ牌が出るとボーナス。当たり続ける限りめくれます。', 'coral');
+  }
+  if (R.flowers.enabled) {
+    push('華牌（春夏秋冬）', '引いたら自動で抜けて、すぐ次の牌を引きます。春夏秋冬それぞれ違う効果があります。', 'amber');
+  }
+  if (R.game.players === 3 && R.sanma.northMode === 'nuki') {
+    const extra = (R.sanma.extraNukiTiles || []).map((c) => typeName(codeToType(c)));
+    push('抜きドラ', `北${extra.length ? `と${extra.join('・')}` : ''}は手牌から抜いて使います。抜くとドラが増えます。`, 'teal');
+  }
+  if (R.local.wareme.enabled) {
+    push('割れ目', `サイコロで決まった人は、払うときも受け取るときも${R.local.wareme.multiplier}倍になります。`, 'rose');
+  }
+  for (const d of (R.specialTiles || []).slice(0, 2)) {
+    push(d.name, d.description || 'この店だけの特別な牌です。手牌に入ると効果があります。', 'violet');
+  }
+  if (R.local.dice.enabled) {
+    push('サイコロチャンス', '条件を満たすとサイコロを振れます。出目に応じてボーナスが入ります。', 'amber');
+  }
+  return pts.slice(0, 5);
+}
+
+function showPregame() {
+  const R = G.rules;
+  const pts = pregamePoints();
+  const body = h('div.sheet-body');
+  body.appendChild(h('p.muted', { style: { marginTop: '0' }, text: 'このお店で覚えておくとよいのは、次の点だけです。' }));
+  const list = h('div.pregame-list');
+  for (const p of pts) {
+    list.appendChild(h('div.pregame-item',
+      h('span', { class: `chip tag-${p.tone}`, text: p.title }),
+      h('p', { text: p.body })));
+  }
+  body.appendChild(list);
+  if (R.bonus.enabled) {
+    body.appendChild(h('div.notice', { style: { marginTop: '14px' }, text: `ボーナス（BP）は${R.bonus.label}です。お金とは交換できません。` }));
+  }
+
+  const start = h('button.btn.btn-brass.btn-lg', {}, icon('play', 15), 'この設定で対局を始める');
+  start.addEventListener('click', () => { closeOverlay(); startGame(); });
+  const back = h('a.btn.btn-ghost', {
+    href: G.store ? `#/store/${G.store.id}` : '#/stores', text: 'ルールをもっと見る',
+  });
+  back.addEventListener('click', () => closeOverlay());
+
+  overlay(h('div.sheet',
+    h('div.sheet-head',
+      h('div.eyebrow', { text: G.event ? `イベント卓：${G.event.name}` : '対局前の確認' }),
+      h('h3', { text: G.preset.name })),
+    body,
+    h('div.sheet-foot', back, start)));
+}
+
+// ---------------------------------------------------------------------------
+// 特殊効果のトースト（何が起きたかをその場で伝える。演出は短く）
+// ---------------------------------------------------------------------------
+function toast(title, body, tone = 'amber') {
+  if (!G || !G.dom || !G.dom.toasts) return;
+  const el = h('div.toast', { class: `toast-${tone}` },
+    h('b', { text: title }),
+    body ? h('span', { text: body }) : null);
+  G.dom.toasts.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); }, 2200);
+  setTimeout(() => { el.remove(); }, 2700);
 }
 
 function startGame() {
@@ -142,15 +227,26 @@ function drainLog() {
         pushLog('sys', `── ${['東', '南', '西', '北'][ev.wind]}${ev.kyoku}局 ${ev.honba}本場（親：${nameOf(ev.dealer)}）`);
         break;
       case 'discard': pushLog('', `${nameOf(ev.seat)}：${ev.tile.name} 切り${ev.riichi ? '（リーチ宣言牌）' : ''}`); break;
-      case 'riichi': pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`); break;
+      case 'riichi':
+        pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
+        toast(ev.open ? 'オープンリーチ' : 'リーチ', nameOf(ev.seat), 'rose');
+        break;
       case 'call': pushLog('', `${nameOf(ev.seat)}：${{ pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind}（${nameOf(ev.from)}の${ev.tile.name}）`); break;
       case 'kan': pushLog('', `${nameOf(ev.seat)}：${{ ankan: '暗槓', kakan: '加槓' }[ev.kind] || 'カン'} ${typeName(ev.t)}`); break;
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
       case 'kita': pushLog('rule', `${nameOf(ev.seat)}：${ev.tile.name}を抜く（${ev.count}枚目）`); break;
       case 'flower':
         pushLog('rule', `${nameOf(ev.seat)}：華牌「${ev.label}」を抜く${ev.messages && ev.messages.length ? ' → ' + ev.messages.join(' / ') : ''}`);
+        toast(`華牌「${ev.label}」`, (ev.messages || [])[0] || `${nameOf(ev.seat)}が抜きました`, 'amber');
         break;
-      case 'wareme': pushLog('rule', `割れ目：${nameOf(ev.seat)}（サイコロ ${ev.dice}）`); break;
+      case 'wareme':
+        pushLog('rule', `割れ目：${nameOf(ev.seat)}（サイコロ ${ev.dice}）`);
+        toast('割れ目', ev.all ? '全員が対象です' : `${nameOf(ev.seat)}の収支が倍になります`, 'rose');
+        break;
+      case 'specialDraw':
+        pushLog('rule', `${nameOf(ev.seat)}：${ev.name} をツモ（+${ev.bonus}BP）`);
+        toast(ev.name, `+${ev.bonus}BP`, 'violet');
+        break;
       case 'abort': pushLog('sys', `途中流局：${ev.reason}`); break;
       case 'kyokuEnd': {
         const res = ev.result;
