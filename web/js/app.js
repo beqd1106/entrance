@@ -13,6 +13,7 @@ import { renderEditor } from './editor.js';
 import { renderDashboard } from './dashboard.js';
 import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
 import { artwork, emptyState } from './artwork.js';
+import { renderStoreEdit, resolveStore } from './storeedit.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -45,6 +46,7 @@ function route() {
     case 'play': cleanup = renderGame(app, params); break;
     case 'editor': cleanup = renderEditor(app, params); break;
     case 'dashboard': cleanup = renderDashboard(app, params); break;
+    case 'store-edit': cleanup = renderStoreEdit(app, params); break;
     default: viewHome();
   }
 }
@@ -124,7 +126,8 @@ function footer() {
 // ---------------------------------------------------------------------------
 function storeGrid(list) {
   const grid = h('div.store-grid');
-  for (const s of list) {
+  for (const raw of list) {
+    const s = resolveStore(raw.id);
     const r = rulesOf(s.presetId);
     grid.appendChild(h('a.card', { href: `#/store/${s.id}`, style: { display: 'block' } },
       h('div.store-photo', { style: { '--hue': String(s.photo.hue) } }, icon(s.photo.icon, 52)),
@@ -207,7 +210,7 @@ function viewStores(params) {
 // 店舗ページ
 // ---------------------------------------------------------------------------
 function viewStore(id) {
-  const s = getStore(id);
+  const s = resolveStore(id);
   const r = rulesOf(s.presetId);
   const v = validateRules(r);
 

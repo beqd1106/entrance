@@ -12,6 +12,7 @@ import { validateRules } from '../../src/rules/validator.js';
 import { diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { STORES, getStore } from '../../src/data/stores.js';
 import { lookupPreset, loadCustomPresets } from './custom.js';
+import { resolveStore } from './storeedit.js';
 import { h, clear, icon, chip, ruleChip, sectionHead, stars } from './ui.js';
 
 const KEY = 'houserule.storeStats.v1';
@@ -118,7 +119,7 @@ function buildChecklist(store, rules) {
 // ---------------------------------------------------------------------------
 export function renderDashboard(root, params) {
   const storeId = params.store || STORES[0].id;
-  const store = getStore(storeId);
+  const store = resolveStore(storeId);
   const rules = resolveRules(lookupPreset(store.presetId).rules);
   const stats = loadStats(store.id);
   const { items, validator } = buildChecklist(store, rules);
@@ -188,6 +189,7 @@ export function renderDashboard(root, params) {
   wrap.appendChild(h('div.row.gap-12.wrapflex',
     h('a.btn.btn-primary', { href: `#/editor?preset=${store.presetId}`, text: 'ルールを編集する' }),
     h('a.btn.btn-brass', { href: `#/play?preset=${store.presetId}` }, icon('play', 14), 'このルールで試し打ちする'),
+    h('a.btn.btn-ghost', { href: `#/store-edit?store=${store.id}`, text: '店舗情報を編集する' }),
     h('a.btn.btn-ghost', { href: `#/store/${store.id}`, text: '店舗ページを見る' })));
 
   // --- 設定チェックの詳細（注意・メモ）

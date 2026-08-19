@@ -851,3 +851,20 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
 .empty-state .aw { max-width: 220px; margin-bottom: 8px; }
 .empty-state h3 { font-size: 17px; }
 .empty-state p { color: var(--ink-3); font-size: 13.5px; margin: 8px 0 18px; }
+
+/* --- 店舗情報の編集 --- */
+.star-btn {
+  background: none; border: 0; padding: 2px; cursor: pointer;
+  color: var(--line-2); transition: 0.15s var(--ease);
+}
+.star-btn.on { color: var(--brass); }
+.star-btn:hover { transform: scale(1.12); }
+.gap-6 { gap: 6px; }
+.hue-swatch {
+  width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
+  border: 2px solid transparent;
+  background: linear-gradient(150deg, hsl(var(--hue) 72% 92%), hsl(var(--hue) 56% 80%));
+  transition: 0.15s var(--ease);
+}
+.hue-swatch.on { border-color: var(--ink); transform: scale(1.06); }
+textarea { resize: vertical; min-height: 56px; }
