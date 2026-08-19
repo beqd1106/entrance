@@ -1272,3 +1272,119 @@ input[type='file'] { font-size: 12.5px; max-width: 100%; }
   border-color: transparent;
   backdrop-filter: blur(4px);
 }
+
+/* =========================================================================
+   使い方ガイド（Web版・iPhone版で同じものを出す）
+   ========================================================================= */
+.manual-sec { scroll-margin-top: calc(var(--nav-h) + 76px); }
+.manual-badge {
+  display: inline-block; margin: -6px 0 14px;
+  font-size: 11px; letter-spacing: 0.04em; font-weight: 700;
+  padding: 4px 11px; border-radius: 999px;
+  background: var(--brass-3); color: #056646;
+}
+.manual-text {
+  max-width: 64ch; margin: 0 0 12px;
+  font-size: 14.5px; line-height: 1.95; color: var(--ink-2);
+}
+
+/* 手順 */
+.manual-steps { counter-reset: step; list-style: none; margin: 4px 0 18px; padding: 0; }
+.manual-steps li {
+  counter-increment: step; position: relative;
+  padding: 0 0 16px 44px; max-width: 66ch;
+}
+.manual-steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--brass); color: #fff;
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+}
+.manual-steps li:not(:last-child)::after {
+  content: ''; position: absolute; left: 13.5px; top: 32px; bottom: 4px;
+  width: 1px; background: var(--line-2);
+}
+.manual-step-t { font-weight: 700; font-size: 14.5px; margin-bottom: 3px; }
+.manual-step-b { font-size: 13.5px; line-height: 1.85; color: var(--ink-3); }
+
+/* 補足の囲み */
+.manual-callout {
+  margin: 4px 0 18px; padding: 14px 16px; border-radius: var(--r-m);
+  border: 1px solid var(--line); background: var(--paper-2);
+  border-left: 3px solid var(--ink-4); max-width: 68ch;
+}
+.manual-callout-title { font-weight: 700; font-size: 13.5px; margin-bottom: 4px; }
+.manual-callout p { margin: 0; font-size: 13.5px; line-height: 1.9; color: var(--ink-2); }
+.manual-callout.tone-brass { border-left-color: var(--brass); background: rgba(14, 166, 114, 0.05); }
+.manual-callout.tone-sky { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+.manual-callout.tone-teal { border-left-color: #0d9488; background: rgba(13, 148, 136, 0.05); }
+.manual-callout.tone-amber { border-left-color: #d97706; background: rgba(217, 119, 6, 0.06); }
+
+/* 表 */
+.manual-table-wrap { overflow-x: auto; margin: 4px 0 18px; }
+.manual-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 420px; }
+.manual-table th, .manual-table td {
+  text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top;
+}
+.manual-table thead th {
+  font-size: 11.5px; letter-spacing: 0.04em; color: var(--ink-4);
+  font-weight: 600; border-bottom: 1px solid var(--line-2);
+}
+.manual-table tbody th { font-weight: 700; color: var(--ink); width: 30%; }
+.manual-table td { color: var(--ink-2); line-height: 1.8; }
+
+/* 牌の並び */
+.manual-tiles { margin: 4px 0 18px; }
+.manual-tile-row { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+.manual-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.manual-tile span { font-size: 11.5px; color: var(--ink-3); }
+
+/* 用語＋牌 */
+.manual-defs { display: grid; gap: 10px; margin: 4px 0 18px; }
+.manual-def {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 14px 16px; border-radius: var(--r-m);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.manual-def-face {
+  flex: 0 0 auto; padding: 8px 10px; border-radius: 10px;
+  background: var(--paper-2); border: 1px solid var(--line);
+}
+.manual-def-term { font-weight: 700; font-size: 14.5px; margin-bottom: 4px; }
+.manual-def p { margin: 0; font-size: 13.5px; line-height: 1.9; color: var(--ink-2); }
+
+/* よくある質問 */
+.manual-faq { display: grid; gap: 8px; margin: 4px 0 18px; }
+.manual-q {
+  border: 1px solid var(--line); border-radius: var(--r-m);
+  background: var(--surface); overflow: hidden;
+}
+.manual-q > summary {
+  cursor: pointer; list-style: none; padding: 13px 16px;
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+}
+.manual-q > summary::-webkit-details-marker { display: none; }
+.manual-q > summary::before {
+  content: '＋'; font-family: var(--mono); color: var(--brass); flex: 0 0 auto;
+}
+.manual-q[open] > summary::before { content: '−'; }
+.manual-q p {
+  margin: 0; padding: 0 16px 15px 42px;
+  font-size: 13.5px; line-height: 1.9; color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .manual-def { flex-direction: column; gap: 10px; }
+  .manual-steps li { padding-left: 38px; }
+  .manual-table tbody th { width: auto; }
+}
+
+/* フッターの導線 */
+.footer-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--ink-2); text-decoration: none;
+  transition: color 0.15s var(--ease);
+}
+.footer-link:hover { color: var(--brass); }

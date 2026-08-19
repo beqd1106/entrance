@@ -115,8 +115,12 @@ export function showOnboarding(onFinish) {
       return d;
     }));
 
-    const skip = h('button.btn.btn-ghost.btn-sm', { text: idx === SLIDES.length - 1 ? '閉じる' : 'スキップ' });
-    skip.addEventListener('click', close);
+    const skip = h('button.btn.btn-ghost.btn-sm', { text: idx === SLIDES.length - 1 ? '使い方を見る' : 'スキップ' });
+    skip.addEventListener('click', () => {
+      const last = idx === SLIDES.length - 1;
+      close();
+      if (last) location.hash = '#/manual';
+    });
 
     const next = h('button.btn.btn-brass', { text: idx === SLIDES.length - 1 ? '店を探してみる' : '次へ' });
     next.addEventListener('click', () => {

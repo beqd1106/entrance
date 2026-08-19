@@ -16,6 +16,7 @@ import { renderDashboard, recordCheckin } from './dashboard.js';
 import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
 import { artwork, emptyState } from './artwork.js';
 import { renderStoreEdit, resolveStore, primeServerStores } from './storeedit.js';
+import { renderManual } from './manual.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -49,6 +50,7 @@ function route() {
     case 'editor': cleanup = renderEditor(app, params); break;
     case 'dashboard': cleanup = renderDashboard(app, params); break;
     case 'store-edit': cleanup = renderStoreEdit(app, params); break;
+    case 'manual': cleanup = renderManual(app); app.appendChild(footer()); break;
     default: viewHome();
   }
 }
@@ -142,6 +144,10 @@ function viewHome() {
 
 function footer() {
   return h('footer.footer', h('div.wrap',
+    h('div.row.gap-16.wrapflex', { style: { marginBottom: '10px' } },
+      h('a.footer-link', { href: '#/manual' }, icon('book', 13), '使い方'),
+      h('a.footer-link', { href: '#/stores', text: '店舗をさがす' }),
+      h('a.footer-link', { href: '#/dashboard', text: '店舗の方へ' })),
     h('div', { text: 'Houserule デモ版 ／ 実在店舗のハウスルールを転載していない架空データです。' }),
     h('div', { text: 'ゲーム内ポイント（BP）はすべて非換金・ゲーム内専用です。賭博性のある設計は含みません（法務判断は要専門家確認）。' })));
 }
