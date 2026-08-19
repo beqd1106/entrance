@@ -5,11 +5,12 @@ import { STORES, FILTERS, getStore } from '../../src/data/stores.js';
 import { ALL_PRESETS, PRESETS } from '../../src/rules/presets.js';
 import { lookupPreset, allPresetsWithCustom } from './custom.js';
 import { resolveRules } from '../../src/rules/defaults.js';
-import { explainRules, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
+import { explainRules, explainForBeginners, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { validateRules } from '../../src/rules/validator.js';
 import { h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl } from './ui.js';
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
+import { renderDashboard } from './dashboard.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -41,6 +42,7 @@ function route() {
     case 'compare': viewCompare(params); break;
     case 'play': cleanup = renderGame(app, params); break;
     case 'editor': cleanup = renderEditor(app, params); break;
+    case 'dashboard': cleanup = renderDashboard(app, params); break;
     default: viewHome();
   }
 }
@@ -216,15 +218,30 @@ function viewStore(id) {
 
   // ルール説明（全文／差分）
   wrap.appendChild(sectionHead('01', 'ハウスルール', '設定データから自動生成しています。編集すれば説明文も対局挙動も同時に変わります。'));
-  const mode = { v: 'diff' };
+  const mode = { v: 'easy' };
   const holder = h('div');
   const renderExplain = () => {
     clear(holder);
     holder.appendChild(h('div.row.gap-12', { style: { marginBottom: '18px' } },
-      toggleRow([{ label: '一般ルールとの差分', value: 'diff' }, { label: 'ルール全文', value: 'full' }], mode.v, (val) => { mode.v = val; renderExplain(); }),
+      toggleRow([
+        { label: '初心者向け', value: 'easy' },
+        { label: '一般ルールとの差分', value: 'diff' },
+        { label: 'ルール全文', value: 'full' },
+      ], mode.v, (val) => { mode.v = val; renderExplain(); }),
       h('div.grow'),
       h('div.tiny.muted', { text: shortSummary(r) })));
-    if (mode.v === 'diff') {
+    if (mode.v === 'easy') {
+      const box = h('div.card.card-pad');
+      box.appendChild(h('p.tiny.muted', { style: { marginTop: '0' },
+        text: '麻雀のルールは分かるけれど、この店の特殊ルールは初めて、という方向けの説明です。' }));
+      for (const e of explainForBeginners(r)) {
+        box.appendChild(h('div.easy-item',
+          h('div.row.gap-8', { style: { marginBottom: '6px' } }, ruleChip(e.title, { strong: true })),
+          h('p', { text: e.body }),
+          e.more ? h('details.easy-more', h('summary', { text: 'もう少し詳しく' }), h('p', { text: e.more })) : null));
+      }
+      holder.appendChild(box);
+    } else if (mode.v === 'diff') {
       const diff = diffFromBaseline(r);
       const table = h('table.diff-table', h('tbody',
         diff.map((d) => h('tr',

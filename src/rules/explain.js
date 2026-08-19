@@ -366,3 +366,129 @@ export function shortSummary(r) {
   if (lyc) parts.push(`ローカル役${lyc}種`);
   return parts.join(' / ');
 }
+
+// ---------------------------------------------------------------------------
+// 初心者向けの説明
+//   専門用語をかみ砕き、「何が起きるのか」だけを伝える。
+//   経験者向け（explainRules）とは別に持ち、店舗ページで切り替えられるようにする。
+// ---------------------------------------------------------------------------
+
+/**
+ * 初心者向けの説明を生成する。
+ * @returns {{title:string, tone:string, body:string, more?:string}[]}
+ */
+export function explainForBeginners(r) {
+  const out = [];
+  const add = (title, tone, body, more) => out.push({ title, tone, body, more });
+  const isSanma = r.game.players === 3;
+
+  add(
+    isSanma ? '3人で打ちます' : '4人で打ちます',
+    'slate',
+    isSanma
+      ? '三人麻雀です。チーはできません。使う牌も4人麻雀とは少し違います。'
+      : '一般的な4人麻雀です。',
+    isSanma && r.sanma.removeManzu
+      ? `萬子は${(r.sanma.manzuKeep || ['1m', '9m']).map(tileLabel).join('・')}だけを使い、それ以外の萬子は入っていません。`
+      : null,
+  );
+
+  if (r.scoring.mode === 'flat') {
+    add('点数の数え方が独特です', 'teal',
+      '「翻」ではなく「点」で数えます。ロンした場合は放銃した人からだけ、ツモの場合は2人からもらいます。',
+      `${r.scoring.flat.fuFixed}符固定で計算し、役満は${r.scoring.flat.yakumanPoints}点です。`);
+  } else {
+    add('持ち点と返し点', 'slate',
+      `${num(r.scoring.startingPoints)}点から始めて、${num(r.scoring.returnPoints)}点を基準に順位点が付きます。`,
+      r.scoring.rankOnly ? '素点は成績に反映されず、順位だけで決まります。' : null);
+  }
+
+  if (r.local.shiroPocchi.enabled) {
+    const cond = { always: 'いつでも', any_tsumo: 'ツモのときに', riichi_tsumo: 'リーチしたあとのツモで' }[r.local.shiroPocchi.almightyCondition];
+    add('白ポッチ', 'sky',
+      `白の牌のうち1枚に赤い点が付いています。${cond}引くと、好きな牌の代わりに使えます。`,
+      `この店には${r.local.shiroPocchi.count}枚入っています。もちろん普通の「白」としても使えます。`);
+  }
+
+  if (r.local.alice.enabled) {
+    add('アリス', 'coral',
+      '和了したあとに、山から牌をめくります。自分の手にあった牌と同じものが出るとボーナス。当たるかぎり、めくり続けられます。',
+      `一致1枚につき${r.local.alice.bonusPerMatch}BP、最大${r.local.alice.maxFlips}枚までめくれます。`);
+  }
+  if (r.local.tulip.enabled) {
+    add('チューリップ', 'coral',
+      'アリスと似ていますが、めくった牌の「1つ隣」までが当たり扱いになります。そのぶん当たりやすくなります。', null);
+  }
+
+  if (r.flowers.enabled) {
+    const eff = (r.flowers.tiles || []).map((k) => `${FLOWER_JP[k]}＝${flowerShort(r.flowers.effects[k])}`).join('／');
+    add('華牌（春夏秋冬）', 'amber',
+      '春夏秋冬という特別な牌が入っています。引いたら自動で手牌から抜けて、すぐ次の牌を引きます。',
+      `それぞれ効果が違います。${eff}`);
+  }
+
+  if (isSanma && r.sanma.northMode === 'nuki') {
+    const extra = (r.sanma.extraNukiTiles || []).map(tileLabel);
+    add('抜きドラ', 'teal',
+      `北${extra.length ? `と${extra.join('・')}` : ''}は、手牌から抜いて自分の前に置きます。抜くとドラが増えて、打点が上がります。`,
+      '抜いたあとは、すぐ次の牌を引けます。');
+  }
+
+  for (const d of r.specialTiles || []) {
+    add(d.name, 'violet',
+      d.description || 'この店だけの特別な牌です。手に入れると効果があります。',
+      `効果：${describeEffects(d.effects)}${describeConditions(d.conditions)}`);
+  }
+
+  if (r.local.wareme.enabled) {
+    add('割れ目', 'rose',
+      r.local.wareme.allPlayers
+        ? `全員が「割れ目」です。やり取りする点数がすべて${r.local.wareme.multiplier}倍になります。`
+        : `サイコロで1人が「割れ目」になります。その人は、払うときも受け取るときも${r.local.wareme.multiplier}倍です。`,
+      null);
+  }
+
+  if (r.local.openRiichi.enabled) {
+    add('オープンリーチ', 'rose',
+      '手牌を見せてリーチする代わりに、和了したときの点数が上がります。',
+      `+${r.local.openRiichi.han}翻。${r.local.openRiichi.revealMode === 'waits' ? '見せるのは待ち牌だけです。' : '手牌をすべて見せます。'}`);
+  }
+
+  if (r.local.dice.enabled) {
+    add('サイコロチャンス', 'amber',
+      '特定の条件を満たすと、サイコロを振れます。出た目に応じてボーナスがもらえます。',
+      `サイコロ${r.local.dice.count}個。ゾロ目が出るとさらに増えます。`);
+  }
+
+  const reds = Object.values(r.dora.red || {}).reduce((a, b) => a + b, 0);
+  if (reds || Object.keys(r.dora.gold || {}).length) {
+    add('赤牌・金牌', 'rose',
+      '色の付いた「5」の牌が入っています。持っているだけで打点が上がります。',
+      `赤${reds}枚${Object.keys(r.dora.gold || {}).length ? '／金牌あり' : ''}`);
+  }
+
+  if (r.dora.bakuDora > 0) {
+    add('爆ドラ', 'violet',
+      `ドラを示す牌が多めにめくられます（合計${r.dora.indicators + r.dora.bakuDora}枚）。全体的に点数が高くなります。`, null);
+  }
+
+  if (r.bonus.enabled) {
+    add('BP（ボーナスポイント）', 'mint',
+      'このアプリの中だけで使う点数です。現金や景品と交換することはできません。',
+      '一発・裏ドラ・赤牌などで増えます。');
+  }
+  return out;
+}
+
+function flowerShort(list) {
+  if (!list || !list.length) return '効果なし';
+  const e = list[0];
+  return {
+    bonusPerTile: 'すぐにボーナス',
+    rankUp: '打点が上がる',
+    doubleDoraFives: '5の牌のドラが倍',
+    alice: '和了時にアリス',
+    dora: 'ドラが増える',
+    han: '翻が増える',
+  }[e.type] || e.type;
+}

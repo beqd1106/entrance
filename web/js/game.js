@@ -6,6 +6,7 @@ import { GameEngine } from '../../src/core/engine.js';
 import { decide } from '../../src/core/ai.js';
 import { resolveRules, deepMerge } from '../../src/rules/defaults.js';
 import { lookupPreset } from './custom.js';
+import { recordPlay } from './dashboard.js';
 import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
@@ -175,6 +176,7 @@ function startGame() {
   G.engine = new GameEngine({ rules: G.rules, seed: G.seed, players, debug: { ...G.debug } });
   G.log = [];
   G.engine.startKyoku();
+  recordPlay(G.presetId);
   pushLog('sys', `${G.preset.name} で対局開始（シード ${G.seed}）`);
   drainLog();
   draw();
