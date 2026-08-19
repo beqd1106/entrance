@@ -14,6 +14,17 @@ const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, 
 
 let G = null;
 
+/** 端末に残す表示設定（localStorageが使えない環境でも動く） */
+function loadPref(key, fallback) {
+  try {
+    const v = localStorage.getItem(`houserule.pref.${key}`);
+    return v === null ? fallback : JSON.parse(v);
+  } catch { return fallback; }
+}
+function savePref(key, value) {
+  try { localStorage.setItem(`houserule.pref.${key}`, JSON.stringify(value)); } catch { /* 保存できなくても続行 */ }
+}
+
 export function renderGame(root, params) {
   const presetId = params.preset || 'standard4';
   const preset = lookupPreset(presetId);
@@ -29,6 +40,8 @@ export function renderGame(root, params) {
     presetId, preset, store, rules, event,
     engine: null, waiting: null, mode: 'idle', riichiIds: null, riichiOpen: false,
     speed: 330, timer: null, log: [], debugOpen: false,
+    confirmDiscard: loadPref('confirmDiscard', true),
+    selectedTileId: null,
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
   };
@@ -107,6 +120,7 @@ function act(action) {
   G.waiting = null;
   G.mode = 'idle';
   G.riichiIds = null;
+  G.selectedTileId = null;
   const r = e.act(seat, action);
   if (r && r.error) { G.dom.hint.textContent = r.error; G.waiting = { seat, choices: e.getChoices(seat) }; draw(); return; }
   drainLog();
@@ -132,7 +146,7 @@ function drainLog() {
       case 'call': pushLog('', `${nameOf(ev.seat)}：${{ pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind}（${nameOf(ev.from)}の${ev.tile.name}）`); break;
       case 'kan': pushLog('', `${nameOf(ev.seat)}：${{ ankan: '暗槓', kakan: '加槓' }[ev.kind] || 'カン'} ${typeName(ev.t)}`); break;
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
-      case 'kita': pushLog('rule', `${nameOf(ev.seat)}：北抜き（${ev.count}枚目）`); break;
+      case 'kita': pushLog('rule', `${nameOf(ev.seat)}：${ev.tile.name}を抜く（${ev.count}枚目）`); break;
       case 'flower':
         pushLog('rule', `${nameOf(ev.seat)}：華牌「${ev.label}」を抜く${ev.messages && ev.messages.length ? ' → ' + ev.messages.join(' / ') : ''}`);
         break;
@@ -193,7 +207,11 @@ function drawRuleCard(s) {
   }
   const item = (k, v) => h('div.rule-item', h('span', { text: k }), h('span', { text: v }));
   const reds = Object.values(R.dora.red || {}).reduce((a, b) => a + b, 0);
-  box.appendChild(item('持ち/返し', `${fmt(R.scoring.startingPoints)} / ${fmt(R.scoring.returnPoints)}`));
+  if (R.scoring.mode === 'flat') {
+    box.appendChild(item('点数', `東天紅系（${R.scoring.flat.fuFixed}符固定・ロン1人分/ツモ2人分）`));
+  } else {
+    box.appendChild(item('持ち/返し', `${fmt(R.scoring.startingPoints)} / ${fmt(R.scoring.returnPoints)}`));
+  }
   box.appendChild(item('形式', `${R.game.players === 3 ? '三麻' : '四麻'}・${{ east: '東風戦', east_south: '半荘戦', ikkyoku: '一局清算' }[R.game.length]}`));
   box.appendChild(item('ドラ', `表${R.dora.indicators}枚${reds ? ` / 赤${reds}枚` : ''}${R.dora.ura ? ' / 裏あり' : ' / 裏なし'}`));
   const specials = [];
@@ -204,7 +222,10 @@ function drawRuleCard(s) {
   if (R.local.wareme.enabled) specials.push('割れ目');
   if (R.flowers.enabled) specials.push('華牌');
   if (R.local.dice.enabled) specials.push('サイコロチャンス');
-  if (R.game.players === 3 && R.sanma.northMode === 'nuki') specials.push('北抜き');
+  if (R.game.players === 3 && R.sanma.northMode === 'nuki') {
+    const extra = (R.sanma.extraNukiTiles || []).map((c) => typeName(codeToType(c)));
+    specials.push(extra.length ? `抜きドラ（北・${extra.join('・')}）` : '北抜き');
+  }
   for (const d of R.specialTiles || []) specials.push(d.name);
   box.appendChild(item('特殊', specials.length ? specials.join('・') : 'なし'));
   box.appendChild(item('喰いタン', R.win.kuitan ? 'あり' : 'なし'));
@@ -240,6 +261,19 @@ function drawTop(s) {
     sp.appendChild(b);
   });
   top.appendChild(sp);
+  const conf = h('button.act', {
+    text: G.confirmDiscard ? '2度押しで確定：ON' : '2度押しで確定：OFF',
+    title: '打牌の押し間違いを防ぎます',
+    style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' },
+  });
+  if (G.confirmDiscard) conf.style.background = 'rgba(16,185,129,.28)';
+  conf.addEventListener('click', () => {
+    G.confirmDiscard = !G.confirmDiscard;
+    G.selectedTileId = null;
+    savePref('confirmDiscard', G.confirmDiscard);
+    draw();
+  });
+  top.appendChild(conf);
   const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
   dbg.addEventListener('click', () => {
     G.debugOpen = !G.debugOpen;
@@ -290,14 +324,34 @@ function seatHead(p, s) {
     G.rules.bonus.enabled ? h('div.seat-bp', { text: `${signed(p.bonus)}BP` }) : null);
 }
 
+/** 抜いた牌を種類ごとにまとめて表示（北・ガリ・華牌を混同させない） */
+function nukiGroup(tiles, label) {
+  if (!tiles || !tiles.length) return null;
+  const byCode = new Map();
+  for (const t of tiles) {
+    const k = `${t.code}|${t.red}|${t.gold}`;
+    if (!byCode.has(k)) byCode.set(k, { tile: t, n: 0 });
+    byCode.get(k).n += 1;
+  }
+  return h('div.meld.nuki',
+    h('span.nuki-label', { text: label }),
+    [...byCode.values()].map(({ tile, n }) => h('div.nuki-item',
+      tileEl(tile, { size: 'sm' }),
+      n > 1 ? h('span.nuki-count', { text: `×${n}` }) : null)));
+}
+
 function meldsEl(p) {
-  if (!p.melds.length && !p.kita && !p.flowers.length) return null;
+  const kita = p.kita || [];
+  if (!p.melds.length && !kita.length && !p.flowers.length) return null;
   const wrap = h('div.melds');
   for (const m of p.melds) {
     wrap.appendChild(h('div.meld', m.tiles.map((t) => tileEl(m.kind === 'kan' && m.concealed ? { hidden: true } : t, { size: 'sm' }))));
   }
-  if (p.kita) wrap.appendChild(h('div.meld', h('span.chip.chip-brass', { text: `北×${p.kita}` })));
-  if (p.flowers.length) wrap.appendChild(h('div.meld', p.flowers.map((t) => tileEl(t, { size: 'sm' }))));
+  // 抜きドラ（北・ガリ）と華牌は別グループにする
+  const k = nukiGroup(kita, '抜き');
+  if (k) wrap.appendChild(k);
+  const f = nukiGroup(p.flowers, '華');
+  if (f) wrap.appendChild(f);
   return wrap;
 }
 
@@ -355,6 +409,7 @@ function drawMy(s) {
       size: 'lg',
       gap,
       clickable: can,
+      selected: G.confirmDiscard && G.selectedTileId === id,
       dim: !!selectable && !can,
       onClick: can ? () => onTileClick({ ...t, id }) : null,
     });
@@ -364,8 +419,16 @@ function drawMy(s) {
 }
 
 function onTileClick(t) {
-  if (G.mode === 'riichiSelect') act({ type: 'riichi', tileId: t.id, open: G.riichiOpen });
-  else act({ type: 'discard', tileId: t.id });
+  if (G.mode === 'riichiSelect') { act({ type: 'riichi', tileId: t.id, open: G.riichiOpen }); return; }
+  // 押し間違い防止：1度目のタップで選択、同じ牌をもう一度タップで確定
+  if (!G.confirmDiscard) { act({ type: 'discard', tileId: t.id }); return; }
+  if (G.selectedTileId === t.id) {
+    G.selectedTileId = null;
+    act({ type: 'discard', tileId: t.id });
+    return;
+  }
+  G.selectedTileId = t.id;
+  draw();
 }
 
 function drawActions(s) {
@@ -397,17 +460,23 @@ function drawActions(s) {
           G.mode = 'riichiSelect'; G.riichiIds = c.tileIds; G.riichiOpen = !!c.open; draw();
         });
         break;
-      case 'pon': add(c.label, '', () => act({ type: 'pon', tileIds: c.tileIds })); break;
-      case 'chi': add(c.label, '', () => act({ type: 'chi', tileIds: c.tileIds })); break;
-      case 'kan': add(c.label, '', () => act({ type: 'kan', kind: c.kind, t: c.t })); break;
-      case 'kita': add('北抜き', '', () => act({ type: 'kita' })); break;
+      case 'pon': add(c.label, 'act-call', () => act({ type: 'pon', tileIds: c.tileIds })); break;
+      case 'chi': add(c.label, 'act-call', () => act({ type: 'chi', tileIds: c.tileIds })); break;
+      case 'kan': add(c.label, 'act-call', () => act({ type: 'kan', kind: c.kind, t: c.t })); break;
+      case 'kita': add(c.label || '北抜き', 'act-nuki', () => act({ type: 'kita', t: c.t })); break;
       case 'kyuushu': add('九種九牌', '', () => act({ type: 'kyuushu' })); break;
       case 'pass': add('スルー', 'act-pass', () => act({ type: 'pass' })); break;
       default: break;
     }
   }
   const hasDiscard = choices.some((c) => c.type === 'discard');
-  hint.textContent = hasDiscard ? '打牌する牌をタップ' : '選択してください';
+  if (hasDiscard && G.confirmDiscard && G.selectedTileId != null) {
+    hint.textContent = 'もう一度タップで確定（他の牌を選び直せます）';
+  } else if (hasDiscard) {
+    hint.textContent = G.confirmDiscard ? '切る牌をタップ（2回タップで確定）' : '切る牌をタップ';
+  } else {
+    hint.textContent = '選択してください';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -443,7 +512,7 @@ function showKyokuResult() {
       if (dd.dora) extras.push(`ドラ${dd.dora}`);
       if (dd.aka) extras.push(`赤${dd.aka}`);
       if (dd.gold) extras.push(`金${dd.gold}`);
-      if (dd.kita) extras.push(`北${dd.kita}`);
+      if (dd.kita) extras.push(`抜きドラ${dd.kita}`);
       if (d.uraCount) extras.push(`裏${d.uraCount}`);
       if (d.extraDora) extras.push(`特殊牌ドラ+${d.extraDora}`);
       if (d.extraHan) extras.push(`特殊牌翻+${d.extraHan}`);

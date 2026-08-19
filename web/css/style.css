@@ -585,3 +585,26 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .nav { padding-top: env(safe-area-inset-top); height: calc(var(--nav-h) + env(safe-area-inset-top)); }
   .footer { padding-bottom: calc(54px + env(safe-area-inset-bottom)); }
 }
+
+/* --- 抜きドラ・華牌のグループ表示 --- */
+.meld.nuki { display: flex; align-items: center; gap: 6px; }
+.nuki-label {
+  font-size: 9.5px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.55);
+  padding: 2px 6px; border-radius: 5px; background: rgba(255, 255, 255, 0.09);
+  flex: 0 0 auto;
+}
+.nuki-item { display: flex; align-items: flex-end; gap: 2px; }
+.nuki-count { font-family: var(--mono); font-size: 10px; color: rgba(255, 255, 255, 0.8); }
+
+/* --- 行動ボタンの意味づけ（色で役割を分ける） --- */
+.act-call { background: rgba(99, 102, 241, 0.22); border-color: rgba(129, 140, 248, 0.45); }
+.act-call:hover { background: rgba(99, 102, 241, 0.34); }
+.act-nuki { background: rgba(201, 164, 98, 0.22); border-color: rgba(226, 194, 128, 0.45); }
+.act-nuki:hover { background: rgba(201, 164, 98, 0.34); }
+/* 選択中の牌はより強く示す（2度押し確定のため） */
+.tile-clickable.sel {
+  transform: translateY(-12px);
+  outline: 3px solid var(--brass-2);
+  outline-offset: 2px;
+  box-shadow: 0 10px 18px rgba(16, 185, 129, 0.35);
+}

@@ -104,11 +104,8 @@ function manzu(n) {
 function honor(t) {
   // 27:東 28:南 29:西 30:北 31:白 32:發 33:中
   if (t === 31) {
-    // 白は枠のみ
-    return `<svg ${VB}>`
-      + `<rect x="18" y="24" width="64" height="92" rx="6" class="blue-stroke"/>`
-      + `<rect x="27" y="33" width="46" height="74" rx="4" class="blue-stroke thin"/>`
-      + `</svg>`;
+    // 白は絵柄なし（真っ白）。白ポッチの赤い点だけがCSS側で乗る
+    return `<svg ${VB}></svg>`;
   }
   const ch = ['東', '南', '西', '北', '白', '發', '中'][t - 27];
   const cls = t === 33 ? 'red' : t === 32 ? 'green' : 'ink';
