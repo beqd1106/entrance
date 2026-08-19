@@ -968,6 +968,11 @@ export class GameEngine {
         diceRolls: dice.diceRolls,
         substituted: win.substituted ? { from: tileName(win.substituted.from), to: typeName(win.substituted.to) } : null,
         payments: s.detail.payments,
+        // 結果画面で「どんな手で和了ったか」を見せるための表示用データ
+        handTiles: sortTiles(win.ctx.hand.filter((t) => t !== win.ctx.winTile)).map((t) => this.tileInfo(t)),
+        winTile: this.tileInfo(win.ctx.winTile),
+        meldsView: p.melds.map((m) => ({ type: m.type, tiles: m.tiles.map((t) => this.tileInfo(t)) })),
+        gain: s.deltas[seat],
       });
     }
 

@@ -221,13 +221,16 @@ svg { display: block; }
 .tile.tsumo-gap { margin-left: 12px; }
 .tile-xs { --tw: 20px; }
 .tile-sm { --tw: 25px; }
+.tile-md { --tw: 34px; }
 .tile-lg { --tw: 44px; }
 
 /* ---------------- 卓 ---------------- */
 .table-shell {
   height: calc(100dvh - var(--nav-h));
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px;
-  background: radial-gradient(130% 100% at 50% -10%, #1a6b5a 0%, #114b40 45%, #0a2f28 100%);
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(45, 212, 191, 0.22) 0%, transparent 55%),
+    radial-gradient(130% 100% at 50% 0%, #1d7a66 0%, #12574a 48%, #0b3730 100%);
   color: #eae4d6; padding: 10px 12px 12px; overflow: hidden;
 }
 .table-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; min-height: 0; }
@@ -957,3 +960,150 @@ textarea { resize: vertical; min-height: 56px; }
   transition: gap 0.2s var(--ease);
 }
 .store-card:hover .store-cta { gap: 8px; }
+
+/* =========================================================================
+   対局画面の仕上げ
+   ========================================================================= */
+/* 卓中央：局表示に落ち着いた奥行きを持たせる */
+.center-info {
+  background:
+    radial-gradient(90% 120% at 50% 0%, rgba(255, 255, 255, 0.1), transparent 70%),
+    rgba(255, 255, 255, 0.055);
+}
+/* 和了・結果シートの見出しに小さな祝いを添える */
+.sheet-head .eyebrow { display: flex; align-items: center; gap: 6px; }
+.big-score { display: inline-flex; align-items: baseline; gap: 8px; }
+/* 役の一覧を読みやすく */
+.yaku-item { padding: 5px 0; font-size: 13.5px; }
+.yaku-item span:last-child { font-family: var(--mono); color: var(--ink-3); }
+/* 点棒の増減を目立たせる */
+.pt-plus, .pt-minus { font-size: 14px; }
+/* 手牌の並びに余白のリズムを付ける */
+.bottom-bar .hand-row { gap: 4px; }
+.bottom-bar .tile-lg { --tw: 46px; }
+@media (max-width: 680px) { .bottom-bar .tile-lg { --tw: 34px; } }
+/* 卓上のプレイヤー名を読みやすく */
+.seat-head { font-weight: 600; }
+.seat-pts { font-weight: 600; letter-spacing: -0.01em; }
+
+/* --- 和了結果：何で和了ったかを一目で --- */
+.win-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 2px 0 12px;
+}
+.win-rank {
+  font-family: var(--display);
+  font-size: clamp(24px, 4.4vw, 34px);
+  font-weight: 800; letter-spacing: -0.02em; line-height: 1;
+  color: var(--ink-1);
+}
+.win-who { font-size: 13px; color: var(--ink-3); }
+.win-gain {
+  font-family: var(--mono); font-size: 17px; font-weight: 700;
+  color: var(--brass); letter-spacing: -0.01em; margin-top: 2px;
+}
+.win-hand {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px; margin-bottom: 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(14, 166, 114, 0.07), rgba(14, 166, 114, 0.02));
+  border: 1px solid rgba(14, 166, 114, 0.16);
+  overflow-x: auto;
+}
+.win-hand .hand-row { gap: 2px; flex-wrap: nowrap; }
+.win-hand .meld-row { opacity: 0.92; }
+.win-sep { width: 10px; flex: 0 0 10px; }
+.tile.tile-win {
+  box-shadow: 0 0 0 2px var(--brass), 0 4px 12px rgba(14, 166, 114, 0.3);
+  transform: translateY(-3px);
+}
+
+/* --- 卓の面：座席の背後に卓布のかたちを敷いて、余白を「卓」に見せる --- */
+.board { position: relative; align-content: center; }
+.board::before {
+  content: '';
+  position: absolute; inset: -22px -10px;
+  border-radius: 28px;
+  background:
+    radial-gradient(75% 90% at 50% 45%, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012) 60%, transparent 78%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+  pointer-events: none;
+}
+.board > * { position: relative; z-index: 1; }
+/* 向聴表示は「あと何枚で聴牌か」の目安。控えめだが読める強さに */
+.shanten-tag {
+  font-size: 11.5px; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.82);
+}
+.shanten-tag.tenpai {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(52, 211, 153, 0.5);
+  color: #a7f3d0; font-weight: 700;
+}
+
+/* --- 広い画面では卓を大きく使う（余白が空きすぎないように） --- */
+@media (min-width: 1000px) {
+  .board { gap: 14px; }
+  .seat { padding: 14px 16px; min-height: 168px; }
+  .center-info { min-height: 200px; gap: 12px; }
+  .center-kyoku { font-size: 32px; }
+  .center-sub { font-size: 12.5px; }
+  .board::before { inset: -26px -14px; }
+}
+
+/* =========================================================================
+   店舗ページのヒーロー：写真帯＋重ねた情報カード
+   ========================================================================= */
+.store-hero { background: var(--paper-2); border-bottom: 1px solid var(--line); }
+.store-hero-photo {
+  position: relative; height: 240px; overflow: hidden;
+  display: grid; place-items: center;
+  color: hsl(var(--hue) 55% 42%);
+  background:
+    radial-gradient(120% 130% at 20% 0%, hsl(var(--hue) 82% 95%) 0%, hsl(var(--hue) 60% 90%) 55%, hsl(var(--hue) 40% 93%) 100%);
+}
+.store-hero-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(hsl(var(--hue) 45% 70% / 0.28) 1px, transparent 1px);
+  background-size: 13px 13px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
+}
+.store-hero-photo > svg { position: relative; z-index: 1; opacity: 0.9; }
+/* 店の顔になる牌を、写真帯の下辺に並べる */
+.store-hero-tiles {
+  position: absolute; z-index: 2; right: clamp(16px, 5vw, 56px); bottom: 78px;
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.sig-tile {
+  transform: rotate(calc((var(--i) - 2) * 3.2deg)) translateY(calc(var(--i) * -1px));
+  filter: drop-shadow(0 8px 18px rgba(20, 30, 28, 0.18));
+  animation: sig-in 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes sig-in { from { opacity: 0; transform: translateY(14px) rotate(0deg); } }
+@media (prefers-reduced-motion: reduce) { .sig-tile { animation: none; } }
+
+.store-hero-card {
+  position: relative; margin-top: -58px; margin-bottom: 26px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-l); padding: clamp(18px, 3vw, 26px);
+  box-shadow: 0 18px 44px rgba(18, 32, 30, 0.1);
+}
+.store-hero-name {
+  font-size: clamp(24px, 4vw, 38px); letter-spacing: -0.025em; line-height: 1.2;
+}
+.store-hero-catch { margin-top: 8px; color: var(--ink-2); font-size: 15px; }
+.store-meta {
+  display: flex; flex-wrap: wrap; gap: 10px 22px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+.store-meta-item { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+.store-meta-item > svg { color: var(--ink-3); flex: 0 0 auto; }
+@media (max-width: 680px) {
+  .store-hero-photo { height: 168px; }
+  .store-hero-tiles { right: 14px; bottom: 56px; gap: 5px; }
+  .store-hero-card { margin-top: -40px; }
+}

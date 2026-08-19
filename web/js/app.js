@@ -231,24 +231,53 @@ function viewStores(params) {
 // ---------------------------------------------------------------------------
 // 店舗ページ
 // ---------------------------------------------------------------------------
+/**
+ * この店の「顔になる牌」を最大5枚選ぶ。
+ * ルール設定から導くので、店を増やしても画像を用意する必要がない。
+ */
+function signatureTiles(r) {
+  const out = [];
+  if (r.local.shiroPocchi && r.local.shiroPocchi.enabled) out.push({ t: 31, dot: true, name: '白ポッチ' });
+  for (const d of (r.specialTiles || [])) {
+    let t = 0;
+    try { t = codeToTypeLite(d.tile); } catch { t = 0; }
+    out.push({ t, sp: d.id, red: d.color === 'red', gold: d.color === 'gold', name: d.name });
+  }
+  if (r.flowers && r.flowers.enabled) {
+    for (const [i, key] of (r.flowers.tiles || []).entries()) {
+      out.push({ t: 34 + i, flower: key, name: { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }[key] });
+    }
+  }
+  if (r.dora.blue && r.dora.blue.enabled) out.push({ t: 22, blue: true, name: '青5索' });
+  if (r.dora.aka && (r.dora.aka.pin || r.dora.aka.sou || r.dora.aka.man)) out.push({ t: 13, red: true, name: '赤5筒' });
+  if (r.sanma && r.game.players === 3) out.push({ t: 30, name: '北' });
+  if (!out.length) out.push({ t: 13, red: true, name: '赤5筒' }, { t: 4, name: '五萬' }, { t: 27, name: '東' });
+  return out.slice(0, 5);
+}
+
 function viewStore(id) {
   const s = resolveStore(id);
   const r = rulesOf(s.presetId);
   const v = validateRules(r);
 
-  app.appendChild(h('section', { style: { background: 'var(--paper-2)', borderBottom: '1px solid var(--line)' } },
-    h('div.store-photo', { style: { '--hue': String(s.photo.hue), height: '190px' } }, icon(s.photo.icon, 74)),
-    h('div.wrap', { style: { padding: '24px 0 28px' } },
-      h('div.row.gap-8.wrapflex', { style: { marginBottom: '8px' } },
-        chip(r.game.players === 3 ? '三麻' : '四麻', 'felt'), chip(s.style), chip(s.smoking),
-        h('div.grow'), h('a.btn.btn-sm.btn-ghost', { href: '#/stores', text: '← 一覧' })),
-      h('h1', { style: { fontSize: 'clamp(24px,4vw,38px)' }, text: s.name }),
-      h('p.muted', { style: { marginTop: '8px' }, text: s.catch }),
-      h('div.row.gap-24.wrapflex', { style: { marginTop: '16px' } },
-        h('div.row.gap-8', icon('pin', 15), h('span.tiny', { text: `${s.area}／${s.access}` })),
-        h('div.row.gap-8', icon('clock', 15), h('span.tiny', { text: s.hours })),
-        h('div.row.gap-8', icon('smoke', 15), h('span.tiny', { text: s.smoking })),
-        h('div.row.gap-8', h('span.tiny.muted', { text: '初心者歓迎度' }), stars(s.beginner))))));
+  // ヒーロー：写真帯の上に情報カードを重ねる。店の顔になる牌もここで見せる。
+  app.appendChild(h('section.store-hero',
+    h('div.store-hero-photo', { style: { '--hue': String(s.photo.hue) } },
+      icon(s.photo.icon, 78),
+      h('div.store-hero-tiles', { 'aria-hidden': 'true' },
+        signatureTiles(r).map((info, i) => h('div.sig-tile', { style: { '--i': String(i) } }, tileEl(info, { size: 'md' }))))),
+    h('div.wrap',
+      h('div.store-hero-card',
+        h('div.row.gap-8.wrapflex', { style: { marginBottom: '10px' } },
+          chip(r.game.players === 3 ? '三麻' : '四麻', 'felt'), chip(s.style), chip(s.smoking),
+          h('div.grow'), h('a.btn.btn-sm.btn-ghost', { href: '#/stores', text: '← 一覧' })),
+        h('h1.store-hero-name', { text: s.name }),
+        h('p.store-hero-catch', { text: s.catch }),
+        h('div.store-meta',
+          h('div.store-meta-item', icon('pin', 15), h('span', { text: `${s.area}／${s.access}` })),
+          h('div.store-meta-item', icon('clock', 15), h('span', { text: s.hours })),
+          h('div.store-meta-item', icon('smoke', 15), h('span', { text: s.smoking })),
+          h('div.store-meta-item', h('span.muted', { text: '初心者歓迎度' }), stars(s.beginner)))))));
 
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;

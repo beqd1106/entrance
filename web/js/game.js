@@ -664,6 +664,25 @@ function closeOverlay() {
   if (G.dom.overlay) { G.dom.overlay.remove(); G.dom.overlay = null; }
 }
 
+/** 和了形を牌で見せる。何で和了ったかが一目で分かるようにする。 */
+function winHandView(d) {
+  if (!d.handTiles || !d.handTiles.length) return null;
+  const box = h('div.win-hand');
+  const row = h('div.hand-row');
+  for (const t of d.handTiles) row.appendChild(tileEl(t, { size: 'sm' }));
+  if (d.winTile) {
+    row.appendChild(h('div.win-sep'));
+    row.appendChild(tileEl(d.winTile, { size: 'sm', cls: 'tile-win' }));
+  }
+  box.appendChild(row);
+  for (const m of d.meldsView || []) {
+    const mr = h('div.hand-row.meld-row');
+    for (const t of m.tiles) mr.appendChild(tileEl(t, { size: 'sm' }));
+    box.appendChild(mr);
+  }
+  return box;
+}
+
 function showKyokuResult() {
   const e = G.engine;
   const res = e.kyokuEnd;
@@ -672,9 +691,14 @@ function showKyokuResult() {
 
   if (res.kind === 'win') {
     for (const d of res.details) {
-      body.appendChild(h('div.row.gap-12', { style: { alignItems: 'baseline', marginBottom: '6px' } },
-        h('div.big-score', { text: d.yakuman ? (d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満') : (d.limitName || `${d.han}翻${G.rules.scoring.useFu ? ` ${d.fu}符` : ''}`) }),
-        h('div.muted', { text: `${nameOf(d.seat)} の ${d.tsumo ? 'ツモ' : 'ロン'}` })));
+      const rank = d.yakuman ? (d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満')
+        : (d.limitName || `${d.han}翻${G.rules.scoring.useFu ? ` ${d.fu}符` : ''}`);
+      body.appendChild(h('div.win-head',
+        h('div.win-rank', { text: rank }),
+        h('div.grow',
+          h('div.win-who', { text: `${nameOf(d.seat)} の ${d.tsumo ? 'ツモ' : 'ロン'}` }),
+          d.gain > 0 ? h('div.win-gain', { text: `+${fmt(d.gain)}点` }) : null)));
+      body.appendChild(winHandView(d));
       const list = h('div.yaku-list');
       for (const y of d.yaku) {
         list.appendChild(h('div.yaku-item', h('span', { text: y.name }), h('span.num', { text: y.yakuman ? '役満' : `${y.han}翻` })));
