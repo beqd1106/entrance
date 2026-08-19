@@ -68,14 +68,20 @@ jobs:
           keychain add-certificates
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
+      - name: バージョンを設定
+        working-directory: ios
+        run: |
+          # build-ipa は追加のビルド設定を受け付けないため、定義側に書き込んでから再生成する
+          sed -i '' "s/MARKETING_VERSION: .*/MARKETING_VERSION: \"${{ inputs.version }}\"/" project.yml
+          sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
+          xcodegen generate
+          grep -E "MARKETING_VERSION|CURRENT_PROJECT_VERSION" project.yml
+
       - name: IPAをビルド
         run: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
-            --scheme "$SCHEME" \
-            -- \
-            MARKETING_VERSION=${{ inputs.version }} \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+            --scheme "$SCHEME"
 
       - name: TestFlightへアップロード
         env:
@@ -83,10 +89,11 @@ jobs:
           APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
+          IPA=$(find build/ios/ipa -name '*.ipa' | head -1)
+          echo "Uploading: $IPA"
           app-store-connect publish \
-            --path "build/ios/ipa/*.ipa" \
-            --testflight \
-            --beta-build-localizations "[{\"locale\":\"ja\",\"whats_new\":\"${{ inputs.whats_new }}\"}]"
+            --path "$IPA" \
+            --max-build-processing-wait 0
 
       - name: 成果物を保存
         if: always()
