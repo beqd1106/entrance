@@ -7,7 +7,9 @@ import { lookupPreset, allPresetsWithCustom } from './custom.js';
 import { resolveRules } from '../../src/rules/defaults.js';
 import { explainRules, explainForBeginners, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { validateRules } from '../../src/rules/validator.js';
-import { h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl } from './ui.js';
+import {
+  h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl, photoImg,
+} from './ui.js';
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
 import { renderDashboard, recordCheckin } from './dashboard.js';
@@ -155,7 +157,7 @@ function storeGrid(list) {
     grid.appendChild(h('a.card.store-card', { href: `#/store/${s.id}`, style: { '--hue': String(s.photo.hue) } },
       h('div.store-photo', { style: { '--hue': String(s.photo.hue) } },
         // 写真があれば写真を、無ければ色とマークを使う（どちらでも成立させる）
-        s.photoUrl ? h('img.store-photo-img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon(s.photo.icon, 52),
+        s.photoUrl ? photoImg(s.photoUrl, { attrs: { loading: 'lazy' } }) : icon(s.photo.icon, 52),
         h('div.store-photo-badges',
           chip(r.game.players === 3 ? '三麻' : '四麻'),
           chip(s.style)),
@@ -275,7 +277,7 @@ function viewStore(id) {
   // ヒーロー：写真帯の上に情報カードを重ねる。店の顔になる牌もここで見せる。
   app.appendChild(h('section.store-hero',
     h('div.store-hero-photo', { style: { '--hue': String(s.photo.hue) } },
-      s.photoUrl ? h('img.store-photo-img', { src: s.photoUrl, alt: '' }) : icon(s.photo.icon, 78),
+      s.photoUrl ? photoImg(s.photoUrl) : icon(s.photo.icon, 78),
       h('div.store-hero-tiles', { 'aria-hidden': 'true' },
         signatureTiles(r).map((info, i) => h('div.sig-tile', { style: { '--i': String(i) } }, tileEl(info, { size: 'md' }))))),
     h('div.wrap',

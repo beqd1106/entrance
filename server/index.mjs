@@ -17,13 +17,28 @@
  *   GET  /stores/{id}/stats       集計値
  *   POST /rules/draft             文章からルール設定の下書きを作る
  */
-import { getItem, putItem, queryPk, bump, underDailyLimit } from './lib/db.mjs';
-import { presignS3Put } from './lib/sign.mjs';
+import { getItem, putItem, queryPk, bump, underDailyLimit, underGlobalDailyLimit } from './lib/db.mjs';
+import { presignS3Put, presignS3Get } from './lib/sign.mjs';
 import { draftRulesFromText } from './lib/ai.mjs';
 
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
 const BUCKET = process.env.ASSET_BUCKET || '';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+
+/**
+ * サービス全体の1日あたりの上限。費用が伸び続けないことを保証するための天井。
+ * 相手ごとの制限はIPを変えれば抜けられるので、こちらを最後の砦にする。
+ * 上限に当たったら、その日はその操作を受け付けない（他の操作は動く）。
+ */
+const DAILY = {
+  draft: Number(process.env.DAILY_DRAFT || 50),    // AIの下書き（1回あたりの単価がいちばん高い）
+  write: Number(process.env.DAILY_WRITE || 500),   // 店舗の保存・写真URLの発行
+  record: Number(process.env.DAILY_RECORD || 5000), // 体験プレイ・来店の記録
+  photo: Number(process.env.DAILY_PHOTO || 20000),  // 画像URLの発行（転送量に直結する）
+};
+
+/** 画像URLの有効期限（秒）。短いほど、1回の発行で持ち出せる量が減る。 */
+const PHOTO_URL_TTL = 900;
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -94,9 +109,23 @@ async function getStore(id) {
   ]);
   if (!profile) return bad(404, 'その店舗は登録されていません');
   return json(200, {
-    store: strip(profile),
+    store: await withPhotoUrl(strip(profile)),
     rules: rules ? rules.patch : null,
   });
+}
+
+/**
+ * 保存してあるのは画像の置き場所（キー）だけ。
+ * 表示のたびに期限付きURLを作って返す。バケットは公開していないので、
+ * ここを通らずに画像を取り出すことはできない。
+ */
+async function withPhotoUrl(store) {
+  if (!store.photoKey || !BUCKET) return store;
+  if (!(await underGlobalDailyLimit('photo', DAILY.photo))) return store;
+  return {
+    ...store,
+    photoUrl: presignS3Get({ bucket: BUCKET, key: store.photoKey, region: REGION, expires: PHOTO_URL_TTL }),
+  };
 }
 
 async function getStats(id) {
@@ -110,6 +139,9 @@ async function getStats(id) {
 async function saveStore(id, event) {
   const body = parseBody(event);
   if (!body) return bad(400, '内容を読み取れませんでした');
+  if (!(await underGlobalDailyLimit('write', DAILY.write))) {
+    return bad(429, '本日の保存回数の上限に達しました。明日またお試しください');
+  }
   const auth = await authorize(id, event);
   if (!auth.ok) return bad(auth.code, auth.message);
 
@@ -139,6 +171,9 @@ async function record(id, field, event) {
   const profile = await getItem(`STORE#${id}`, 'PROFILE');
   if (!profile) return bad(404, 'その店舗は登録されていません');
 
+  if (!(await underGlobalDailyLimit('record', DAILY.record))) {
+    return json(200, { ok: true, counted: false, reason: '本日の記録数の上限に達しました' });
+  }
   const who = clientKey(event);
   if (!(await underDailyLimit(`${field}:${id}:${who}`, 50))) {
     // 弾いたことは伝えるが、失敗扱いにはしない（画面を止める理由がない）
@@ -158,12 +193,15 @@ async function photoUrl(id, event) {
   const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[type];
   if (!ext) return bad(400, '対応しているのは JPEG・PNG・WebP です');
 
+  if (!(await underGlobalDailyLimit('write', DAILY.write))) {
+    return bad(429, '本日のアップロード回数の上限に達しました');
+  }
   const key = `photos/${id}/${Date.now().toString(36)}.${ext}`;
-  const uploadUrl = presignS3Put({ bucket: BUCKET, key, region: REGION, expires: 600 });
   return json(200, {
-    uploadUrl,
+    uploadUrl: presignS3Put({ bucket: BUCKET, key, region: REGION, expires: 600 }),
     contentType: type,
-    publicUrl: `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`,
+    key,
+    viewUrl: presignS3Get({ bucket: BUCKET, key, region: REGION, expires: PHOTO_URL_TTL }),
     expiresInSec: 600,
   });
 }
@@ -172,8 +210,12 @@ async function rulesDraft(event) {
   const body = parseBody(event) || {};
   const text = String(body.text || '').slice(0, 1200);
   if (text.trim().length < 4) return bad(400, 'ルールの説明を書いてください');
-  if (!(await underDailyLimit(`draft:${clientKey(event)}`, 30))) {
+  if (!(await underDailyLimit(`draft:${clientKey(event)}`, 10))) {
     return bad(429, '本日の下書き回数の上限に達しました');
+  }
+  // IPを変えられても抜けられない、サービス全体の天井
+  if (!(await underGlobalDailyLimit('draft', DAILY.draft))) {
+    return bad(429, '本日の下書き回数が全体の上限に達しました。明日またお試しください');
   }
   const result = await draftRulesFromText(text);
   if (!result.ok) return bad(502, result.message);
@@ -218,7 +260,7 @@ function pickProfile(s) {
     style: str(s.style, 40),
     beginner: Number.isFinite(+s.beginner) ? Math.max(0, Math.min(5, Math.round(+s.beginner))) : undefined,
     beginnerNote: str(s.beginnerNote, 240),
-    photoUrl: str(s.photoUrl, 400),
+    photoKey: str(s.photoKey, 300),
     mood: arr(s.mood, 8, 24),
     ruleHighlights: arr(s.ruleHighlights, 8, 24),
     sns: s.sns && typeof s.sns === 'object'

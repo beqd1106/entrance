@@ -84,6 +84,17 @@ export function tileEl(info, opts = {}) {
   return el;
 }
 
+/**
+ * 店舗写真の img。
+ * 画像URLには期限があるので、切れていたら黙って消す。
+ * 消えても下の色とマークが残るので、画面は崩れない。
+ */
+export function photoImg(url, opts = {}) {
+  const el = h('img.store-photo-img', { src: url, alt: '', ...(opts.attrs || {}) });
+  el.addEventListener('error', () => el.remove());
+  return el;
+}
+
 export function tileRow(list, opts = {}) {
   return h('div.hand-row', (list || []).map((t) => tileEl(t, opts)));
 }

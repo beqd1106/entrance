@@ -84,7 +84,10 @@ export const draftRules = (text) => call('/rules/draft', { method: 'POST', body:
 
 /**
  * 店舗写真をアップロードする。
- * 画像そのものはサーバを通さず、署名付きURLでS3へ直接送る（サーバ側の負荷と費用を増やさない）。
+ *
+ * 画像そのものはサーバを通さず、署名付きURLでS3へ直接送る。
+ * 保管先は公開していないので、表示にも期限付きのURLを使う。
+ * 保存するのは置き場所（key）だけで、URLは表示のたびにサーバが作り直す。
  */
 export async function uploadPhoto(storeId, file) {
   if (!BASE) return { ok: false, error: 'offline' };
@@ -104,7 +107,7 @@ export async function uploadPhoto(storeId, file) {
       method: 'PUT', headers: { 'content-type': file.type }, body: file,
     });
     if (!put.ok) return { ok: false, error: `画像の送信に失敗しました（${put.status}）` };
-    return { ok: true, data: { url: signed.data.publicUrl } };
+    return { ok: true, data: { key: signed.data.key, url: signed.data.viewUrl } };
   } catch {
     return { ok: false, error: '画像を送信できませんでした' };
   }

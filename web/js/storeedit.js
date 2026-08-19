@@ -7,7 +7,7 @@
  * 保存先はデモとして端末内（localStorage）。本番では店舗アカウントに紐づくレコード。
  */
 import { STORES, getStore } from '../../src/data/stores.js';
-import { h, clear, icon, chip, ruleChip, stars, field, sectionHead } from './ui.js';
+import { h, clear, icon, chip, ruleChip, stars, field, sectionHead, photoImg } from './ui.js';
 import {
   hasServer, uploadPhoto, saveStore as apiSaveStore, editToken, saveEditToken, fetchStore,
 } from './api.js';
@@ -35,7 +35,10 @@ export function resolveStore(id) {
   const base = getStore(id);
   const server = serverStores.get(id);
   const edit = loadEdits()[id];
-  return { ...base, ...(server || {}), ...(edit || {}) };
+  const merged = { ...base, ...(server || {}), ...(edit || {}) };
+  // 画像URLには期限があるので、サーバが作りたてを返しているならそちらを使う
+  if (server && server.photoUrl) merged.photoUrl = server.photoUrl;
+  return merged;
 }
 
 /**
@@ -259,7 +262,7 @@ function photoField(d, onChange) {
     if (d.photoUrl) {
       preview.appendChild(h('img', { src: d.photoUrl, alt: '店舗写真' }));
       const del = h('button.btn.btn-ghost.btn-sm', { text: '写真を外す' });
-      del.addEventListener('click', () => { d.photoUrl = ''; onChange(); });
+      del.addEventListener('click', () => { d.photoUrl = ''; d.photoKey = ''; onChange(); });
       preview.appendChild(del);
     } else {
       preview.appendChild(h('p.tiny.muted', { style: { margin: 0 }, text: '未設定（色とマークが表示されます）' }));
@@ -283,7 +286,8 @@ function photoField(d, onChange) {
       status.className = 'tiny err';
       return;
     }
-    d.photoUrl = r.data.url;
+    d.photoKey = r.data.key;   // 保存するのは置き場所だけ
+    d.photoUrl = r.data.url;   // 画面にすぐ出すための期限付きURL
     status.textContent = 'アップロードしました';
     status.className = 'tiny ok';
     onChange();
@@ -373,7 +377,7 @@ function renderPreview(right, state) {
     h('div.label', { style: { marginBottom: '10px' }, text: 'お客様の見え方' }),
     h('div.card', { style: { overflow: 'hidden' } },
       h('div.store-photo', { style: { '--hue': String((d.photo && d.photo.hue) || 168), height: '96px' } },
-        d.photoUrl ? h('img.store-photo-img', { src: d.photoUrl, alt: '' }) : null,
+        d.photoUrl ? photoImg(d.photoUrl) : null,
         d.photoUrl ? null : icon((d.photo && d.photo.icon) || 'table', 40)),
       h('div.card-pad', { style: { padding: '14px' } },
         h('div.row.gap-8', { style: { marginBottom: '6px' } },

@@ -2,7 +2,7 @@
  * sw.js - オフライン対応のサービスワーカー
  * アプリシェルとエンジンを事前キャッシュし、機内モードでも対局できるようにする。
  */
-const CACHE = 'houserule-v6';
+const CACHE = 'houserule-v7';
 const ASSETS = [
   './',
   './index.html',

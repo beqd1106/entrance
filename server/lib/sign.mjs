@@ -36,10 +36,20 @@ function signingKey(secret, dateStamp, region, service) {
 }
 
 /**
- * S3 への PUT 用の署名付きURLを作る。
+ * S3 への PUT 用の署名付きURL。
  * ブラウザからこのURLへ直接 PUT すれば、サーバを経由せず画像を置ける。
  */
-export function presignS3Put({ bucket, key, region, expires = 600, creds = credsFromEnv() }) {
+export const presignS3Put = (opts) => presignS3({ ...opts, method: 'PUT' });
+
+/**
+ * S3 からの GET 用の署名付きURL。
+ *
+ * バケットは公開していない。匿名でいくらでもダウンロードできる状態にすると、
+ * 転送量の費用に上限が無くなるため。画像はここで発行した期限付きURLでのみ取得できる。
+ */
+export const presignS3Get = (opts) => presignS3({ ...opts, method: 'GET' });
+
+function presignS3({ bucket, key, region, method = 'PUT', expires = 600, creds = credsFromEnv() }) {
   const host = `${bucket}.s3.${region}.amazonaws.com`;
   const { amzDate, dateStamp } = stamps();
   const scope = `${dateStamp}/${region}/s3/aws4_request`;
@@ -61,7 +71,7 @@ export function presignS3Put({ bucket, key, region, expires = 600, creds = creds
     .join('&');
 
   const canonicalRequest = [
-    'PUT', canonicalUri, canonicalQuery,
+    method, canonicalUri, canonicalQuery,
     `host:${host}\n`, 'host', 'UNSIGNED-PAYLOAD',
   ].join('\n');
 

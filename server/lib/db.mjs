@@ -53,6 +53,17 @@ export async function bump(pk, sk, field, by = 1) {
 }
 
 /**
+ * サービス全体の1日あたりの上限。
+ *
+ * 相手ごとの制限（underDailyLimit）は、IPを変えられると効かない。
+ * 費用が青天井にならないことを保証するのはこちらの役目で、
+ * 「1日にこれ以上は絶対にやらない」という硬い天井をここで作る。
+ */
+export async function underGlobalDailyLimit(name, limit) {
+  return underDailyLimit(`ALL:${name}`, limit);
+}
+
+/**
  * 同じ相手からの連打を弾く。
  * 統計を水増しされると店舗が判断を誤るので、1日あたりの上限を設ける。
  * 記録自体は TTL で自動的に消えるので、掃除の手間もコストもかからない。
