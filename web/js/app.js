@@ -13,7 +13,7 @@ import { renderEditor } from './editor.js';
 import { renderDashboard } from './dashboard.js';
 import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
 import { artwork, emptyState } from './artwork.js';
-import { renderStoreEdit, resolveStore } from './storeedit.js';
+import { renderStoreEdit, resolveStore, primeServerStores } from './storeedit.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -52,6 +52,13 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 route();
+
+// サーバに店舗情報があれば読み込んで描き直す。無ければ何も起きない。
+primeServerStores();
+window.addEventListener('houserule:stores-updated', () => {
+  const r = parseHash().route;
+  if (['home', 'stores', 'store', 'dashboard'].includes(r)) route();
+});
 
 // 初回訪問時だけ、何ができるサービスかを4枚で案内する
 if (shouldShowOnboarding() && ['', '#/', '#'].includes(location.hash)) {
@@ -147,7 +154,8 @@ function storeGrid(list) {
     const r = rulesOf(s.presetId);
     grid.appendChild(h('a.card.store-card', { href: `#/store/${s.id}`, style: { '--hue': String(s.photo.hue) } },
       h('div.store-photo', { style: { '--hue': String(s.photo.hue) } },
-        icon(s.photo.icon, 52),
+        // 写真があれば写真を、無ければ色とマークを使う（どちらでも成立させる）
+        s.photoUrl ? h('img.store-photo-img', { src: s.photoUrl, alt: '', loading: 'lazy' }) : icon(s.photo.icon, 52),
         h('div.store-photo-badges',
           chip(r.game.players === 3 ? '三麻' : '四麻'),
           chip(s.style)),
@@ -267,7 +275,7 @@ function viewStore(id) {
   // ヒーロー：写真帯の上に情報カードを重ねる。店の顔になる牌もここで見せる。
   app.appendChild(h('section.store-hero',
     h('div.store-hero-photo', { style: { '--hue': String(s.photo.hue) } },
-      icon(s.photo.icon, 78),
+      s.photoUrl ? h('img.store-photo-img', { src: s.photoUrl, alt: '' }) : icon(s.photo.icon, 78),
       h('div.store-hero-tiles', { 'aria-hidden': 'true' },
         signatureTiles(r).map((info, i) => h('div.sig-tile', { style: { '--i': String(i) } }, tileEl(info, { size: 'md' }))))),
     h('div.wrap',

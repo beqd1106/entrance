@@ -8,6 +8,9 @@
  */
 import { STORES, getStore } from '../../src/data/stores.js';
 import { h, clear, icon, chip, ruleChip, stars, field, sectionHead } from './ui.js';
+import {
+  hasServer, uploadPhoto, saveStore as apiSaveStore, editToken, saveEditToken, fetchStore,
+} from './api.js';
 
 const KEY = 'houserule.storeEdits.v1';
 
@@ -19,11 +22,42 @@ function saveEdits(all) {
   try { localStorage.setItem(KEY, JSON.stringify(all)); } catch { /* 保存できなくても続行 */ }
 }
 
-/** 元データに編集内容を重ねた店舗を返す（他の画面からも使う） */
+/** サーバから取れた店舗情報。取れるまでは空で、取れたら重ねる。 */
+const serverStores = new Map();
+
+/**
+ * 元データに、サーバの内容と端末の編集を重ねた店舗を返す（他の画面からも使う）。
+ *
+ * 重ねる順番は 元データ → サーバ → 端末。
+ * 端末をいちばん上にするのは、保存前の入力を消さないため。
+ */
 export function resolveStore(id) {
   const base = getStore(id);
+  const server = serverStores.get(id);
   const edit = loadEdits()[id];
-  return edit ? { ...base, ...edit } : base;
+  return { ...base, ...(server || {}), ...(edit || {}) };
+}
+
+/**
+ * サーバの店舗情報を読み込んでおく。
+ * 起動時に1回だけ呼ぶ。取れたら画面を描き直させる（取れなくても何も起きない）。
+ */
+export async function primeServerStores() {
+  if (!hasServer()) return;
+  const results = await Promise.all(STORES.map((s) => fetchStore(s.id)));
+  let got = 0;
+  results.forEach((r, i) => {
+    if (!r.ok || !r.data || !r.data.store) return;
+    const { storeId, published, updatedAt, ...fields } = r.data.store;
+    // 値が入っている項目だけを重ねる（サーバ側が空でも元データを消さない）
+    const clean = {};
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== null && v !== undefined && v !== '') clean[k] = v;
+    }
+    serverStores.set(STORES[i].id, clean);
+    got++;
+  });
+  if (got) window.dispatchEvent(new CustomEvent('houserule:stores-updated'));
 }
 
 export function saveStore(id, patch) {
@@ -195,6 +229,7 @@ function renderForm(left, state, onChange) {
   }
   iconSel.addEventListener('change', () => { d.photo = { ...(d.photo || {}), icon: iconSel.value }; onChange(); });
   look.appendChild(field('カードのマーク', iconSel));
+  look.appendChild(photoField(d, onChange));
 
   const sx = h('input', { type: 'text', value: (d.sns && d.sns.x) || '', placeholder: '@your_shop' });
   sx.addEventListener('input', () => { d.sns = { ...(d.sns || {}), x: sx.value }; onChange(); });
@@ -205,28 +240,138 @@ function renderForm(left, state, onChange) {
   left.appendChild(look);
 }
 
+/**
+ * 店舗写真の差し替え。
+ * 画像はサーバを通さず署名付きURLでS3へ直接送るので、大きな画像でも詰まらない。
+ * サーバに繋がっていないときは、色とマークで代用していることを説明する。
+ */
+function photoField(d, onChange) {
+  if (!hasServer()) {
+    return field('店舗写真', h('p.tiny.muted', { style: { margin: 0 },
+      text: 'いまはサーバに接続していないため、上の色とマークがカードの絵になります。' }));
+  }
+  const box = h('div');
+  const status = h('div.tiny.muted', { style: { marginTop: '6px' } });
+
+  const preview = h('div.photo-preview');
+  const drawPreview = () => {
+    clear(preview);
+    if (d.photoUrl) {
+      preview.appendChild(h('img', { src: d.photoUrl, alt: '店舗写真' }));
+      const del = h('button.btn.btn-ghost.btn-sm', { text: '写真を外す' });
+      del.addEventListener('click', () => { d.photoUrl = ''; onChange(); });
+      preview.appendChild(del);
+    } else {
+      preview.appendChild(h('p.tiny.muted', { style: { margin: 0 }, text: '未設定（色とマークが表示されます）' }));
+    }
+  };
+  drawPreview();
+
+  const input = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp' });
+  input.addEventListener('change', async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    status.textContent = 'アップロード中…';
+    status.className = 'tiny muted';
+    const r = await uploadPhoto(d.id, file);
+    input.value = '';
+    if (!r.ok) {
+      status.textContent = r.error === 'offline' ? 'サーバに接続していません' : r.error;
+      status.className = 'tiny err';
+      return;
+    }
+    d.photoUrl = r.data.url;
+    status.textContent = 'アップロードしました';
+    status.className = 'tiny ok';
+    onChange();
+  });
+
+  box.appendChild(preview);
+  box.appendChild(input);
+  box.appendChild(status);
+  return field('店舗写真', box, 'JPEG・PNG・WebP／4MBまで。横長の写真がきれいに収まります');
+}
+
+/** ボタンの文言を一時的に変える（0を渡すと戻さない） */
+function flash(btn, text, backAfter = 1600) {
+  btn.textContent = text;
+  if (backAfter) setTimeout(() => { btn.textContent = 'この内容で保存'; }, backAfter);
+}
+
+/**
+ * 編集キーの入力。
+ * サーバ上の店舗は、キーを持っている人だけが直せる。
+ * 店舗には運営からこのキーを渡し、最初に1回だけ貼ってもらう。
+ */
+function editKeyCard(storeId) {
+  if (!hasServer()) return null;
+  const has = !!editToken(storeId);
+  const box = h('div.card.card-pad', { style: { marginBottom: '16px' } },
+    h('div.label', { style: { marginBottom: '6px' }, text: '編集キー' }),
+    h('p.tiny.muted', { style: { margin: '0 0 10px' },
+      text: has
+        ? 'この端末は、この店舗を編集できます。'
+        : '運営から受け取ったキーを貼ると、この店舗を編集・公開できるようになります。' }));
+  const inp = h('input', { type: 'password', placeholder: has ? '••••••••（設定済み）' : 'キーを貼り付け' });
+  const btn = h('button.btn.btn-ghost.btn-sm', { style: { marginTop: '8px' }, text: has ? 'キーを入れ直す' : 'キーを保存' });
+  const note = h('div.tiny.muted', { style: { marginTop: '6px' } });
+  btn.addEventListener('click', () => {
+    const v = inp.value.trim();
+    if (!v) { note.textContent = 'キーを入力してください'; note.className = 'tiny err'; return; }
+    saveEditToken(storeId, v);
+    inp.value = '';
+    note.textContent = 'この端末に保存しました。もう一度保存を押してください。';
+    note.className = 'tiny ok';
+  });
+  box.appendChild(inp);
+  box.appendChild(btn);
+  box.appendChild(note);
+  return box;
+}
+
 // ---------------------------------------------------------------------------
 function renderPreview(right, state) {
   const d = state.data;
   clear(right);
 
   const save = h('button.btn.btn-primary.btn-block', { text: 'この内容で保存' });
-  save.addEventListener('click', () => {
+  const saveNote = h('div.tiny.muted', { style: { marginTop: '8px', textAlign: 'center' } });
+  save.addEventListener('click', async () => {
+    // まず端末内に保存する。サーバが落ちていても入力が消えないようにする。
     saveStore(state.id, d);
-    save.textContent = '保存しました';
-    setTimeout(() => { save.textContent = 'この内容で保存'; }, 1600);
+    if (!hasServer()) {
+      flash(save, '保存しました');
+      saveNote.textContent = 'この端末に保存しました';
+      return;
+    }
+    save.disabled = true;
+    flash(save, '保存しています…', 0);
+    const r = await apiSaveStore(state.id, { published: true, store: d, rules: undefined });
+    save.disabled = false;
+    if (r.ok) {
+      flash(save, '保存しました');
+      saveNote.textContent = 'お客様に公開されました';
+      saveNote.className = 'tiny ok';
+    } else {
+      flash(save, 'この内容で保存', 0);
+      saveNote.textContent = `${r.error}（この端末には保存済みです）`;
+      saveNote.className = 'tiny err';
+    }
   });
   const view = h('a.btn.btn-ghost.btn-block', {
     href: `#/store/${state.id}`, style: { marginTop: '8px' }, text: '店舗ページを開く',
   });
-  right.appendChild(h('div.card.card-pad', { style: { marginBottom: '16px' } }, save, view));
+  right.appendChild(h('div.card.card-pad', { style: { marginBottom: '16px' } }, save, saveNote, view));
+  const key = editKeyCard(state.id);
+  if (key) right.appendChild(key);
 
   // お客様に見える形（店舗カード）
   right.appendChild(h('div.card.card-pad',
     h('div.label', { style: { marginBottom: '10px' }, text: 'お客様の見え方' }),
     h('div.card', { style: { overflow: 'hidden' } },
       h('div.store-photo', { style: { '--hue': String((d.photo && d.photo.hue) || 168), height: '96px' } },
-        icon((d.photo && d.photo.icon) || 'table', 40)),
+        d.photoUrl ? h('img.store-photo-img', { src: d.photoUrl, alt: '' }) : null,
+        d.photoUrl ? null : icon((d.photo && d.photo.icon) || 'table', 40)),
       h('div.card-pad', { style: { padding: '14px' } },
         h('div.row.gap-8', { style: { marginBottom: '6px' } },
           chip(d.style || 'ノーレート'), h('div.grow'),

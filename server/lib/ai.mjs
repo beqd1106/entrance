@@ -92,7 +92,18 @@ export async function draftRulesFromText(text) {
   }
   if (!res.ok) {
     console.error('bedrock error', res.status, res.text.slice(0, 400));
-    return { ok: false, message: '下書きの生成に失敗しました' };
+    // 何が足りないのかを伝える。「失敗しました」だけだと打つ手が分からない。
+    if (/use case details/i.test(res.text)) {
+      return {
+        ok: false,
+        message: 'AIの利用申請がまだ済んでいません。AWSコンソールの Bedrock →'
+          + ' モデルアクセスで利用用途フォームを送信すると使えるようになります。',
+      };
+    }
+    if (/AccessDenied|not authorized/i.test(res.text)) {
+      return { ok: false, message: 'AIモデルへのアクセスが許可されていません' };
+    }
+    return { ok: false, message: '下書きの生成に失敗しました。時間をおいてお試しください' };
   }
 
   let raw;

@@ -9,6 +9,7 @@ import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { lookupPreset, saveCustomPreset, loadCustomPresets } from './custom.js';
 import { h, clear, icon, chip, field, switchRow, stepper, sectionHead, toggleRow, tileEl } from './ui.js';
+import { hasServer, draftRules } from './api.js';
 
 const get = (o, p) => p.split('.').reduce((x, k) => (x == null ? undefined : x[k]), o);
 const deepMergePatch = (a, b) => {
@@ -305,6 +306,9 @@ function renderLeft(left, state, onChange) {
   left.appendChild(h('div.card.card-pad', { style: { marginBottom: '18px' } },
     field('ルール名（お客様に表示されます）', nameInp),
     field('ベースにするルール', baseSel, '選び直すとその設定を読み込みます')));
+
+  const draft = draftCard(state, onChange);
+  if (draft) left.appendChild(draft);
 
   for (const g of GROUPS) left.appendChild(group(g.title, g.items, R, onChange));
 
@@ -673,6 +677,97 @@ function renderLeft(left, state, onChange) {
 
   // 設定項目が多いので、見出しへ飛べる目次を先頭に置く
   left.insertBefore(sectionJump(left), left.firstChild);
+}
+
+/**
+ * 文章からルール設定の下書きを作る。
+ *
+ * 設定項目を一つずつ触るのは、店舗にとってかなりの負担になる。
+ * 貼り紙やSNSの文面をそのまま貼れば、当てはまる項目だけが埋まるようにする。
+ * 反映は必ず人が確認してから。読み取った内容を先に見せ、押して初めて適用する。
+ */
+function draftCard(state, onChange) {
+  if (!hasServer()) return null;
+  const box = h('div.card.card-pad.draft-card', { style: { marginBottom: '18px' } },
+    h('h3', { style: { fontSize: '16px', marginBottom: '4px' }, text: '文章からまとめて設定する' }),
+    h('p.tiny.muted', { style: { margin: '0 0 12px' },
+      text: '「うちのルール」を普通の文章で書いてください。当てはまる項目だけを下書きします。設定が変わるのは、内容を確認して反映を押したときだけです。' }));
+
+  const ta = h('textarea', {
+    rows: '4',
+    placeholder: '例：四麻の東南戦、25000持ちの30000返し。赤は5筒2枚と5索1枚。喰いタンあり。白ポッチ1枚、オープンリーチは2翻です。',
+  });
+  const out = h('div.draft-out');
+  const btn = h('button.btn.btn-brass', { text: '下書きを作る' });
+
+  btn.addEventListener('click', async () => {
+    const text = ta.value.trim();
+    clear(out);
+    if (text.length < 4) { out.appendChild(h('p.tiny.err', { text: 'ルールの説明を書いてください' })); return; }
+    btn.disabled = true;
+    btn.textContent = '読み取っています…';
+    const r = await draftRules(text);
+    btn.disabled = false;
+    btn.textContent = '下書きを作る';
+    if (!r.ok) { out.appendChild(h('p.tiny.err', { text: r.error })); return; }
+    showDraft(out, r.data, state, onChange);
+  });
+
+  box.appendChild(ta);
+  box.appendChild(h('div.row.gap-12', { style: { marginTop: '10px' } }, btn));
+  box.appendChild(out);
+  return box;
+}
+
+/** 読み取った内容を、反映する前に見せる */
+function showDraft(out, data, state, onChange) {
+  const rows = flatten(data.patch || {});
+  if (!rows.length) {
+    out.appendChild(h('p.tiny.muted', { text: '設定に落とせる内容が見つかりませんでした。書き方を変えてもう一度お試しください。' }));
+  } else {
+    out.appendChild(h('div.label', { style: { margin: '14px 0 6px' }, text: `読み取った設定（${rows.length}項目）` }));
+    const list = h('div.draft-list');
+    for (const [path, value] of rows) {
+      list.appendChild(h('div.draft-row',
+        h('code', { text: path }),
+        h('span', { text: String(value) })));
+    }
+    out.appendChild(list);
+  }
+  for (const note of data.notes || []) {
+    out.appendChild(h('p.tiny.muted', { style: { margin: '6px 0 0' }, text: `※ ${note}` }));
+  }
+  if (!rows.length) return;
+
+  const apply = h('button.btn.btn-primary', { style: { marginTop: '12px' }, text: 'この内容を設定に反映する' });
+  apply.addEventListener('click', () => {
+    deepMerge(state.rules, data.patch);
+    onChange();
+  });
+  out.appendChild(apply);
+}
+
+/** 入れ子のオブジェクトを「a.b.c → 値」の一覧にする（確認用） */
+function flatten(obj, prefix = '') {
+  const rows = [];
+  for (const [k, v] of Object.entries(obj || {})) {
+    const path = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === 'object' && !Array.isArray(v)) rows.push(...flatten(v, path));
+    else rows.push([path, v]);
+  }
+  return rows;
+}
+
+/** 下書きを既存の設定へ重ねる（書かれていない項目はそのまま） */
+function deepMerge(target, patch) {
+  for (const [k, v] of Object.entries(patch || {})) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      if (typeof target[k] !== 'object' || target[k] === null) target[k] = {};
+      deepMerge(target[k], v);
+    } else {
+      target[k] = v;
+    }
+  }
 }
 
 /**
