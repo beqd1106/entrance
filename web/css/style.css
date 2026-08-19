@@ -1107,3 +1107,16 @@ textarea { resize: vertical; min-height: 56px; }
   .store-hero-tiles { right: 14px; bottom: 56px; gap: 5px; }
   .store-hero-card { margin-top: -40px; }
 }
+
+/* --- 初心者向け説明：特殊牌は実物と同じ牌を横に置く --- */
+.easy-item { display: flex; gap: 16px; align-items: flex-start; }
+.easy-body { flex: 1 1 auto; min-width: 0; }
+.easy-face {
+  flex: 0 0 auto; padding: 8px 10px; border-radius: 12px;
+  background: var(--paper-2); border: 1px solid var(--line);
+  display: grid; place-items: center;
+}
+@media (max-width: 560px) {
+  .easy-item { gap: 12px; }
+  .easy-face { padding: 6px 7px; }
+}

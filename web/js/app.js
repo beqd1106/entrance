@@ -311,11 +311,17 @@ function viewStore(id) {
         text: '麻雀のルールは分かるけれど、この店の特殊ルールは初めて、という方向けの説明です。' }));
       const ART_FOR = { 'アリス': 'alice', '華牌（春夏秋冬）': 'flower', '白ポッチ': 'pocchi' };
       for (const e of explainForBeginners(r)) {
+        // 特殊牌の項目は、実物と同じ見た目の牌を横に置く（言葉より速い）
+        const face = e.tile ? h('div.easy-face',
+          tileEl({ t: safeType(e.tile.code), sp: e.tile.sp, red: e.tile.color === 'red', gold: e.tile.color === 'gold', name: e.tile.name },
+            { size: 'lg', spColor: e.tile.color })) : null;
         box.appendChild(h('div.easy-item',
-          h('div.row.gap-8', { style: { marginBottom: '6px' } }, ruleChip(e.title, { strong: true })),
-          h('p', { text: e.body }),
-          ART_FOR[e.title] ? artwork(ART_FOR[e.title]) : null,
-          e.more ? h('details.easy-more', h('summary', { text: 'もう少し詳しく' }), h('p', { text: e.more })) : null));
+          face,
+          h('div.easy-body',
+            h('div.row.gap-8', { style: { marginBottom: '6px' } }, ruleChip(e.title, { strong: true })),
+            h('p', { text: e.body }),
+            ART_FOR[e.title] ? artwork(ART_FOR[e.title]) : null,
+            e.more ? h('details.easy-more', h('summary', { text: 'もう少し詳しく' }), h('p', { text: e.more })) : null)));
       }
       holder.appendChild(box);
     } else if (mode.v === 'diff') {
@@ -433,6 +439,11 @@ function viewStore(id) {
     h('a.btn.btn-primary.btn-lg.btn-block', { href: `#/play?preset=${s.presetId}` }, icon('play', 15), 'このルールで遊んでみる')));
   app.appendChild(sec);
   app.appendChild(footer());
+}
+
+/** 牌コードをタイプ番号に。未知のコードでも画面を壊さない。 */
+function safeType(code) {
+  try { return codeToTypeLite(code); } catch { return 0; }
 }
 
 // 牌コード→タイプ（店舗ページの特殊牌表示用）

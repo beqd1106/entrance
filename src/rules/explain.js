@@ -175,6 +175,40 @@ function describeEffects(effects = []) {
   }).join('、');
 }
 
+/**
+ * 特殊牌の効果を、麻雀は分かるが この店は初めて という人向けの1文にする。
+ * 「特別な牌です」だけでは何も伝わらないので、条件と結果を言い切る。
+ */
+function specialTileSentence(d) {
+  const c = d.conditions || {};
+  const when = [];
+  if (c.riichiOnly) when.push('リーチしているとき');
+  if (c.menzenOnly) when.push('門前のとき');
+  if (c.tsumoOnly) when.push('ツモ和了のとき');
+  if (c.ronOnly) when.push('ロン和了のとき');
+  if (c.ippatsuOnly) when.push('一発のとき');
+  const head = when.length ? `${when.join('で')}、この牌を持っていると` : 'この牌を持っていると';
+  const results = (d.effects || []).map((e) => {
+    switch (e.type) {
+      case 'dora': return `ドラ${e.value ?? 1}枚分になります`;
+      case 'han': return `${e.value ?? 1}翻ぶん打点が上がります`;
+      case 'bonus': return `ボーナスポイントが${e.value ?? 1}もらえます`;
+      case 'rankUp': return `満貫・跳満といった打点が${e.value ?? 1}段階上がります`;
+      case 'almighty': return '好きな牌の代わりとして使えます';
+      case 'doubleDora': return '対象の牌がドラ2枚分になります';
+      case 'bonusMultiply': return `もらえるボーナスが${e.value ?? 2}倍になります`;
+      case 'scoreMultiply': return `和了点が${e.value ?? 2}倍になります`;
+      case 'yakuman': return '役満あつかいになります';
+      case 'alice': return '和了したあとに山をめくるチャンスが発生します';
+      case 'dice': return 'サイコロを振れます';
+      case 'ura': return '裏ドラが増えます';
+      default: return null;
+    }
+  }).filter(Boolean);
+  if (!results.length) return 'この店だけの特別な牌です。普通の牌としても使えます。';
+  return `${head}${results.join('。さらに')}。`;
+}
+
 function describeConditions(c = {}) {
   const list = [];
   if (c.menzenOnly) list.push('門前限定');
@@ -435,9 +469,13 @@ export function explainForBeginners(r) {
   }
 
   for (const d of r.specialTiles || []) {
-    add(d.name, 'violet',
-      d.description || 'この店だけの特別な牌です。手に入れると効果があります。',
-      `効果：${describeEffects(d.effects)}${describeConditions(d.conditions)}`);
+    out.push({
+      title: d.name,
+      tone: 'violet',
+      body: d.description || specialTileSentence(d),
+      more: `効果：${describeEffects(d.effects)}${describeConditions(d.conditions)}`,
+      tile: { code: d.tile, sp: d.id, color: d.color, name: d.name },
+    });
   }
 
   if (r.local.wareme.enabled) {
