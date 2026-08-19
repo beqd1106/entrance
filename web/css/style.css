@@ -1120,3 +1120,25 @@ textarea { resize: vertical; min-height: 56px; }
   .easy-item { gap: 12px; }
   .easy-face { padding: 6px 7px; }
 }
+
+/* --- 店舗管理：公開までの進み具合と、済み項目の畳み方 --- */
+.publish-ring { position: relative; flex: 0 0 auto; display: grid; place-items: center; }
+.publish-ring svg { display: block; }
+.publish-ring span {
+  position: absolute; font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.btn-publish {
+  background: #fff; color: #0b7a56; border: 1px solid transparent; font-weight: 700;
+}
+.btn-publish:hover:not(:disabled) { background: #f0fdf7; }
+.btn-publish:disabled { background: rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.72); cursor: not-allowed; }
+
+.check-done-head {
+  margin: 22px 0 10px; font-size: 12px; letter-spacing: 0.04em; color: var(--ink-4);
+}
+.check-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.check-grid .check-item { padding: 11px 14px; }
+.check-grid .check-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 未完了は目に留まる強さを残す */
+.check-list .check-item { box-shadow: 0 2px 8px rgba(180, 83, 9, 0.07); }

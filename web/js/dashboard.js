@@ -144,7 +144,8 @@ export function renderDashboard(root, params) {
 
   // --- 公開状態
   wrap.appendChild(h(`div.publish-band${ready ? '.ready' : ''}`,
-    h('div',
+    progressRing(done, items.length),
+    h('div.grow',
       h('div.publish-state', { text: ready ? '公開できます' : `公開まであと ${items.length - done} 項目` }),
       h('p.tiny', { style: { margin: '4px 0 0' },
         text: ready
@@ -156,7 +157,7 @@ export function renderDashboard(root, params) {
         style: { color: '#fff', borderColor: 'rgba(255,255,255,.45)' },
         text: 'お客様の見え方を確認',
       }),
-      h('button.btn.btn-brass', { text: ready ? '店舗ページを公開' : '公開する（未完了）', disabled: !ready }))));
+      h('button.btn.btn-publish', { text: ready ? '店舗ページを公開' : '公開する（未完了）', disabled: !ready }))));
 
   // --- 数値
   wrap.appendChild(h('div.stat-row', { style: { marginTop: '20px' } },
@@ -168,18 +169,22 @@ export function renderDashboard(root, params) {
   // --- 公開前チェック
   wrap.appendChild(h('div.rule-line'));
   wrap.appendChild(sectionHead('01', '公開前チェック', '足りないところだけ直せば公開できます。'));
-  const list = h('div.check-list');
-  for (const it of items) {
-    list.appendChild(h(`div.check-item${it.ok ? '.ok' : ''}`,
-      h('span.check-mark', { html: it.ok
-        ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>'
-        : '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 7v7M12 17.5v.5"/></svg>' }),
-      h('div.grow',
-        h('div.check-label', { text: it.label }),
-        h('div.check-detail', { text: it.ok ? it.detail : it.fix })),
-      it.warn ? chip(`注意${it.warn}`, 'brass') : null));
+  // 手を動かす必要がある項目を先に、済んだ項目は後ろにまとめる
+  const todo = items.filter((i) => !i.ok);
+  const doneItems = items.filter((i) => i.ok);
+  if (todo.length) {
+    const list = h('div.check-list');
+    for (const it of todo) list.appendChild(checkRow(it));
+    wrap.appendChild(list);
   }
-  wrap.appendChild(list);
+  if (doneItems.length) {
+    if (todo.length) {
+      wrap.appendChild(h('div.check-done-head', { text: `済んでいる項目（${doneItems.length}）` }));
+    }
+    const grid = h('div.check-grid');
+    for (const it of doneItems) grid.appendChild(checkRow(it));
+    wrap.appendChild(grid);
+  }
 
   // --- ルールの要点
   wrap.appendChild(h('div.rule-line'));
@@ -211,6 +216,31 @@ export function renderDashboard(root, params) {
 
   root.appendChild(sec);
   return () => {};
+}
+
+const MARK_OK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+const MARK_TODO = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 7v7M12 17.5v.5"/></svg>';
+
+function checkRow(it) {
+  return h(`div.check-item${it.ok ? '.ok' : ''}`,
+    h('span.check-mark', { html: it.ok ? MARK_OK : MARK_TODO }),
+    h('div.grow',
+      h('div.check-label', { text: it.label }),
+      h('div.check-detail', { text: it.ok ? it.detail : it.fix })),
+    it.warn ? chip(`注意${it.warn}`, 'brass') : null);
+}
+
+/** 公開までの進み具合。数字だけより「あと少し」が伝わる。 */
+function progressRing(done, total) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const R = 26;
+  const c = 2 * Math.PI * R;
+  const svg = `<svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="${R}" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="6"/>
+    <circle cx="32" cy="32" r="${R}" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}" transform="rotate(-90 32 32)"/>
+  </svg>`;
+  return h('div.publish-ring', { html: svg }, h('span', { text: `${done}/${total}` }));
 }
 
 function statCard(label, value, unit, note) {
