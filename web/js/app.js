@@ -11,6 +11,7 @@ import { h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggle
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
 import { renderDashboard } from './dashboard.js';
+import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -49,6 +50,11 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 
+// 初回訪問時だけ、何ができるサービスかを4枚で案内する
+if (shouldShowOnboarding() && ['', '#/', '#'].includes(location.hash)) {
+  showOnboarding();
+}
+
 // ---------------------------------------------------------------------------
 // ホーム
 // ---------------------------------------------------------------------------
@@ -62,7 +68,12 @@ function viewHome() {
         + '店のハウスルールをそのまま読み込んだCPU対戦で、ルールと空気を体験してから来店できます。'),
       h('div.row.gap-12.wrapflex.reveal-3', { style: { marginTop: '26px' } },
         h('a.btn.btn-primary.btn-lg', { href: '#/stores' }, 'ハウスルールを体験する', icon('arrow', 16)),
-        h('a.btn.btn-ghost.btn-lg', { href: '#/play?preset=standard4', text: '一般四麻ですぐ打つ' })))));
+        h('a.btn.btn-ghost.btn-lg', { href: '#/play?preset=standard4', text: '一般四麻ですぐ打つ' }),
+        (() => {
+          const b = h('button.btn.btn-ghost.btn-lg', { text: 'はじめての方へ' });
+          b.addEventListener('click', () => showOnboarding());
+          return b;
+        })()))));
 
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;

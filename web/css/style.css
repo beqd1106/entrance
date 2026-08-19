@@ -769,3 +769,42 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
 .easy-more > summary::before { content: '＋'; font-family: var(--mono); }
 .easy-more[open] > summary::before { content: '−'; }
 .easy-more p { margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+
+/* =========================================================================
+   はじめての方への案内（4枚）
+   ========================================================================= */
+.ob-overlay { background: rgba(10, 16, 20, 0.55); }
+.ob-sheet { width: min(460px, 100%); overflow: hidden; }
+.ob-body { padding: 30px 30px 12px; text-align: center; }
+.ob-art {
+  width: 100%; max-width: 260px; margin: 0 auto 20px;
+  background: var(--paper); border-radius: var(--r-l); padding: 14px;
+}
+.ob-art svg { width: 100%; height: auto; }
+.ob-art .ob-card { fill: #fff; stroke: rgba(20, 22, 26, 0.1); stroke-width: 1.5; }
+.ob-art .ob-card.dim { opacity: 0.5; }
+.ob-art .ob-felt { fill: var(--felt); }
+.ob-art .ob-tile { fill: #fff; }
+.ob-art .ob-tile.hi { fill: #d9f7ec; stroke: var(--brass-2); stroke-width: 2; }
+.ob-art .ob-lens { fill: var(--brass-2); }
+.ob-art .ob-stroke { stroke: var(--ink-4); stroke-width: 3; stroke-linecap: round; fill: none; }
+.ob-art .ob-mute { fill: #dfe3e9; }
+.ob-art .ob-tag.a { fill: #7dd3fc; }
+.ob-art .ob-tag.b { fill: #fcd34d; }
+.ob-art .ob-tag.c { fill: var(--brass-2); }
+.ob-title { font-size: 19px; margin-bottom: 10px; }
+.ob-text { font-size: 13.5px; color: var(--ink-3); line-height: 1.9; margin: 0; }
+.ob-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 22px 22px;
+}
+.ob-dots { display: flex; gap: 7px; }
+.ob-dot {
+  width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0;
+  background: var(--line-2); cursor: pointer; transition: 0.2s var(--ease);
+}
+.ob-dot.on { background: var(--brass-2); width: 20px; border-radius: 999px; }
+@media (max-width: 680px) {
+  .ob-body { padding: 24px 20px 8px; }
+  .ob-foot { padding: 14px 16px 18px; }
+}
