@@ -61,22 +61,38 @@ if (shouldShowOnboarding() && ['', '#/', '#'].includes(location.hash)) {
 // ---------------------------------------------------------------------------
 // ホーム
 // ---------------------------------------------------------------------------
+/** ヒーローに置く牌（この店らしさを一目で見せる） */
+function heroTiles() {
+  const set = [
+    { t: 22, blue: true, name: '青5索' },
+    { t: 31, dot: true, name: '白ポッチ' },
+    { t: 34, flower: 'spring', name: '春' },
+    { t: 13, red: true, name: '赤5筒' },
+    { t: 30, name: '北' },
+  ];
+  return h('div.hero-tiles', { 'aria-hidden': 'true' },
+    set.map((info, i) => h('div.hero-tile', { style: { '--i': String(i) } },
+      tileEl(info, { size: 'lg' }))));
+}
+
 function viewHome() {
   app.appendChild(h('section.hero',
-    h('div.wrap',
-      h('div.eyebrow.reveal', { text: 'ONLINE BRANCH FOR MAHJONG PARLORS' }),
-      h('h1.reveal', { style: { marginTop: '10px' } }, '打ってから、行く。'),
-      h('p.reveal-2', { style: { marginTop: '16px', fontSize: '16px' } },
-        'Houseruleは、全国の雀荘がそれぞれの「オンライン支店」を持つためのプラットフォームです。'
-        + '店のハウスルールをそのまま読み込んだCPU対戦で、ルールと空気を体験してから来店できます。'),
-      h('div.row.gap-12.wrapflex.reveal-3', { style: { marginTop: '26px' } },
+    h('div.wrap.hero-inner',
+      h('div.hero-copy',
+        h('div.eyebrow.reveal', { text: 'ONLINE BRANCH FOR MAHJONG PARLORS' }),
+        h('h1.reveal', { style: { marginTop: '10px' } }, '打ってから、', h('span.hl', '行く。')),
+        h('p.reveal-2', { style: { marginTop: '16px', fontSize: '16px' } },
+          '白ポッチ、アリス、華牌。お店ごとに違うハウスルールを、'
+          + '行く前にそのまま体験できます。CPU3人との対局で、知らないルールを気兼ねなく試してから来店を。'),
+        h('div.row.gap-12.wrapflex.reveal-3', { style: { marginTop: '26px' } },
         h('a.btn.btn-primary.btn-lg', { href: '#/stores' }, 'ハウスルールを体験する', icon('arrow', 16)),
         h('a.btn.btn-ghost.btn-lg', { href: '#/play?preset=standard4', text: '一般四麻ですぐ打つ' }),
         (() => {
           const b = h('button.btn.btn-ghost.btn-lg', { text: 'はじめての方へ' });
           b.addEventListener('click', () => showOnboarding());
           return b;
-        })()))));
+        })())),
+      heroTiles())));
 
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;
@@ -129,18 +145,24 @@ function storeGrid(list) {
   for (const raw of list) {
     const s = resolveStore(raw.id);
     const r = rulesOf(s.presetId);
-    grid.appendChild(h('a.card', { href: `#/store/${s.id}`, style: { display: 'block' } },
-      h('div.store-photo', { style: { '--hue': String(s.photo.hue) } }, icon(s.photo.icon, 52)),
+    grid.appendChild(h('a.card.store-card', { href: `#/store/${s.id}`, style: { '--hue': String(s.photo.hue) } },
+      h('div.store-photo', { style: { '--hue': String(s.photo.hue) } },
+        icon(s.photo.icon, 52),
+        h('div.store-photo-badges',
+          chip(r.game.players === 3 ? '三麻' : '四麻'),
+          chip(s.style))),
       h('div.card-pad',
-        h('div.row.gap-8', { style: { marginBottom: '6px' } },
-          chip(r.game.players === 3 ? '三麻' : '四麻', 'felt'), chip(s.style), h('div.grow'),
-          h('div.tiny.muted', { text: s.area })),
+        h('div.row.gap-8', { style: { marginBottom: '4px' } },
+          h('div.store-area', icon('pin', 12), h('span', { text: s.area })),
+          h('div.grow'),
+          h('div.row.gap-4', h('span.tiny.muted', { text: '初心者' }), stars(s.beginner))),
         h('h3.store-name', { text: s.name }),
-        h('p.tiny.muted', { style: { margin: '4px 0 10px' }, text: s.catch }),
-        h('div.row.gap-8', { style: { marginBottom: '10px' } },
-          h('div.tiny.muted', { text: '初心者歓迎度' }), stars(s.beginner)),
-        h('div.row.gap-4.wrapflex', s.ruleHighlights.slice(0, 5).map((t) => ruleChip(t))),
-        h('div.tiny.muted', { style: { marginTop: '10px' }, text: shortSummary(r) }))));
+        h('p.store-catch', { text: s.catch }),
+        h('div.row.gap-4.wrapflex', { style: { marginTop: '12px' } },
+          s.ruleHighlights.slice(0, 5).map((t) => ruleChip(t))),
+        h('div.store-foot',
+          h('span.tiny.muted', { text: shortSummary(r) }),
+          h('span.store-cta', '遊んでみる', icon('arrow', 14))))));
   }
   return grid;
 }

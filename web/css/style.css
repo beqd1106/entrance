@@ -882,3 +882,78 @@ textarea { resize: vertical; min-height: 56px; }
 .tile-pop-body p:last-child { margin-bottom: 0; }
 @keyframes popIn { from { opacity: 0; transform: translateY(6px) scale(0.97); } }
 @media (prefers-reduced-motion: reduce) { .tile-pop { animation: none; } }
+
+/* =========================================================================
+   ヒーロー（第一印象）
+   ・文字だけにせず、この店らしさを示す牌を並べる
+   ・重くならないよう、動きは最小限にとどめる
+   ========================================================================= */
+.hero-inner {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 48px; align-items: center;
+}
+.hero-copy { position: relative; }
+.hero h1 .hl {
+  position: relative; display: inline-block; color: var(--brass);
+}
+.hero h1 .hl::after {
+  content: ''; position: absolute; left: 2%; right: 8%; bottom: 6%; height: 22%;
+  background: rgba(16, 185, 129, 0.18); border-radius: 999px; z-index: -1;
+}
+.hero-tiles { display: flex; gap: 10px; align-items: flex-end; }
+.hero-tile {
+  --tw: 62px;
+  animation: heroFloat 4.5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.35s);
+  transform-origin: bottom center;
+}
+.hero-tile .tile { --tw: 62px; }
+.hero-tile:nth-child(odd) { transform: translateY(-10px); }
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-9px) rotate(1.5deg); }
+}
+@media (prefers-reduced-motion: reduce) { .hero-tile { animation: none; } }
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 30px; }
+  .hero-tiles { justify-content: center; }
+  .hero-tile .tile { --tw: 48px; }
+}
+@media (max-width: 560px) {
+  .hero-tiles { gap: 6px; }
+  .hero-tile .tile { --tw: 38px; }
+}
+
+/* =========================================================================
+   店舗カード（店ごとの個性が並んで見えることが価値）
+   ========================================================================= */
+.store-card {
+  display: block; overflow: hidden; position: relative;
+  transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), border-color 0.22s var(--ease);
+}
+.store-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(16, 24, 40, 0.1), 0 22px 48px rgba(16, 24, 40, 0.09);
+  border-color: hsl(var(--hue) 50% 78%);
+}
+.store-photo-badges {
+  position: absolute; top: 12px; left: 12px; display: flex; gap: 6px;
+}
+.store-photo-badges .chip {
+  background: rgba(255, 255, 255, 0.92); color: hsl(var(--hue) 50% 28%);
+  font-weight: 600; backdrop-filter: blur(4px);
+}
+.store-area { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ink-4); }
+.store-area svg { color: var(--ink-4); }
+.store-name { font-size: 18px; letter-spacing: -0.02em; margin-top: 2px; }
+.store-catch { font-size: 12.5px; color: var(--ink-3); margin: 6px 0 0; line-height: 1.7; }
+.store-foot {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
+}
+.store-foot .tiny { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.store-cta {
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+  font-size: 12.5px; font-weight: 700; color: var(--brass);
+  transition: gap 0.2s var(--ease);
+}
+.store-card:hover .store-cta { gap: 8px; }
