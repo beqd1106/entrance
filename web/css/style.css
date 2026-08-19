@@ -1142,3 +1142,16 @@ textarea { resize: vertical; min-height: 56px; }
 .check-grid .check-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 未完了は目に留まる強さを残す */
 .check-list .check-item { box-shadow: 0 2px 8px rgba(180, 83, 9, 0.07); }
+
+/* --- 店舗カード：ルール由来の牌を写真枠に添える --- */
+.card-tiles {
+  position: absolute; right: 14px; bottom: 14px; z-index: 2;
+  display: flex; gap: 5px; align-items: flex-end;
+}
+.card-tile {
+  transform: rotate(calc((var(--i) - 1) * 4deg));
+  filter: drop-shadow(0 4px 10px rgba(20, 30, 28, 0.16));
+  transition: transform 0.25s var(--ease);
+}
+.store-card:hover .card-tile { transform: rotate(calc((var(--i) - 1) * 4deg)) translateY(-3px); }
+@media (prefers-reduced-motion: reduce) { .store-card:hover .card-tile { transform: rotate(calc((var(--i) - 1) * 4deg)); } }

@@ -150,7 +150,11 @@ function storeGrid(list) {
         icon(s.photo.icon, 52),
         h('div.store-photo-badges',
           chip(r.game.players === 3 ? '三麻' : '四麻'),
-          chip(s.style))),
+          chip(s.style)),
+        // ルールから選んだ「顔になる牌」。店舗ページと同じ牌が並ぶ
+        h('div.card-tiles', { 'aria-hidden': 'true' },
+          signatureTiles(r).slice(0, 3).map((info, i) =>
+            h('div.card-tile', { style: { '--i': String(i) } }, tileEl(info, { size: 'md' }))))),
       h('div.card-pad',
         h('div.row.gap-8', { style: { marginBottom: '4px' } },
           h('div.store-area', icon('pin', 12), h('span', { text: s.area })),
@@ -248,8 +252,8 @@ function signatureTiles(r) {
       out.push({ t: 34 + i, flower: key, name: { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }[key] });
     }
   }
-  if (r.dora.blue && r.dora.blue.enabled) out.push({ t: 22, blue: true, name: '青5索' });
-  if (r.dora.aka && (r.dora.aka.pin || r.dora.aka.sou || r.dora.aka.man)) out.push({ t: 13, red: true, name: '赤5筒' });
+  if (Object.values(r.dora.blue || {}).some((n) => n > 0)) out.push({ t: 22, blue: true, name: '青5索' });
+  if (Object.values(r.dora.red || {}).some((n) => n > 0)) out.push({ t: 13, red: true, name: '赤5筒' });
   if (r.sanma && r.game.players === 3) out.push({ t: 30, name: '北' });
   if (!out.length) out.push({ t: 13, red: true, name: '赤5筒' }, { t: 4, name: '五萬' }, { t: 27, name: '東' });
   return out.slice(0, 5);
