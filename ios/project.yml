@@ -1,7 +1,7 @@
 # XcodeGen プロジェクト定義
 #   生成: cd ios && xcodegen generate
 # Macがなくても GitHub Actions（macOSランナー）でビルド〜TestFlight配信ができる。
-name: Entrance
+name: Houserule
 options:
   bundleIdPrefix: com.beqd1106
   deploymentTarget:
@@ -19,7 +19,7 @@ settings:
     CODE_SIGN_STYLE: Manual
 
 targets:
-  Entrance:
+  Houserule:
     type: application
     platform: iOS
     sources:
@@ -34,7 +34,7 @@ targets:
       path: Resources/Info.plist
     settings:
       base:
-        PRODUCT_NAME: Entrance
+        PRODUCT_NAME: Houserule
         PRODUCT_BUNDLE_IDENTIFIER: com.beqd1106.entrance
         INFOPLIST_FILE: Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

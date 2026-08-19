@@ -21,8 +21,8 @@ concurrency:
 
 env:
   BUNDLE_ID: com.beqd1106.entrance
-  SCHEME: Entrance
-  XCODE_PROJECT: ios/Entrance.xcodeproj
+  SCHEME: Houserule
+  XCODE_PROJECT: ios/Houserule.xcodeproj
 
 jobs:
   testflight:

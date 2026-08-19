@@ -1,4 +1,4 @@
-# Entrance（エントランス）
+# Houserule（Houserule）
 
 **打ってから、行く。** — 全国の雀荘が「オンライン支店」を持ち、
 ユーザーが店のハウスルールを実際に打って体験してから来店できるプラットフォームの試作です。
@@ -58,7 +58,7 @@ node test/sim.js 300 standard4  # 1プリセットを300対局（約2,800局）
 ## 3. ディレクトリ構成
 
 ```
-Entrance/
+Houserule/
 ├── server.js                依存ゼロの静的サーバ
 ├── start.bat                起動用
 ├── src/

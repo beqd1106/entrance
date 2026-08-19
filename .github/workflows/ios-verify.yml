@@ -40,16 +40,16 @@ jobs:
       - name: シミュレータ向けにビルド（署名なし）
         run: |
           xcodebuild build \
-            -project ios/Entrance.xcodeproj \
-            -scheme Entrance \
+            -project ios/Houserule.xcodeproj \
+            -scheme Houserule \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             | xcpretty || xcodebuild build \
-            -project ios/Entrance.xcodeproj \
-            -scheme Entrance \
+            -project ios/Houserule.xcodeproj \
+            -scheme Houserule \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \

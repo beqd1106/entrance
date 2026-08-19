@@ -56,7 +56,7 @@ function viewHome() {
       h('div.eyebrow.reveal', { text: 'ONLINE BRANCH FOR MAHJONG PARLORS' }),
       h('h1.reveal', { style: { marginTop: '10px' } }, '打ってから、行く。'),
       h('p.reveal-2', { style: { marginTop: '16px', fontSize: '16px' } },
-        'Entranceは、全国の雀荘がそれぞれの「オンライン支店」を持つためのプラットフォームです。'
+        'Houseruleは、全国の雀荘がそれぞれの「オンライン支店」を持つためのプラットフォームです。'
         + '店のハウスルールをそのまま読み込んだCPU対戦で、ルールと空気を体験してから来店できます。'),
       h('div.row.gap-12.wrapflex.reveal-3', { style: { marginTop: '26px' } },
         h('a.btn.btn-primary.btn-lg', { href: '#/stores' }, 'ハウスルールを体験する', icon('arrow', 16)),
@@ -87,7 +87,7 @@ function viewHome() {
   wrap.appendChild(h('div.cta-band',
     h('div',
       h('h3', { text: '「検索できる」で終わらせない。' }),
-      h('p', { text: 'ルールを読むだけでは不安は消えません。Entranceは、その店のルールで実際に1半荘打てるところまでを入口にします。' })),
+      h('p', { text: 'ルールを読むだけでは不安は消えません。Houseruleは、その店のルールで実際に1半荘打てるところまでを入口にします。' })),
     h('a.btn.btn-brass.btn-lg', { href: '#/store/goto_kan', text: '五等サンマ館を体験する' })));
   app.appendChild(sec);
   app.appendChild(footer());
@@ -95,7 +95,7 @@ function viewHome() {
 
 function footer() {
   return h('footer.footer', h('div.wrap',
-    h('div', { text: 'Entrance デモ版 ／ 実在店舗のハウスルールを転載していない架空データです。' }),
+    h('div', { text: 'Houserule デモ版 ／ 実在店舗のハウスルールを転載していない架空データです。' }),
     h('div', { text: 'ゲーム内ポイント（BP）はすべて非換金・ゲーム内専用です。賭博性のある設計は含みません（法務判断は要専門家確認）。' })));
 }
 
