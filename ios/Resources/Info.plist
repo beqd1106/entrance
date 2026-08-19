@@ -41,11 +41,7 @@
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
   </array>
-  <key>UISupportedInterfaceOrientations~ipad</key>
-  <array>
-    <string>UIInterfaceOrientationLandscapeLeft</string>
-    <string>UIInterfaceOrientationLandscapeRight</string>
-  </array>
+
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
   <!-- 資産はすべてアプリに同梱。外部通信は店舗SNSリンクをSafariで開く時のみ -->

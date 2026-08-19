@@ -26,10 +26,16 @@ env:
 
 jobs:
   testflight:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Xcode 26 を選択（App Storeは iOS 26 SDK 必須）
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST"; fi
+          xcodebuild -version
 
       - uses: actions/setup-node@v4
         with:
