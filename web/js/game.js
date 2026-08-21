@@ -7,6 +7,7 @@ import { decide } from '../../src/core/ai.js';
 import { resolveRules, deepMerge } from '../../src/rules/defaults.js';
 import { lookupPreset } from './custom.js';
 import { recordPlay } from './dashboard.js';
+import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
@@ -46,6 +47,8 @@ export function renderGame(root, params) {
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
   };
+  // ホームの「前回の続き」から戻れるように、開いた卓を覚えておく
+  rememberTable({ presetId, name: preset.name, event: params.event || null });
   buildDom(root);
   showPregame();
   return () => {

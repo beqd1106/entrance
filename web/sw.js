@@ -1,13 +1,25 @@
 /**
  * sw.js - オフライン対応のサービスワーカー
+ *
  * アプリシェルとエンジンを事前キャッシュし、機内モードでも対局できるようにする。
+ *
+ * 取り出し方は2種類に分ける。
+ *   コード（HTML/JS/CSS）… まずネットワーク。取れたら保存し、取れなければ保存分を使う。
+ *   それ以外（画像・アイコン等）… まず保存分。無ければネットワーク。
+ * コードをキャッシュ優先にすると、更新してもキャッシュ名を変えるまで古い画面が出続ける。
+ * 実際にそれで「直したはずの画面が変わらない」状態が起きたので、この形にしている。
  */
-const CACHE = 'houserule-v10';
+const CACHE = 'houserule-v13';
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
+  './js/hub.js',
+  './js/table.js',
+  './js/search.js',
+  './js/marks.js',
+  './js/recent.js',
   './js/game.js',
   './js/editor.js',
   './js/ui.js',
@@ -21,6 +33,7 @@ const ASSETS = [
   './js/manual.js',
   './config.js',
   './manifest.webmanifest',
+  './img/op-bg.svg',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
   '../src/core/tiles.js',
@@ -39,7 +52,10 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // 1件でも欠けると全部入らないので、失敗は個別に見逃す
+  e.waitUntil(caches.open(CACHE)
+    .then((c) => Promise.all(ASSETS.map((a) => c.add(a).catch(() => {}))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -50,8 +66,30 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+/** コードかどうか（更新が届かないと困るもの） */
+function isCode(request) {
+  if (request.mode === 'navigate') return true;
+  return /\.(?:js|mjs|css|html|webmanifest)(?:\?|$)/.test(new URL(request.url).pathname);
+}
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return; // APIなどは素通し
+
+  if (isCode(e.request)) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(e.request).then((hit) => hit || caches.match('./index.html'))),
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
       const copy = res.clone();

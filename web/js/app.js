@@ -13,10 +13,13 @@ import {
 import { renderGame } from './game.js';
 import { renderEditor } from './editor.js';
 import { renderDashboard, recordCheckin } from './dashboard.js';
-import { shouldShowOnboarding, showOnboarding } from './onboarding.js';
+import { showOnboarding } from './onboarding.js';
 import { artwork, emptyState } from './artwork.js';
 import { renderStoreEdit, resolveStore, primeServerStores } from './storeedit.js';
 import { renderManual } from './manual.js';
+import { renderHub } from './hub.js';
+import { renderTable } from './table.js';
+import { matchText, presetHaystack, storeHaystack, searchField } from './search.js';
 
 const app = document.getElementById('app');
 let cleanup = null;
@@ -41,17 +44,22 @@ function route() {
   const { route: r, arg, params } = parseHash();
   document.querySelectorAll('#navLinks a').forEach((a) => a.classList.toggle('on', a.dataset.route === r));
   window.scrollTo(0, 0);
+  // 画面ごとの body 状態は、必ずここで一度まっさらに戻す
+  document.body.classList.remove('op-mode', 'no-scroll');
   clear(app);
   switch (r) {
     case 'stores': viewStores(params); break;
     case 'store': viewStore(arg); break;
+    case 'search': viewSearch(params); break;
     case 'compare': viewCompare(params); break;
+    case 'table': cleanup = renderTable(app, params); break;
     case 'play': cleanup = renderGame(app, params); break;
     case 'editor': cleanup = renderEditor(app, params); break;
     case 'dashboard': cleanup = renderDashboard(app, params); break;
     case 'store-edit': cleanup = renderStoreEdit(app, params); break;
     case 'manual': cleanup = renderManual(app); app.appendChild(footer()); break;
-    default: viewHome();
+    case 'about': viewAbout(); break;
+    default: renderHub(app);
   }
 }
 window.addEventListener('hashchange', route);
@@ -64,10 +72,8 @@ window.addEventListener('houserule:stores-updated', () => {
   if (['home', 'stores', 'store', 'dashboard'].includes(r)) route();
 });
 
-// 初回訪問時だけ、何ができるサービスかを4枚で案内する
-if (shouldShowOnboarding() && ['', '#/', '#'].includes(location.hash)) {
-  showOnboarding();
-}
+// 案内は最初の画面をふさがない。OPの「はじめての方へ」から開く。
+// （初回だけ自動で出す挙動は、操作の入口を隠してしまうのでやめた）
 
 // ---------------------------------------------------------------------------
 // ホーム
@@ -86,7 +92,7 @@ function heroTiles() {
       tileEl(info, { size: 'lg' }))));
 }
 
-function viewHome() {
+function viewAbout() {
   app.appendChild(h('section.hero',
     h('div.wrap.hero-inner',
       h('div.hero-copy',
@@ -118,19 +124,7 @@ function viewHome() {
 
   wrap.appendChild(h('div.rule-line'));
   wrap.appendChild(sectionHead('03', 'ルールプリセット', '店舗以外の系統ルールもそのまま試せます。設定を変えるとCPUの挙動・点数・祝儀まで変わります。'));
-  const grid = h('div.store-grid');
-  for (const p of PRESETS) {
-    const r = resolveRules(p.rules);
-    grid.appendChild(h('div.card.card-pad',
-      h('div.row.gap-8', { style: { marginBottom: '8px' } }, chip(p.category, 'felt'), h('div.grow'), chip(`${r.game.players === 3 ? '三麻' : '四麻'}`)),
-      h('h3', { style: { fontSize: '16px' }, text: p.name }),
-      h('p.tiny.muted', { style: { margin: '6px 0 12px' }, text: p.description }),
-      h('div.row.gap-8.wrapflex', { style: { marginBottom: '14px' } }, p.tags.slice(0, 4).map((t) => ruleChip(t))),
-      h('div.row.gap-8',
-        h('a.btn.btn-sm.btn-primary', { href: `#/play?preset=${p.id}`, text: 'このルールで遊ぶ' }),
-        h('a.btn.btn-sm.btn-ghost', { href: `#/editor?preset=${p.id}`, text: '設定を見る' }))));
-  }
-  wrap.appendChild(grid);
+  wrap.appendChild(h('div.store-grid', PRESETS.map(presetCard)));
 
   wrap.appendChild(h('div.rule-line'));
   wrap.appendChild(h('div.cta-band',
@@ -188,43 +182,82 @@ function storeGrid(list) {
 }
 
 function viewStores(params) {
-  const state = { active: new Set((params.f || '').split(',').filter(Boolean)) };
+  const state = {
+    active: new Set((params.f || '').split(',').filter(Boolean)),
+    q: params.q || '',
+  };
   const sec = h('section.section', h('div.wrap'));
   const wrap = sec.firstChild;
-  wrap.appendChild(sectionHead('01', '店舗をさがす', 'ルール条件で絞り込めます。ヒットした店舗はそのルールでそのまま打てます。'));
+  wrap.appendChild(sectionHead('01', '店舗をさがす', '言葉でも、ルール条件でも探せます。見つけた店はそのルールでそのまま打てます。'));
+
   const filterBox = h('div.card.card-pad', { style: { marginBottom: '22px' } });
   const result = h('div');
 
-  const render = () => {
+  const syncHash = () => {
+    const qs = [];
+    if (state.active.size) qs.push(`f=${encodeURIComponent([...state.active].join(','))}`);
+    if (state.q.trim()) qs.push(`q=${encodeURIComponent(state.q.trim())}`);
+    const next = `#/stores${qs.length ? `?${qs.join('&')}` : ''}`;
+    // ここでルーターを走らせると入力が途切れるので、履歴だけ差し替える
+    try { history.replaceState(null, '', next); } catch { /* 置き換えられなくても検索は動く */ }
+  };
+
+  // 言葉で探す（店名・エリア・雰囲気・ルールの特徴まで対象）
+  const field = searchField({
+    id: 'storeSearch',
+    value: state.q,
+    placeholder: '店名・エリア・ルールで探す（例：新宿、白ポッチ、禁煙）',
+    help: '入力するたびに絞り込みます。ひらがな・カタカナはどちらでも構いません。',
+    onInput: (v) => { state.q = v; syncHash(); renderResult(); },
+  });
+
+  const renderFilters = () => {
     clear(filterBox);
+    filterBox.appendChild(field);
+    filterBox.appendChild(h('div.filter-sep'));
     for (const f of FILTERS) {
-      const row = h('div.row.gap-8.wrapflex', { style: { marginBottom: '10px' } },
-        h('div.tiny.muted', { style: { width: '84px', flex: '0 0 auto' }, text: f.label }));
+      const holder = h('div.row.gap-8.wrapflex.grow');
       for (const o of f.options) {
         const on = state.active.has(o.value);
-        const c = h(`span.chip.chip-btn.tag-${toneOf(o.value)}`, { class: on ? 'on' : '', text: o.value });
+        const c = h(`span.chip.chip-btn.tag-${toneOf(o.value)}${on ? '.on' : ''}`, { text: o.value });
         c.addEventListener('click', () => {
           if (on) state.active.delete(o.value); else state.active.add(o.value);
-          render();
+          syncHash();
+          renderFilters();
+          renderResult();
         });
-        row.appendChild(c);
+        holder.appendChild(c);
       }
-      filterBox.appendChild(row);
+      filterBox.appendChild(h('div.filter-row', h('div.filter-label', { text: f.label }), holder));
     }
-    if (state.active.size) {
-      const clearBtn = h('button.btn.btn-sm.btn-ghost', { text: '条件をクリア' });
-      clearBtn.addEventListener('click', () => { state.active.clear(); render(); });
-      filterBox.appendChild(clearBtn);
+    if (state.active.size || state.q.trim()) {
+      const clearBtn = h('button.btn.btn-sm.btn-ghost', { text: '条件をすべて外す' });
+      clearBtn.addEventListener('click', resetAll);
+      filterBox.appendChild(h('div.row', { style: { marginTop: '12px' } }, clearBtn));
     }
-    const hits = STORES.filter((s) => {
+  };
+
+  function resetAll() {
+    state.active.clear();
+    state.q = '';
+    field.input.value = '';
+    field.input.dispatchEvent(new Event('input'));
+    syncHash();
+    renderFilters();
+    renderResult();
+  }
+
+  const renderResult = () => {
+    const hits = STORES.map((raw) => resolveStore(raw.id)).filter((s) => {
       const r = rulesOf(s.presetId);
       for (const f of FILTERS) {
         const picked = f.options.filter((o) => state.active.has(o.value));
         if (!picked.length) continue;
         if (!picked.some((o) => o.test(s, r))) return false;
       }
-      return true;
+      return matchText(storeHaystack(s, r), state.q);
     });
+
     clear(result);
     result.appendChild(h('div.row.gap-8', { style: { marginBottom: '12px' } },
       h('div.label', { text: `${hits.length}件` }),
@@ -232,20 +265,120 @@ function viewStores(params) {
       h('a.btn.btn-sm.btn-ghost', { href: '#/compare', text: '2店舗を比較する' })));
     if (hits.length) {
       result.appendChild(storeGrid(hits));
-    } else {
-      const reset = h('button.btn.btn-ghost', { text: '条件をすべて外す' });
-      reset.addEventListener('click', () => { state.active.clear(); render(); });
-      result.appendChild(emptyState(
-        '条件に合う店舗がありません',
-        '絞り込みを少し減らすと見つかるかもしれません。',
-        reset));
+      return;
     }
+    const reset = h('button.btn.btn-ghost', { text: '条件をすべて外す' });
+    reset.addEventListener('click', resetAll);
+    result.appendChild(emptyState(
+      '条件に合う店舗がありません',
+      'デモ店舗は3件だけです。ルールそのものを試したいときは、ルールを含めて探せます。',
+      reset));
+    result.appendChild(h('div.row.gap-8.wrapflex', { style: { marginTop: '14px' } },
+      h('a.btn.btn-sm.btn-primary', { href: `#/search?q=${encodeURIComponent(state.q)}`, text: 'ルールも含めて探す' }),
+      h('a.btn.btn-sm.btn-ghost', { href: '#/table', text: '卓を立てる' })));
   };
-  render();
+
+  renderFilters();
+  renderResult();
   wrap.appendChild(filterBox);
   wrap.appendChild(result);
   app.appendChild(sec);
   app.appendChild(footer());
+}
+
+/** ルールプリセット1件のカード（ホーム・検索で共用） */
+function presetCard(p) {
+  const r = resolveRules(p.rules);
+  return h('div.card.card-pad',
+    h('div.row.gap-8', { style: { marginBottom: '8px' } },
+      chip(p.category || '自作', 'felt'),
+      h('div.grow'),
+      chip(r.game.players === 3 ? '三麻' : '四麻')),
+    h('h3', { style: { fontSize: '16px' }, text: p.name }),
+    h('p.tiny.muted', { style: { margin: '6px 0 10px' }, text: p.description || shortSummary(r) }),
+    h('div.row.gap-8.wrapflex', { style: { marginBottom: '14px' } },
+      (p.tags || []).slice(0, 4).map((t) => ruleChip(t))),
+    h('div.row.gap-8',
+      h('a.btn.btn-sm.btn-primary', { href: `#/play?preset=${encodeURIComponent(p.id)}`, text: 'このルールで遊ぶ' }),
+      h('a.btn.btn-sm.btn-ghost', { href: `#/editor?preset=${encodeURIComponent(p.id)}`, text: '設定を見る' })));
+}
+
+// ---------------------------------------------------------------------------
+// 横断検索（店舗とルールをまとめて探す）
+// ---------------------------------------------------------------------------
+function viewSearch(params) {
+  const state = { q: params.q || '' };
+  const sec = h('section.section', h('div.wrap'));
+  const wrap = sec.firstChild;
+  wrap.appendChild(sectionHead('検索', '店舗とルールをまとめて探す', '店名・エリア・ルール名・特徴、どれで打っても構いません。'));
+
+  const result = h('div');
+
+  const syncHash = () => {
+    const next = `#/search${state.q.trim() ? `?q=${encodeURIComponent(state.q.trim())}` : ''}`;
+    try { history.replaceState(null, '', next); } catch { /* 置き換えられなくても検索は動く */ }
+  };
+
+  const field = searchField({
+    id: 'globalSearch',
+    value: state.q,
+    placeholder: '例：白ポッチ／三麻／新宿／赤なし／東天紅',
+    onInput: (v) => { state.q = v; syncHash(); render(); },
+  });
+
+  const suggests = ['白ポッチ', 'アリス', '華牌', '割れ目', '東天紅', '五等サンマ', '三麻', '初心者歓迎'];
+
+  const render = () => {
+    clear(result);
+    const q = state.q.trim();
+    if (!q) {
+      result.appendChild(h('p.muted', { text: 'よく探されるもの' }));
+      result.appendChild(h('div.row.gap-8.wrapflex', { style: { marginBottom: '28px' } },
+        suggests.map((t) => {
+          const c = h(`span.chip.chip-btn.chip-lg.tag-${toneOf(t)}`, { text: t });
+          c.addEventListener('click', () => {
+            state.q = t;
+            field.input.value = t;
+            field.input.dispatchEvent(new Event('input'));
+          });
+          return c;
+        })));
+      result.appendChild(h('div.rule-line'));
+      result.appendChild(sectionHead('01', 'すべてのルール', `${allPresetsWithCustom().length}件を掲載しています。`));
+      result.appendChild(h('div.store-grid', allPresetsWithCustom().map(presetCard)));
+      return;
+    }
+
+    const stores = STORES.map((raw) => resolveStore(raw.id))
+      .filter((s) => matchText(storeHaystack(s, rulesOf(s.presetId)), q));
+    const presets = allPresetsWithCustom().filter((p) => matchText(presetHaystack(p), q));
+
+    result.appendChild(h('p.search-summary', { text: `「${q}」に一致：店舗${stores.length}件／ルール${presets.length}件` }));
+
+    if (!stores.length && !presets.length) {
+      result.appendChild(emptyState(
+        '見つかりませんでした',
+        '言い方を変えると見つかることがあります（例：「赤ドラ」→「赤あり」、「サンマ」→「三麻」）。',
+        h('a.btn.btn-ghost', { href: '#/table', text: '卓を立てる' })));
+      return;
+    }
+    if (stores.length) {
+      result.appendChild(sectionHead('01', '店舗', 'この店のルールでそのまま打てます。'));
+      result.appendChild(storeGrid(stores));
+      result.appendChild(h('div.rule-line'));
+    }
+    if (presets.length) {
+      result.appendChild(sectionHead(stores.length ? '02' : '01', 'ルール', '設定を見たうえで、そのまま卓を立てられます。'));
+      result.appendChild(h('div.store-grid', presets.map(presetCard)));
+    }
+  };
+
+  wrap.appendChild(h('div.card.card-pad', { style: { marginBottom: '24px' } }, field));
+  wrap.appendChild(result);
+  render();
+  app.appendChild(sec);
+  app.appendChild(footer());
+  setTimeout(() => field.input.focus(), 0);
 }
 
 // ---------------------------------------------------------------------------

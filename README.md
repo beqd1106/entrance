@@ -27,13 +27,22 @@ node server.js 5173      # Node.js 18以上（動作確認は v22.17.0）
 
 | URL | 内容 |
 | --- | --- |
-| `#/` | ホーム（デモ店舗3件＋ルールプリセット19種） |
-| `#/stores` | ルール条件での店舗検索 |
+| `#/` | OP画面（何をするかを選ぶ入口。1画面で完結・スクロールなし） |
+| `#/table` | 卓を立てる（人数→ルール→よく変える設定→対局開始） |
+| `#/search` | 店舗とルールの横断検索（言葉で探す） |
+| `#/stores` | 店舗検索（キーワード＋ルール条件で絞り込み） |
 | `#/store/goto_kan` | 店舗ページ（五等サンマ館） |
 | `#/play?preset=store_goto_kan` | その店のルールでCPU対戦 |
 | `#/editor?preset=standard4` | 店舗ルールエディタ（JSON不要） |
+| `#/dashboard` | 店舗側の管理画面（公開前チェック・店舗情報の設定） |
 | `#/compare` | 2ルールの比較表 |
+| `#/about` | サービス紹介（旧ホーム。デモ店舗とプリセットの一覧） |
+| `#/manual` | 使い方 |
 | `tiles-preview.html` | 牌面（インラインSVG）の一覧 |
+
+起動直後は店舗一覧ではなく**機能を選ぶOP画面**を出す。
+「打つ」導線（卓を立てる／前回の続き）を最上段に置き、
+店舗さがし・ルール設定・比較・店舗管理はその下に並べている。
 
 ---
 
@@ -80,7 +89,8 @@ Houserule/
 ├── web/                     画面（ビルド不要のSPA）
 │   ├── index.html
 │   ├── css/style.css
-│   └── js/{app,game,editor,ui,custom}.js
+│   ├── img/op-bg.svg        OP背景（和柄。外部画像を使わずSVGで持つ）
+│   └── js/{app,hub,table,search,marks,recent,game,editor,ui,custom}.js
 ├── ios/                     iOSアプリ（XcodeGen＋WKWebViewシェル）
 ├── scripts/                 build-ios-www.js（Web資産の同梱ビルド）
 ├── .github/workflows/       ios-verify.yml / ios-testflight.yml
