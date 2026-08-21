@@ -176,6 +176,18 @@ svg { display: block; }
 .tile-face .glyph {
   font-family: var(--tile-serif); font-weight: 700; text-anchor: middle; dominant-baseline: alphabetic;
 }
+/* 筒子・索子の角に置く数字。柄を数えなくても何の牌か分かるようにする。
+   絵柄の上に重ねず、白い縁で浮かせて、慣れている人の邪魔をしない濃さにする */
+.tile-idx {
+  position: absolute; top: 3%; left: 7%;
+  font-family: var(--sans); font-weight: 800; line-height: 1;
+  font-size: calc(var(--tw) * 0.30);
+  color: rgba(28, 30, 33, 0.46);
+  text-shadow: 0 0 2px #fff, 0 0 3px #fff;
+  pointer-events: none;
+}
+.tile-xs .tile-idx, .tile.back .tile-idx { display: none; }
+.tile.side .tile-idx { display: none; }
 /* 赤牌・金牌は牌面の色そのものを変える */
 .tile.red .tile-face .ink, .tile.red .tile-face .blue, .tile.red .tile-face .green { fill: var(--red); }
 .tile.red { border-color: #d8a49e; background: linear-gradient(#fffaf8, #f4e6e2); }
@@ -194,12 +206,35 @@ svg { display: block; }
   content: ''; position: absolute; width: 28%; aspect-ratio: 1; border-radius: 50%;
   background: var(--red); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
+/* 特殊牌：縁の色だけだと小さいときに見分けがつかないので、
+   面をうっすら染めて、右上に色の印を置く */
 .tile.sp { border-width: 2px; }
-.tile.sp-blue { border-color: #3f7fbf; box-shadow: 0 0 0 1px rgba(63, 127, 191, 0.3), 0 2px 3px rgba(0, 0, 0, 0.16); }
-.tile.sp-silver { border-color: #96a2ad; }
-.tile.sp-green { border-color: #3c8f63; }
-.tile.sp-gold { border-color: #c39a3c; }
-.tile.sp-red { border-color: #c0524a; }
+.tile.sp .tile-face { position: relative; }
+.tile.sp .tile-face::after {
+  content: '';
+  position: absolute; top: 5%; right: 5%;
+  width: 24%; height: 24%;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--sp-mark, #94a3b8);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+}
+.tile.sp-blue { --sp-mark: #3f7fbf; border-color: #3f7fbf; background: linear-gradient(#f2f8ff, #dceafb); }
+.tile.sp-silver { --sp-mark: #8d99a6; border-color: #96a2ad; background: linear-gradient(#fbfcfd, #e6eaee); }
+.tile.sp-green { --sp-mark: #3c8f63; border-color: #3c8f63; background: linear-gradient(#f1fbf5, #dcf1e5); }
+.tile.sp-gold { --sp-mark: #c39a3c; border-color: #c39a3c; background: linear-gradient(#fffaef, #fbeecb); }
+.tile.sp-red { --sp-mark: #c0524a; border-color: #c0524a; background: linear-gradient(#fff5f4, #fadedb); }
+.tile.sp-star { --sp-mark: #7c6bd6; border-color: #7c6bd6; background: linear-gradient(#f7f5ff, #e6e1fb); }
+.tile.sp-rainbow {
+  --sp-mark: #ef4444;
+  border-color: transparent;
+  background:
+    linear-gradient(#ffffff, #f5f7fa) padding-box,
+    linear-gradient(125deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6) border-box;
+}
+.tile.sp-rainbow .tile-face::after {
+  background: linear-gradient(125deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6);
+}
 .tile.flower { background: linear-gradient(#fdf6ff, #efe4f5); border-color: #cbb8d6; }
 .tile.back {
   background: linear-gradient(150deg, #1c7a66, #10564a); border-color: rgba(0, 0, 0, 0.25);
@@ -2167,4 +2202,57 @@ body.op-mode::before { display: none; }
   .op-tile:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.12); }
   .op-tile.tone-primary:hover { background: linear-gradient(140deg, rgba(14, 166, 114, 0.92), rgba(9, 116, 80, 0.92)); }
   .tile-clickable:hover:not(.sel) { transform: none; box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(16, 24, 40, 0.14), 0 6px 10px rgba(16, 24, 40, 0.06); }
+}
+
+/* =========================================================================
+   特殊牌をつくる画面
+   選択肢を文字で並べず、牌を押して決められるようにする。
+   ========================================================================= */
+.sp-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 14px;
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+.sp-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.sp-preview {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 62px; height: 78px;
+  background: var(--paper); border-radius: var(--r-s);
+}
+.sp-head input[type='text'] { width: 100%; }
+.sp-label { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+.sp-row {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 10px 0; border-top: 1px solid var(--line);
+}
+.sp-row > .sp-label { flex: 0 0 86px; padding-top: 6px; }
+.sp-tabs { display: inline-flex; background: var(--paper-3); border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 10px; }
+.sp-tile-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-tile-pick {
+  padding: 4px; border-radius: 8px; border: 1px solid transparent;
+  transition: 0.15s var(--ease);
+}
+.sp-tile-pick:hover { background: var(--paper-3); }
+.sp-tile-pick.on { border-color: var(--brass); background: var(--brass-3); }
+.sp-designs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-design {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--paper-2); font-size: 12px; color: var(--ink-3);
+  transition: 0.15s var(--ease);
+}
+.sp-design:hover { border-color: var(--line-2); color: var(--ink); }
+.sp-design.on { border-color: var(--brass); background: var(--brass-3); color: var(--accent-ink); font-weight: 600; }
+.sp-effects { display: grid; gap: 6px; }
+.sp-eff-row { display: flex; align-items: center; gap: 8px; }
+.sp-eff-row select { flex: 1 1 auto; min-width: 0; max-width: 280px; }
+.sp-eff-value { width: 72px; }
+
+@media (max-width: 720px) {
+  .sp-row { flex-direction: column; gap: 6px; }
+  .sp-row > .sp-label { flex: none; padding-top: 0; }
+  .sp-eff-row select { max-width: none; }
 }

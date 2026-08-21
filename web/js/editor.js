@@ -6,6 +6,7 @@ import { resolveRules, clone } from '../../src/rules/defaults.js';
 import { ALL_PRESETS } from '../../src/rules/presets.js';
 import { validateRules } from '../../src/rules/validator.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
+import { codeToType, typeName } from '../../src/core/tiles.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
 import { lookupPreset, saveCustomPreset, loadCustomPresets } from './custom.js';
 import { h, clear, icon, chip, field, switchRow, stepper, sectionHead, toggleRow, tileEl } from './ui.js';
@@ -54,14 +55,33 @@ const EFFECT_TYPES = [
   { value: 'tulip', label: 'チューリップ発動' },
   { value: 'dice', label: 'サイコロチャンス発動' },
   { value: 'yakuman', label: '役満扱い' },
+  { value: 'bonusByNumber', label: 'BP＝牌の数字×n（8索なら8×n）' },
+  { value: 'bonusByKind', label: 'BP＋n（字牌なら2倍）' },
 ];
+/** 効果の値に付ける単位。数字だけだと何を設定しているか分からないため */
+const EFFECT_UNIT = {
+  dora: '枚ぶん', han: '翻', bonus: 'BP', rankUp: '段階', bonusMultiply: '倍', scoreMultiply: '倍',
+  alice: '回', tulip: '回', bonusByNumber: '倍', bonusByKind: 'BP',
+};
+const NO_VALUE_EFFECTS = new Set(['almighty', 'dice', 'yakuman']);
 const TIMINGS = [
   { value: 'win', label: '和了時' },
   { value: 'draw', label: 'ツモった瞬間' },
   { value: 'always', label: '手牌にあるだけで' },
 ];
 const DESIGNS = ['none', 'blue', 'silver', 'green', 'gold', 'red', 'star', 'rainbow'];
-const TILE_CHOICES = ['1m', '5m', '9m', '1p', '5p', '9p', '1s', '5s', '9s', '1z', '2z', '3z', '4z', '5z', '6z', '7z'];
+/** 特殊牌にできる牌。数牌は1〜9すべて、字牌も全種。金8索・虹3筒のような指定に対応する */
+const TILE_SUITS = [
+  { key: 'm', label: '萬子', codes: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m'] },
+  { key: 'p', label: '筒子', codes: ['1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p'] },
+  { key: 's', label: '索子', codes: ['1s', '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s'] },
+  { key: 'z', label: '字牌', codes: ['1z', '2z', '3z', '4z', '5z', '6z', '7z'] },
+];
+const TILE_CHOICES = TILE_SUITS.flatMap((g) => g.codes);
+/** 見た目の名前。牌の名前を自動で作るときにも使う */
+const DESIGN_LABELS = {
+  none: 'ふつう', blue: '青', silver: '銀', green: '翠', gold: '金', red: '赤', star: '星', rainbow: '虹',
+};
 const FLOWER_EFFECTS = [
   { value: 'bonusPerTile', label: '即時ボーナスBP' },
   { value: 'rankUp', label: '打点ランクアップ' },
@@ -598,57 +618,7 @@ function renderLeft(left, state, onChange) {
     h('p.tiny.muted', { style: { marginTop: '0' }, text: '牌ごとに違う効果を持たせられます（宝石牌のような特殊牌システムに相当）。' }));
   R.specialTiles = R.specialTiles || [];
   R.specialTiles.forEach((def, i) => {
-    const nameI = h('input', { type: 'text', value: def.name, style: { width: '150px' } });
-    nameI.addEventListener('change', () => { def.name = nameI.value; onChange(); });
-    const tileS = h('select', { style: { width: '90px' } });
-    for (const c of TILE_CHOICES) tileS.appendChild(h('option', { value: c, text: c, selected: def.tile === c }));
-    tileS.addEventListener('change', () => { def.tile = tileS.value; onChange(); });
-    const colorS = h('select', { style: { width: '92px' } });
-    for (const c of DESIGNS) {
-      colorS.appendChild(h('option', { value: c, text: c, selected: (def.color || 'none') === c }));
-    }
-    colorS.addEventListener('change', () => { def.color = colorS.value === 'none' ? null : colorS.value; onChange(); });
-    const del = h('button.btn.btn-sm.btn-ghost', { text: '削除' });
-    del.addEventListener('click', () => { R.specialTiles.splice(i, 1); onChange(); });
-
-    const effBox = h('div', { style: { marginTop: '8px' } });
-    (def.effects || []).forEach((e, ei) => {
-      const es = h('select', { style: { width: '170px' } });
-      for (const o of EFFECT_TYPES) es.appendChild(h('option', { value: o.value, text: o.label, selected: e.type === o.value }));
-      es.addEventListener('change', () => { e.type = es.value; onChange(); });
-      const ev = h('input', { type: 'number', value: String(e.value ?? 1), step: '1', style: { width: '68px' } });
-      ev.addEventListener('change', () => { e.value = Number(ev.value); onChange(); });
-      const ed = h('button.btn.btn-sm.btn-ghost', { text: '×' });
-      ed.addEventListener('click', () => { def.effects.splice(ei, 1); onChange(); });
-      effBox.appendChild(h('div.row.gap-8', { style: { marginBottom: '6px' } }, es, ev, ed));
-    });
-    const addEff = h('button.btn.btn-sm.btn-ghost', { text: '＋効果を追加' });
-    addEff.addEventListener('click', () => { def.effects = [...(def.effects || []), { type: 'bonus', value: 1 }]; onChange(); });
-    effBox.appendChild(addEff);
-
-    const condBox = h('div.row.gap-4.wrapflex', { style: { marginTop: '8px' } });
-    def.conditions = def.conditions || {};
-    for (const [k, label] of [['menzenOnly', '門前限定'], ['riichiOnly', 'リーチ時限定'], ['tsumoOnly', 'ツモ限定'], ['ronOnly', 'ロン限定'], ['ippatsuOnly', '一発時限定']]) {
-      const on = !!def.conditions[k];
-      const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: label });
-      c.addEventListener('click', () => { def.conditions[k] = !on; onChange(); });
-      condBox.appendChild(c);
-    }
-    const timing = h('select', { style: { width: '140px' } });
-    for (const o of TIMINGS) {
-      timing.appendChild(h('option', { value: o.value, text: o.label, selected: (def.activationTiming || 'win') === o.value }));
-    }
-    timing.addEventListener('change', () => { def.activationTiming = timing.value; onChange(); });
-    const descI = h('input', {
-      type: 'text', value: def.description || '', placeholder: 'お客様向けの一言説明（任意）',
-      style: { marginTop: '8px' },
-    });
-    descI.addEventListener('change', () => { def.description = descI.value; onChange(); });
-    sp.appendChild(h('div', { style: { border: '1px solid var(--line)', borderRadius: '10px', padding: '12px', marginBottom: '10px' } },
-      h('div.row.gap-8.wrapflex', nameI, tileS,
-        stepper(def.count ?? 1, (v) => { def.count = Math.max(1, v); onChange(); }, 1, 4),
-        colorS, timing, h('div.grow'), del),
-      effBox, condBox, descI));
+    sp.appendChild(specialTileCard(def, i, R, onChange));
   });
   // テンプレートから追加（ゼロから作らせない）
   sp.appendChild(h('div.tpl-head', { text: 'よくある形から追加' }));
@@ -667,7 +637,7 @@ function renderLeft(left, state, onChange) {
   const addSp = h('button.btn.btn-sm.btn-ghost', { style: { marginTop: '10px' }, text: '空の特殊牌を追加（自分で設定する）' });
   addSp.addEventListener('click', () => {
     R.specialTiles.push({
-      id: `sp_${Date.now().toString(36)}`, name: '新しい特殊牌', tile: '5s', count: 1, color: 'blue',
+      id: `sp_${Date.now().toString(36)}`, name: autoSpecialName('5s', 'blue'), tile: '5s', count: 1, color: 'blue',
       activationTiming: 'win', effects: [{ type: 'bonus', value: 2 }], conditions: {},
     });
     onChange();
@@ -879,3 +849,139 @@ function renderRight(right, state, onChange) {
   }
   right.appendChild(pv);
 }
+
+// ---------------------------------------------------------------------------
+// 特殊牌カード
+//   選択肢を文字で並べるより、牌そのものを押せたほうが早い。
+//   名前・見た目・枚数・効果を、上から順に決めれば1枚できあがる形にする。
+// ---------------------------------------------------------------------------
+const spSuitTab = new Map();
+
+/** 「金8索」「虹3筒」のような名前を自動で作る */
+function autoSpecialName(code, color) {
+  const label = DESIGN_LABELS[color || 'none'] || '';
+  const name = typeName(codeToType(code));
+  return color && color !== 'none' ? `${label}${name}` : name;
+}
+
+/** 牌1枚の見本（押せる） */
+function tileSample(code, color, opts = {}) {
+  const info = { t: codeToType(code), sp: color && color !== 'none' ? true : undefined };
+  return tileEl(info, {
+    size: opts.size || 'sm',
+    spColor: color && color !== 'none' ? color : undefined,
+    clickable: !!opts.onClick,
+    onClick: opts.onClick,
+    selected: !!opts.selected,
+  });
+}
+
+function specialTileCard(def, index, R, onChange) {
+  const suitOf = (code) => (code || '5s').slice(-1);
+  const tab = spSuitTab.get(def.id) || suitOf(def.tile);
+  spSuitTab.set(def.id, tab);
+
+  // --- 見出し（見本・名前・枚数・削除）
+  const nameI = h('input', { type: 'text', value: def.name || '', placeholder: '牌の名前' });
+  nameI.addEventListener('change', () => { def.name = nameI.value; onChange(); });
+  const del = h('button.btn.btn-sm.btn-ghost', { text: '削除' });
+  del.addEventListener('click', () => { R.specialTiles.splice(index, 1); spSuitTab.delete(def.id); onChange(); });
+
+  const head = h('div.sp-head',
+    h('div.sp-preview', tileSample(def.tile, def.color, { size: 'lg' })),
+    h('div.grow',
+      h('label.sp-label', { text: '名前（お客様に表示されます）' }),
+      nameI,
+      h('div.row.gap-8', { style: { marginTop: '8px' } },
+        h('span.sp-label', { text: '枚数' }),
+        stepper(def.count ?? 1, (v) => { def.count = Math.min(4, Math.max(1, v)); onChange(); }, 1, 4),
+        h('span.tiny.muted', { text: '同じ牌を何枚この効果にするか' }))),
+    del);
+
+  // --- どの牌にするか（スートを選んでから牌を押す）
+  const tabs = h('div.sp-tabs', TILE_SUITS.map((g) => {
+    const b = h(`button.seg-btn${g.key === tab ? '.on' : ''}`, { type: 'button', text: g.label });
+    b.addEventListener('click', () => { spSuitTab.set(def.id, g.key); onChange(); });
+    return b;
+  }));
+  const group = TILE_SUITS.find((g) => g.key === tab) || TILE_SUITS[0];
+  const grid = h('div.sp-tile-grid', group.codes.map((code) => {
+    const wrap = h('div.sp-tile-pick', { class: code === def.tile ? 'on' : '' });
+    wrap.appendChild(tileSample(code, def.color, {
+      size: 'md',
+      selected: code === def.tile,
+      onClick: () => {
+        const before = autoSpecialName(def.tile, def.color);
+        def.tile = code;
+        // 名前を触っていなければ、牌に合わせて付け替える
+        if (!def.name || def.name === before) def.name = autoSpecialName(code, def.color);
+        onChange();
+      },
+    }));
+    return wrap;
+  }));
+
+  // --- 見た目
+  const designs = h('div.sp-designs', DESIGNS.map((c) => {
+    const on = (def.color || 'none') === c;
+    const b = h(`button.sp-design${on ? '.on' : ''}`, { type: 'button', title: DESIGN_LABELS[c] || c });
+    b.appendChild(tileSample(def.tile, c, { size: 'sm' }));
+    b.appendChild(h('span', { text: DESIGN_LABELS[c] || c }));
+    b.addEventListener('click', () => {
+      const before = autoSpecialName(def.tile, def.color);
+      def.color = c === 'none' ? null : c;
+      if (!def.name || def.name === before) def.name = autoSpecialName(def.tile, def.color);
+      onChange();
+    });
+    return b;
+  }));
+
+  // --- 効果
+  const effBox = h('div.sp-effects');
+  (def.effects || []).forEach((e, ei) => {
+    const es = h('select');
+    for (const o of EFFECT_TYPES) es.appendChild(h('option', { value: o.value, text: o.label, selected: e.type === o.value }));
+    es.addEventListener('change', () => { e.type = es.value; onChange(); });
+    const needsValue = !NO_VALUE_EFFECTS.has(e.type);
+    const ev = h('input.sp-eff-value', { type: 'number', value: String(e.value ?? 1), step: '1' });
+    ev.addEventListener('change', () => { e.value = Number(ev.value); onChange(); });
+    const ed = h('button.btn.btn-sm.btn-ghost', { text: '×', 'aria-label': 'この効果を消す' });
+    ed.addEventListener('click', () => { def.effects.splice(ei, 1); onChange(); });
+    effBox.appendChild(h('div.sp-eff-row', es,
+      needsValue ? ev : null,
+      needsValue ? h('span.tiny.muted', { text: EFFECT_UNIT[e.type] || '' }) : h('span.tiny.muted', { text: '数値なし' }),
+      h('div.grow'), ed));
+  });
+  const addEff = h('button.btn.btn-sm.btn-ghost', { text: '＋効果を追加' });
+  addEff.addEventListener('click', () => { def.effects = [...(def.effects || []), { type: 'bonus', value: 1 }]; onChange(); });
+  effBox.appendChild(addEff);
+
+  // --- いつ効くか・条件
+  const timing = h('select');
+  for (const o of TIMINGS) {
+    timing.appendChild(h('option', { value: o.value, text: o.label, selected: (def.activationTiming || 'win') === o.value }));
+  }
+  timing.addEventListener('change', () => { def.activationTiming = timing.value; onChange(); });
+
+  def.conditions = def.conditions || {};
+  const condBox = h('div.row.gap-4.wrapflex',
+    [['menzenOnly', '門前限定'], ['riichiOnly', 'リーチ時限定'], ['tsumoOnly', 'ツモ限定'], ['ronOnly', 'ロン限定'], ['ippatsuOnly', '一発時限定']]
+      .map(([k, label]) => {
+        const on = !!def.conditions[k];
+        const c = h(`span.chip.chip-btn${on ? '.on' : ''}`, { text: label });
+        c.addEventListener('click', () => { def.conditions[k] = !on; onChange(); });
+        return c;
+      }));
+
+  const descI = h('input', { type: 'text', value: def.description || '', placeholder: 'お客様向けの一言説明（任意）' });
+  descI.addEventListener('change', () => { def.description = descI.value; onChange(); });
+
+  return h('div.sp-card',
+    head,
+    h('div.sp-row', h('div.sp-label', { text: 'どの牌にするか' }), h('div.grow', tabs, grid)),
+    h('div.sp-row', h('div.sp-label', { text: '見た目' }), h('div.grow', designs)),
+    h('div.sp-row', h('div.sp-label', { text: '効果' }), h('div.grow', effBox)),
+    h('div.sp-row', h('div.sp-label', { text: 'いつ効くか' }), h('div.grow.row.gap-8.wrapflex', timing, condBox)),
+    h('div.sp-row', h('div.sp-label', { text: '説明' }), h('div.grow', descI)));
+}
+

@@ -85,6 +85,20 @@ export function applySpecialTiles(rules, ctx) {
         case 'dice': res.diceTrigger = true; break;
         case 'scoreMultiply': res.scoreMultiply = (res.scoreMultiply || 1) * (eff.value ?? 2); break;
         case 'ura': res.extraUra = (res.extraUra || 0) + v; break;
+        // 牌の数字ぶんのボーナス（8索なら8×n）。字牌は数字を持たないので0
+        case 'bonusByNumber': {
+          const t = codeToType(def.tile);
+          const num = t < 27 ? (t % 9) + 1 : 0;
+          res.bonus += num * (eff.value ?? 1) * (stackOnce ? 1 : n);
+          break;
+        }
+        // 数牌ならそのまま、字牌なら2倍のボーナス
+        case 'bonusByKind': {
+          const t = codeToType(def.tile);
+          const mul = t >= 27 ? 2 : 1;
+          res.bonus += (eff.value ?? 1) * mul * (stackOnce ? 1 : n);
+          break;
+        }
         default: break;
       }
     }
