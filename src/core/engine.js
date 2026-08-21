@@ -1093,6 +1093,11 @@ export class GameEngine {
     // トビ
     const busted = this.players.some((p) => (R.game.tobiZeroIsEnd ? p.points <= 0 : p.points < 0));
     if (R.game.tobiEnd && busted) { this.endGame('トビ終了'); return; }
+    // 点数の打ち切り（四万点クビなど）。到達した局で終わる
+    const cap = R.game.pointCapEnd;
+    if (cap && cap.enabled && cap.points > 0 && this.players.some((p) => p.points >= cap.points)) {
+      this.endGame(`${cap.points}点で終了`); return;
+    }
     if (R.game.length === 'ikkyoku') { this.endGame('一局清算'); return; }
     if (this.kyokuCount >= R.game.maxKyoku) { this.endGame('上限局数'); return; }
 

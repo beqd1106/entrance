@@ -133,6 +133,23 @@ const GROUPS = [
       { type: 'number', path: 'scoring.honbaPoints', label: '1本場の点数', step: 100, advanced: true },
       { type: 'switch', path: 'scoring.umaZeroSum', label: 'トップのウマを自動計算', advanced: true },
       { type: 'switch', path: 'scoring.okaToTop', label: 'オカをトップへ', advanced: true },
+      {
+        type: 'switch', path: 'game.pointCapEnd.enabled', label: '点数で打ち切り',
+        desc: '誰かが指定の点数に達したら、その局で終わります（四万点クビなど）',
+      },
+      { type: 'number', path: 'game.pointCapEnd.points', label: '打ち切り点', step: 1000 },
+    ],
+  },
+  {
+    title: '料金の案内',
+    items: [
+      {
+        type: 'switch', path: 'fees.show', label: '料金を表示する',
+        desc: '対局には影響しません。店舗ページと対局前の確認に出ます',
+      },
+      { type: 'number', path: 'fees.perGame', label: '1半荘（円）', step: 50 },
+      { type: 'number', path: 'fees.seat', label: '席料・時間料（円／時間）', step: 100 },
+      { type: 'text', path: 'fees.note', label: '補足', placeholder: '学生割あり／初回1時間無料 など' },
     ],
   },
   {
@@ -253,6 +270,11 @@ function control(item, R, onChange) {
     case 'number': {
       const inp = h('input', { type: 'number', value: String(v), step: String(item.step || 1) });
       inp.addEventListener('change', () => { set(R, item.path, Number(inp.value)); onChange(); });
+      return field(item.label, inp, item.desc);
+    }
+    case 'text': {
+      const inp = h('input', { type: 'text', value: v == null ? '' : String(v), placeholder: item.placeholder || '' });
+      inp.addEventListener('change', () => { set(R, item.path, inp.value); onChange(); });
       return field(item.label, inp, item.desc);
     }
     case 'select': {

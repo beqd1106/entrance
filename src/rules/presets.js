@@ -348,6 +348,22 @@ export const PRESETS = [
     },
   },
   {
+    id: 'chinitsu3',
+    name: '清一色ゲーム風',
+    category: '特殊',
+    tags: ['三麻', '清一色', '萬子なし'],
+    description: '萬子をすべて抜いた三人麻雀。使うのは筒子・索子・字牌だけなので、手はいつも混一色以上になります。',
+    rules: {
+      meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
+      game: { players: 3, length: 'east' },
+      // 萬子を1枚も残さない（manzuKeep を空にする）のが清一色ゲームの肝
+      sanma: { removeManzu: true, manzuKeep: [], northMode: 'normal', tsumoLoss: false },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
+      dora: { indicators: 1, red: { '5p': 2, '5s': 2 } },
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
+    },
+  },
+  {
     id: 'bakudora4',
     name: '爆ドラ四麻風',
     category: '特殊',

@@ -147,6 +147,16 @@ function showPregame() {
   if (R.bonus.enabled) {
     body.appendChild(h('div.notice', { style: { marginTop: '14px' }, text: `ボーナス（BP）は${R.bonus.label}です。お金とは交換できません。` }));
   }
+  // 料金の案内（設定してある店だけ。対局そのものには影響しない）
+  if (R.fees && R.fees.show) {
+    const parts = [];
+    if (R.fees.perGame) parts.push(`1半荘 ${R.fees.perGame.toLocaleString('ja-JP')}円`);
+    if (R.fees.seat) parts.push(`席料 ${R.fees.seat.toLocaleString('ja-JP')}円／時間`);
+    if (R.fees.note) parts.push(R.fees.note);
+    if (parts.length) {
+      body.appendChild(h('div.notice', { style: { marginTop: '10px' }, text: `来店時の料金の目安：${parts.join(' ／ ')}` }));
+    }
+  }
 
   const start = h('button.btn.btn-brass.btn-lg', {}, icon('play', 15), 'この設定で対局を始める');
   start.addEventListener('click', () => { closeOverlay(); startGame(); });

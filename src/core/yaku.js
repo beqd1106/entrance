@@ -434,6 +434,60 @@ export const LOCAL_YAKU_DEFS = {
       return false;
     },
   },
+  juuniraku: {
+    name: '十二落抬', defaultHan: 2,
+    desc: '4つ鳴いて単騎待ちで和了る',
+    test: (ctx, counts, sets, decomp) => {
+      if (!sets || !decomp) return false;
+      const open = sets.filter((s) => s.open).length;
+      if (open < 4) return false;
+      return decomp.pair === ctx.winTile.t;
+    },
+  },
+  wupinkaihua: {
+    name: '五筒開花', defaultHan: 2,
+    desc: '嶺上開花を5筒で和了る',
+    test: (ctx) => !!ctx.flags.rinshan && ctx.winTile.t === 13,
+  },
+  ipinmoetsu: {
+    name: '一筒摸月', defaultHan: 2,
+    desc: '海底摸月を1筒で和了る',
+    test: (ctx) => !!ctx.flags.haitei && ctx.tsumo && ctx.winTile.t === 9,
+  },
+  chuupinrouyui: {
+    name: '九筒撈魚', defaultHan: 2,
+    desc: '河底撈魚を9筒で和了る',
+    test: (ctx) => !!ctx.flags.houtei && !ctx.tsumo && ctx.winTile.t === 17,
+  },
+  kinkeidokuritsu: {
+    name: '金鶏独立', defaultHan: 1,
+    desc: '1索の単騎待ちで和了る',
+    test: (ctx, counts, sets, decomp) => !!decomp && decomp.pair === 18 && ctx.winTile.t === 18,
+  },
+  dokuchoukankou: {
+    name: '独釣寒江雪', defaultHan: 1,
+    desc: '1筒の単騎待ちで和了る',
+    test: (ctx, counts, sets, decomp) => !!decomp && decomp.pair === 9 && ctx.winTile.t === 9,
+  },
+  kessenupin: {
+    name: '血染五筒', defaultHan: 2,
+    desc: '赤5筒で和了る',
+    test: (ctx) => ctx.winTile.t === 13 && !!ctx.winTile.red,
+  },
+  sanshokushoudoukou: {
+    name: '三色小同刻', defaultHan: 2,
+    desc: '同じ数字を、3色そろえて刻子2つ＋対子1つ',
+    test: (ctx, counts, sets, decomp) => {
+      if (!sets || !decomp) return false;
+      for (let n = 0; n < 9; n++) {
+        const t = [n, n + 9, n + 18];
+        const kou = t.filter((x) => sets.some((st) => st.kind === 'triplet' && st.t === x)).length;
+        const pair = t.filter((x) => decomp.pair === x).length;
+        if (kou === 2 && pair === 1) return true;
+      }
+      return false;
+    },
+  },
   daichisei: {
     name: '大七星', defaultYakuman: 1,
     desc: '字牌のみの七対子',

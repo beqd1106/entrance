@@ -30,6 +30,8 @@ export const DEFAULT_RULES = {
     dealerDecide: 'dice',       // 親決め
     alwaysEast: false,          // 常に東場（場風が変わらない：東天紅系）
     dealerRule: 'rotate',       // 'rotate'（通常）| 'winner'（前局の和了者が次局の親）
+    // 誰かがこの点数に達したら、その局で終わる（いわゆる「四万点クビ」）
+    pointCapEnd: { enabled: false, points: 40000 },
     timeLimitMinutes: 0,        // 時間打ち切り（0で無効。UIは将来対応）
     maxKyoku: 12,               // 安全弁（無限ループ防止）
   },
@@ -279,6 +281,18 @@ export const DEFAULT_RULES = {
    * }]
    */
   customRules: [],
+
+  /**
+   * 料金の案内。
+   * 対局そのものには影響しない表示用の値で、店舗ページと対局前の確認に出る。
+   * ゲーム内ポイント（BP）とは無関係で、BPをお金に換える設計は持たない。
+   */
+  fees: {
+    show: false,
+    perGame: 0,                 // 1半荘あたり（円）
+    seat: 0,                    // 席料・時間料（円／時間）
+    note: '',                   // 「学生割あり」などの補足
+  },
 
   // ゲーム内ボーナスポイント（すべて非換金・デモ用） --------------------
   bonus: {
