@@ -9,6 +9,8 @@
 export const STORES = [
   {
     id: 'yonma_kan',
+    // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
+    photoFile: 'img/store-yonma_kan.webp',
     name: 'DEMO雀荘 四麻館',
     catch: 'はじめての1半荘を、いちばん安心して打てる店。',
     presetId: 'store_yonma_kan',
@@ -43,6 +45,8 @@ export const STORES = [
   },
   {
     id: 'tokushu_kan',
+    // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
+    photoFile: 'img/store-tokushu_kan.webp',
     name: 'DEMO雀荘 特殊牌館',
     catch: '牌に意味がある。1枚めくるたびに空気が変わる店。',
     presetId: 'store_tokushu_kan',
@@ -77,6 +81,8 @@ export const STORES = [
   },
   {
     id: 'goto_kan',
+    // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
+    photoFile: 'img/store-goto_kan.webp',
     name: 'DEMO雀荘 五等サンマ館',
     catch: '春夏秋冬を抜いて、点数以外の何かも動かす三人麻雀。',
     presetId: 'store_goto_kan',

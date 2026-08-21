@@ -11,6 +11,8 @@
   --paper: #f7f8fa;
   --paper-2: #ffffff;
   --paper-3: #eef1f5;
+  /* カードなど「面」の色。未定義のまま使われていて背景が透けていた */
+  --surface: #ffffff;
   /* --- アクセント（エメラルド） --- */
   --brass: #0ea672;
   --brass-2: #10b981;
@@ -25,6 +27,9 @@
   --red: #e5484d;
   --red-2: #ff6b6b;
   --blue: #3b7dd8;
+  /* 朱。見出しの番号と、ごく小さな印にだけ使う差し色 */
+  --vermilion: #c8352b;
+  --vermilion-soft: rgba(200, 53, 43, 0.12);
   /* 装飾に使う金。面には塗らず、細い線と小さな印だけに使う */
   --gold: #c6a05a;
   --gold-soft: rgba(198, 160, 90, 0.42);
@@ -319,9 +324,14 @@ svg { display: block; }
   display: grid; place-items: center; padding: 16px; backdrop-filter: blur(3px);
 }
 .sheet {
-  width: min(620px, 100%); max-height: 88vh; overflow-y: auto; background: var(--paper-2);
+  width: min(620px, 100%); max-height: 88vh; background: var(--paper-2);
   color: var(--ink); border-radius: var(--r-l); box-shadow: var(--shadow-3);
+  /* 縦が短い端末でもボタンが画面外へ出ないよう、中身だけを送る */
+  display: flex; flex-direction: column; overflow: hidden;
 }
+.sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sheet-head, .sheet-foot { flex: 0 0 auto; }
+.sheet-foot { border-top: 1px solid var(--line); background: var(--paper-2); }
 .sheet-head { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
 .sheet-body { padding: 20px 22px; }
 .sheet-foot { padding: 14px 22px 20px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
@@ -531,9 +541,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
    ・ノッチのセーフエリアを避ける
    ========================================================================= */
 @media (orientation: landscape) and (max-height: 560px) {
-  :root { --nav-h: 0px; }
-  .nav { display: none; }                    /* 対局中はナビを隠して卓を最大化 */
-  body { overflow: hidden; }
+  /* 対局中だけ、ナビを隠して卓を画面いっぱいに使う。
+     以前はこれを全画面に効かせていたため、他の画面が下まで見られなかった。 */
+  body.playing { --nav-h: 0px; overflow: hidden; }
+  body.playing .nav { display: none; }
   .table-shell {
     height: 100dvh; padding: 6px 8px 6px; gap: 5px;
     padding-left: max(8px, env(safe-area-inset-left));
@@ -1150,6 +1161,14 @@ textarea { resize: vertical; min-height: 56px; }
 .card-tiles {
   position: absolute; right: 14px; bottom: 14px; z-index: 2;
   display: flex; gap: 5px; align-items: flex-end;
+}
+/* 写真の上に置くので、牌の下だけ明るくして輪郭を立てる */
+.card-tiles::before {
+  content: '';
+  position: absolute; inset: -14px -16px -18px -26px;
+  background: radial-gradient(65% 130% at 72% 100%, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0) 72%);
+  border-radius: 24px;
+  z-index: -1;
 }
 .card-tile {
   transform: rotate(calc((var(--i) - 1) * 4deg));
@@ -1899,4 +1918,225 @@ body.op-mode::before { display: none; }
   bottom: -1px;
   height: 1px;
   background: linear-gradient(90deg, var(--gold-soft), transparent 62%);
+}
+
+.store-cta-bar { display: none; }
+
+/* =========================================================================
+   横持ちのスマホ（iPhoneアプリはこの向きに固定）
+   縦が390px前後しかないので、ナビと余白を詰め、内容が入る形にする。
+   ========================================================================= */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --nav-h: 44px; }
+
+  /* ナビ：高さを詰めて、リンクは横に流す（消さない。消すと戻れなくなる） */
+  .nav-inner { gap: 14px; }
+  .brand { font-size: 15px; gap: 7px; flex: 0 0 auto; }
+  .brand-mark { width: 23px; height: 23px; border-radius: 7px; }
+  .nav-links {
+    gap: 16px; font-size: 12.5px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto; min-width: 0;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a { white-space: nowrap; padding: 6px 0; }
+  .nav-note { display: none; }
+  .nav-inner, .wrap, .wrap-narrow {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* 余白：縦を食う指定をまとめて詰める */
+  .section { padding: 18px 0 24px; }
+  .sec-head { margin-bottom: 14px; gap: 10px; }
+  .sec-title { font-size: 19px; }
+  .sec-sub { font-size: 12px; margin-top: 3px; }
+  .card-pad { padding: 14px; }
+  .rule-line { margin: 16px 0; }
+  .hero { padding: 26px 0 24px; }
+  .store-hero-photo { height: 120px; }
+  .footer { padding: 18px 0 24px; }
+  .cta-band { padding: 18px; }
+
+  /* 横に広いので、カードは3列に流す */
+  .store-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+
+  /* 指で押す前提のサイズにする */
+  .chip { padding: 6px 12px; font-size: 12px; }
+  .chip-lg { padding: 8px 16px; font-size: 13px; }
+  .btn { padding: 10px 18px; }
+  .btn-sm { padding: 8px 14px; }
+  .btn-lg { padding: 12px 22px; font-size: 15px; }
+  .nav-links a, .footer-link { min-height: 32px; display: inline-flex; align-items: center; }
+
+  /* ルール設定：項目が多いので、目次はナビの下に貼り付けておく */
+  .editor-jump {
+    position: sticky; top: var(--nav-h); z-index: 20;
+    background: rgba(247, 248, 250, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 8px 10px;
+    margin: 0 0 12px;
+    border-radius: 0 0 var(--r-m) var(--r-m);
+    box-shadow: 0 6px 14px rgba(16, 24, 40, 0.06);
+    overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .editor-jump::-webkit-scrollbar { display: none; }
+  .jump-chip { flex: 0 0 auto; }
+
+  /* 店舗検索：絞り込みで画面が埋まらないよう、左右に分ける */
+  .stores-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .stores-layout > .card { margin-bottom: 0 !important; }
+  .stores-layout .store-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* カードは写真より中身を見せる。1画面に入る枚数を優先する */
+  .store-photo { height: 82px; }
+  .store-photo svg { width: 32px; height: 32px; }
+  .store-photo-badges { top: 8px; left: 8px; }
+  .store-name { font-size: 15.5px; }
+  .store-card .card-pad { padding: 12px; }
+  .store-area { font-size: 11px; }
+  .filter-row { flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .filter-label { flex: none; padding-top: 0; }
+
+  /* 店舗ページ：主役の「打つ」を下に出しっぱなしにする */
+  .store-cta-bar {
+    display: flex; align-items: center; gap: 12px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 8px max(14px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line-2);
+  }
+  .store-cta-name {
+    flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .store-cta-btn { flex: 0 0 auto; padding: 9px 18px; font-size: 13.5px; }
+  .footer { padding-bottom: 76px; }
+
+  /* 卓を立てる：ヘッダを詰めて、一覧に高さを回す */
+  .tbl-left-head { padding: 9px 14px; gap: 8px; }
+  /* 画面名はナビに出ているので、狭い縦幅では一覧に高さを譲る */
+  .tbl-title { display: none; }
+  .seg-lg .seg-btn { padding: 7px 16px; font-size: 13px; }
+  .tbl-search-input { padding: 9px 0; }
+  .tbl-detail { padding: 12px 14px 0; gap: 10px; }
+  .tbl-detail-name { font-size: 17px; }
+  .tbl-diff { display: none; }
+  .tbl-screen { grid-template-columns: minmax(0, 1fr) minmax(300px, 340px); }
+  /* 幅860px以下の指定（縦持ち向けの上下2段）が横持ちにも当たるので、ここで戻す */
+  .tbl-right { max-height: none; border-top: 0; box-shadow: none; }
+  .tbl-detail { min-height: 0; padding-bottom: 10px; }
+}
+
+/* =========================================================================
+   見出しの構成（参考：番号＋朱の矩形＋細い罫のエディトリアル）
+   色を増やすのではなく、朱を「番号」と「小さな印」だけに使う。
+   ========================================================================= */
+.sec-head {
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.sec-head > div:last-child { flex: 1 1 auto; min-width: 0; }
+.sec-no {
+  position: relative;
+  top: 3px;
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: var(--vermilion);
+  border: 0;
+  border-radius: 2px;
+  padding: 4px 7px;
+}
+.sec-title { letter-spacing: -0.015em; }
+
+/* 章の導入に使う小さなラベルも朱に寄せる */
+.eyebrow { color: var(--vermilion); }
+.op .eyebrow, .op-brand-name { color: #e3c07a; }
+
+/* いま見ている場所を朱で示す */
+.nav-links a.on { border-bottom-color: var(--vermilion); }
+
+/* 区切りの菱も朱に。金より締まって、地の色数が増えない */
+.rule-line::after { border-color: rgba(200, 53, 43, 0.5); }
+
+/* 見出し帯の細線も朱で（卓を立てる・店舗管理） */
+.tbl-left-head::after {
+  background: linear-gradient(90deg, rgba(200, 53, 43, 0.55), transparent 58%);
+}
+
+/* =========================================================================
+   手ざわり（押した感じ・選んでいる感じ・出てくる感じ）
+   対局アプリのUIを参考に、動きは 0.12〜0.4秒、意味のある場所だけに絞る。
+   ========================================================================= */
+
+/* 押した瞬間に沈む。指で触るアプリでは、これがあるだけで反応が伝わる */
+.btn:active,
+.op-tile:active,
+.tbl-row:active,
+.chip-btn:active,
+.seg-btn:active,
+.act:active { transform: translateY(1px) scale(0.99); }
+.btn, .act { transition: transform 0.12s var(--ease), background 0.18s var(--ease), box-shadow 0.18s var(--ease); }
+
+/* 選んでいる行は、左に朱の細い柱を立てて一目で分かるようにする */
+.tbl-row { position: relative; }
+.tbl-row::before {
+  content: '';
+  position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0;
+  border-radius: 0 3px 3px 0;
+  background: var(--vermilion);
+  transform: translateY(-50%);
+  transition: height 0.22s var(--ease);
+}
+.tbl-row.on::before { height: 62%; }
+
+/* OPのタイルは、順に立ち上げる（一斉に出るより、選ぶ順が伝わる） */
+@keyframes opRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.op-tile {
+  animation: opRise 0.42s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+}
+.op-head, .op-search { animation: opRise 0.42s var(--ease) both; }
+.op-search { animation-delay: 40ms; }
+
+/* マークは、触れたときだけ小さく反応する */
+.op-tile-mark { transition: transform 0.22s var(--ease), background 0.22s var(--ease); }
+.op-tile:hover .op-tile-mark { transform: scale(1.06) rotate(-2deg); }
+
+/* ツモってきた牌は、そっと呼吸させる（どれを引いたかが分かる） */
+@keyframes tsumoBreathe {
+  0%, 100% { box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(16, 24, 40, 0.14), 0 0 0 rgba(240, 212, 154, 0); }
+  50% { box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(16, 24, 40, 0.14), 0 0 12px rgba(240, 212, 154, 0.55); }
+}
+.bottom-bar .tile.tsumo-gap { animation: tsumoBreathe 2.2s var(--ease) infinite; }
+
+/* 選んだ牌は、朱の下線で「これを切る」と分かるようにする */
+.tile-clickable.sel::after {
+  content: '';
+  position: absolute; left: 12%; right: 12%; bottom: -6px; height: 2px;
+  border-radius: 2px; background: var(--vermilion);
+}
+
+/* カードは、触れたときだけ持ち上がる（一覧で目が滑らないように） */
+.card { transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease); }
+
+/* 動きを減らす設定のときは、すべて止める */
+@media (prefers-reduced-motion: reduce) {
+  .op-tile, .op-head, .op-search { animation: none; }
+  .bottom-bar .tile.tsumo-gap { animation: none; }
+  .btn:active, .op-tile:active, .tbl-row:active, .chip-btn:active, .seg-btn:active, .act:active { transform: none; }
+  .op-tile:hover .op-tile-mark { transform: none; }
 }

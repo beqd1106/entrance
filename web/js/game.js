@@ -44,17 +44,21 @@ export function renderGame(root, params) {
     speed: 330, timer: null, log: [], debugOpen: false,
     confirmDiscard: loadPref('confirmDiscard', true),
     selectedTileId: null,
+    debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
   };
   // ホームの「前回の続き」から戻れるように、開いた卓を覚えておく
   rememberTable({ presetId, name: preset.name, event: params.event || null });
+  // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
+  document.body.classList.add('playing');
   buildDom(root);
   showPregame();
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
     closeOverlay();
     closeTileInfo();
+    document.body.classList.remove('playing');
     G = null;
   };
 }
@@ -425,12 +429,15 @@ function drawTop(s) {
     draw();
   });
   top.appendChild(conf);
-  const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
-  dbg.addEventListener('click', () => {
-    G.debugOpen = !G.debugOpen;
-    G.dom.debug.classList.toggle('hide', !G.debugOpen);
-  });
-  top.appendChild(dbg);
+  // デバッグは検証用。ふだんは出さない（URLに debug=1 を付けたときだけ）
+  if (G.debugAvailable) {
+    const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
+    dbg.addEventListener('click', () => {
+      G.debugOpen = !G.debugOpen;
+      G.dom.debug.classList.toggle('hide', !G.debugOpen);
+    });
+    top.appendChild(dbg);
+  }
 }
 
 function seatPos(n, seat) {

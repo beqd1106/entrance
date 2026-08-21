@@ -111,6 +111,8 @@ export function renderHub(root) {
         h('a.op-foot-link', { href: '#/about' }, h('span', { text: 'このアプリについて' })),
         h('span.op-note', { text: 'デモ版／ポイントは非換金' }))));
 
+  // タイルが順に立ち上がるよう、並び順をCSSへ渡す
+  sec.querySelectorAll('.op-tiles > *').forEach((el, i) => el.style.setProperty('--i', String(i)));
   root.appendChild(sec);
 }
 

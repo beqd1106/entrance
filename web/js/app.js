@@ -149,6 +149,15 @@ function footer() {
 // ---------------------------------------------------------------------------
 // 店舗一覧・検索
 // ---------------------------------------------------------------------------
+/**
+ * 店舗写真の出しどころ。
+ * 同梱の写真を優先する。サーバの写真は期限付きURLで、
+ * 取れないときに絵が消えるため、用意がある店では使わない。
+ */
+function storePhoto(s) {
+  return s.photoFile || s.photoUrl || '';
+}
+
 function storeGrid(list) {
   const grid = h('div.store-grid');
   for (const raw of list) {
@@ -157,7 +166,7 @@ function storeGrid(list) {
     grid.appendChild(h('a.card.store-card', { href: `#/store/${s.id}`, style: { '--hue': String(s.photo.hue) } },
       h('div.store-photo', { style: { '--hue': String(s.photo.hue) } },
         // 写真があれば写真を、無ければ色とマークを使う（どちらでも成立させる）
-        s.photoUrl ? photoImg(s.photoUrl, { attrs: { loading: 'lazy' } }) : icon(s.photo.icon, 52),
+        storePhoto(s) ? photoImg(storePhoto(s), { attrs: { loading: 'lazy' } }) : icon(s.photo.icon, 52),
         h('div.store-photo-badges',
           chip(r.game.players === 3 ? '三麻' : '四麻'),
           chip(s.style)),
@@ -280,8 +289,8 @@ function viewStores(params) {
 
   renderFilters();
   renderResult();
-  wrap.appendChild(filterBox);
-  wrap.appendChild(result);
+  // 横に広くて縦が短い画面（スマホ横持ち）では、左に絞り込み・右に結果を並べる
+  wrap.appendChild(h('div.stores-layout', filterBox, result));
   app.appendChild(sec);
   app.appendChild(footer());
 }
@@ -416,7 +425,7 @@ function viewStore(id) {
   // ヒーロー：写真帯の上に情報カードを重ねる。店の顔になる牌もここで見せる。
   app.appendChild(h('section.store-hero',
     h('div.store-hero-photo', { style: { '--hue': String(s.photo.hue) } },
-      s.photoUrl ? photoImg(s.photoUrl) : icon(s.photo.icon, 78),
+      storePhoto(s) ? photoImg(storePhoto(s)) : icon(s.photo.icon, 78),
       h('div.store-hero-tiles', { 'aria-hidden': 'true' },
         signatureTiles(r).map((info, i) => h('div.sig-tile', { style: { '--i': String(i) } }, tileEl(info, { size: 'md' }))))),
     h('div.wrap',
@@ -592,6 +601,10 @@ function viewStore(id) {
     h('a.btn.btn-primary.btn-lg.btn-block', { href: `#/play?preset=${s.presetId}` }, icon('play', 15), 'このルールで遊んでみる')));
   app.appendChild(sec);
   app.appendChild(footer());
+  // スマホ横持ちでは、画面が長くなって「打つ」が遠くなるので、下に出しっぱなしにする
+  app.appendChild(h('div.store-cta-bar',
+    h('div.store-cta-name', { text: s.name }),
+    h('a.btn.btn-primary.store-cta-btn', { href: `#/play?preset=${s.presetId}` }, icon('play', 14), 'このルールで打つ')));
 }
 
 /** 牌コードをタイプ番号に。未知のコードでも画面を壊さない。 */
