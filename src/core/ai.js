@@ -97,7 +97,7 @@ function pickEfficient(engine, p, ids, cfg, danger) {
   let best = null;
   for (const f of narrowed) {
     const { id, tile, counts, sh } = f;
-    const uk = ukeire(counts, p.melds.length, vis);
+    const uk = ukeire(counts, p.melds.length, vis, engine.wild);
     // 牌の価値（ドラ・赤は残す）
     let value = 0;
     if (doraTypes.includes(tile.t)) value += 2.5;

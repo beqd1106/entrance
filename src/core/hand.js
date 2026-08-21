@@ -229,8 +229,8 @@ function waitsUncached(counts, meldCount) {
  * CPU の打牌選択専用のため、手牌から完全に孤立した牌（幺九牌以外）は
  * 候補から外して高速化している（実戦上の受け入れ評価としては十分な近似）。
  */
-export function ukeire(counts, meldCount = 0, visibleCounts = null) {
-  const base = shanten(counts, meldCount);
+export function ukeire(counts, meldCount = 0, visibleCounts = null, wild = 0) {
+  const base = shantenWithWild(counts, meldCount, wild);
   const c = counts.slice();
   const tiles = [];
   let total = 0;
@@ -248,7 +248,7 @@ export function ukeire(counts, meldCount = 0, visibleCounts = null) {
     if (c[t] >= 4) continue;
     if (!relevant(t)) continue;
     c[t]++;
-    const s = shanten(c, meldCount);
+    const s = shantenWithWild(c, meldCount, wild);
     c[t]--;
     if (s < base) {
       const seen = visibleCounts ? visibleCounts[t] : counts[t];
