@@ -1418,22 +1418,34 @@ body.op-mode .nav { display: none; }
   background-size: cover;
   background-position: center;
 }
-/* 和柄の背景。SVGなので拡大しても荒れず、オフラインでも欠けない */
+/* 背景画像（生成画像 30KB）。読めない環境でも下の地色で成立する */
 .op-bg::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('../img/op-bg.svg');
+  background-image: url('../img/op-bg.webp');
   background-size: cover;
   background-position: center right;
   opacity: 1;
+}
+/* 縦持ちは、上下だけに絵がある縦向きの絵に差し替える
+   （横向きの絵を切り抜くと、雲と牌が文字やカードの裏に来てしまう） */
+@media (orientation: portrait) {
+  .op-bg::before {
+    background-image: url('../img/op-bg-portrait.webp');
+    background-position: center;
+  }
+  .op-bg::after {
+    background: linear-gradient(180deg, rgba(4, 16, 14, 0.62) 0%, rgba(4, 16, 14, 0.30) 42%, rgba(4, 16, 14, 0.55) 100%);
+  }
 }
 .op-bg::after {
   content: '';
   position: absolute;
   inset: 0;
+  /* 文字が乗る左側だけ、わずかに沈める。絵は消さない */
   background:
-    linear-gradient(100deg, rgba(4, 16, 14, 0.92) 0%, rgba(4, 16, 14, 0.66) 42%, rgba(4, 16, 14, 0.18) 100%);
+    linear-gradient(100deg, rgba(4, 16, 14, 0.72) 0%, rgba(4, 16, 14, 0.42) 46%, rgba(4, 16, 14, 0.10) 100%);
 }
 
 .op-inner {
