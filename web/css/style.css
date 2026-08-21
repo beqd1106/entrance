@@ -2272,3 +2272,80 @@ body.op-mode::before { display: none; }
   color: #8a6516; letter-spacing: 0.02em;
   writing-mode: vertical-rl; text-orientation: upright;
 }
+
+/* =========================================================================
+   対局中の演出
+   「いま自分の番」「さっき切られた牌」「何が起きたか」を、
+   目を動かさずに掴めるようにする。動きは短く、勝負の邪魔をしない。
+   ========================================================================= */
+
+/* 直前に切られた牌は、少しのあいだ光らせる */
+@keyframes justPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(110, 231, 183, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.35); }
+}
+.tile.just { outline: 2px solid var(--brass-2); outline-offset: 1px; animation: justPulse 1.6s var(--ease) infinite; }
+
+/* 手番の席は枠がゆっくり息をする */
+@keyframes seatBreathe {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
+  50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.28); }
+}
+.seat.active { animation: seatBreathe 2.4s var(--ease) infinite; }
+
+/* 自分の番は、手牌の上に細い光の線を引く */
+.hand-row.my-turn {
+  position: relative;
+}
+.hand-row.my-turn::before {
+  content: '';
+  position: absolute; left: 50%; top: -10px;
+  width: min(320px, 60%); height: 2px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--brass-2), transparent);
+  animation: justPulse 2s var(--ease) infinite;
+}
+
+/* 局の結果を、まず一言だけ大きく出す */
+.flash {
+  position: fixed; inset: 0; z-index: 88;
+  display: grid; place-items: center;
+  pointer-events: none;
+  background: radial-gradient(58% 58% at 50% 50%, rgba(4, 16, 14, 0.74), rgba(4, 16, 14, 0.34) 68%, rgba(4, 16, 14, 0.06));
+  animation: flashIn 0.26s var(--ease) both;
+}
+.flash.out { animation: flashOut 0.22s var(--ease) both; }
+@keyframes flashIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes flashOut { to { opacity: 0; } }
+.flash-text {
+  font-family: var(--tile-serif);
+  font-size: clamp(46px, 11vw, 108px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #fbf8f1;
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.55);
+  animation: flashPop 0.42s var(--ease) both;
+}
+@keyframes flashPop {
+  0% { transform: scale(0.72); opacity: 0; }
+  62% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.flash-win .flash-text { color: #86efac; }
+.flash-lose .flash-text { color: #fca5a5; }
+.flash-draw .flash-text { color: #e5e7eb; }
+.flash-yakuman .flash-text {
+  color: #fde68a;
+  background: linear-gradient(120deg, #fde68a, #fff7d6, #e3c07a, #fde68a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: flashPop 0.42s var(--ease) both, yakumanShine 1.6s linear infinite;
+  background-size: 220% 100%;
+}
+@keyframes yakumanShine { to { background-position: 220% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile.just, .seat.active, .hand-row.my-turn::before { animation: none; }
+  .flash, .flash-text { animation: none; }
+}

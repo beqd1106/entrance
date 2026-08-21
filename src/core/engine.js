@@ -98,6 +98,7 @@ export class GameEngine {
       p.tempFuriten = false;
       p.drawn = null;
       p.tenpai = false;
+      p.riichiTileId = null;
       p.menzenAtRiichi = true;
       p.nagashi = true;
       p.effectAcc = emptyEffect();
@@ -513,6 +514,8 @@ export class GameEngine {
         this.updateFuriten(p);
         p.tempFuriten = false;
         p.drawn = null;
+        // リーチ宣言牌は横に倒して置くので、どれだったか覚えておく
+        if (action.type === 'riichi') p.riichiTileId = tile.id;
         this.pushEvent({ type: 'discard', seat, tile: this.tileInfo(tile), riichi: action.type === 'riichi' });
         return this.afterDiscard(seat, tile);
       }
@@ -1004,7 +1007,14 @@ export class GameEngine {
         bonusDetail: [...bonusInfo.detail, ...eff.messages, ...alice.messages, ...tulip.messages, ...dice.messages],
         aliceFlips: [...alice.aliceFlips, ...tulip.aliceFlips].map((f) => ({ tile: this.tileInfo(f.tile), matched: f.matched, label: f.label })),
         diceRolls: dice.diceRolls,
-        substituted: win.substituted ? { from: tileName(win.substituted.from), to: typeName(win.substituted.to) } : null,
+        substituted: win.substituted
+          ? {
+            from: tileName(win.substituted.from),
+            to: typeName(win.substituted.to),
+            // 少牌マイティは「元の牌」が無い（足りない1枚を当てはめている）
+            mighty: !!win.substituted.from.mighty,
+          }
+          : null,
         payments: s.detail.payments,
         // 結果画面で「どんな手で和了ったか」を見せるための表示用データ
         handTiles: sortTiles(win.ctx.hand.filter((t) => t !== win.ctx.winTile)).map((t) => this.tileInfo(t)),
@@ -1453,6 +1463,7 @@ export class GameEngine {
           : p.hand.map(() => ({ hidden: true })),
         handCount: p.hand.length,
         mighty: this.wild,
+        riichiTileId: p.riichiTileId || null,
         drawn: p.drawn && (p.seat === viewerSeat || reveal) ? this.tileInfo(p.drawn) : (p.drawn ? { hidden: true } : null),
         melds: p.melds.map((m) => ({ kind: m.kind, concealed: m.concealed, tiles: m.tiles.map((t) => this.tileInfo(t)) })),
         discards: p.discards.map((t) => this.tileInfo(t)),

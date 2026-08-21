@@ -265,7 +265,7 @@ function loop() {
   if (G.timer) clearTimeout(G.timer);
   const e = G.engine;
   if (e.finished) { drainLog(); draw(); showFinal(); return; }
-  if (e.phase === 'kyokuEnd') { drainLog(); draw(); showKyokuResult(); return; }
+  if (e.phase === 'kyokuEnd') { drainLog(); draw(); flashResult(e.kyokuEnd, () => showKyokuResult()); return; }
   const r = e.advance(decide, 1);
   drainLog();
   if (r.waiting) {
@@ -541,10 +541,13 @@ function meldsEl(p) {
 
 function discardsEl(p) {
   const lastId = G.engine.lastDiscard ? G.engine.lastDiscard.tile.id : null;
-  return h('div.discards', p.discards.map((t) => tileEl(t, {
-    size: 'xs',
-    attrs: t.id === lastId ? { class: 'just' } : null,
-  })));
+  return h('div.discards', p.discards.map((t) => {
+    const cls = [];
+    if (t.id === lastId) cls.push('just');
+    // リーチ宣言牌は横に倒す（どこで曲げたかが河を見れば分かる）
+    if (p.riichiTileId && t.id === p.riichiTileId) cls.push('side');
+    return tileEl(t, { size: 'xs', attrs: cls.length ? { class: cls.join(' ') } : null });
+  }));
 }
 
 function seatEl(p, s, cls) {
@@ -648,6 +651,8 @@ function drawActions(s) {
   const box = clear(G.dom.actions);
   const hint = G.dom.hint;
   const choices = G.waiting ? G.waiting.choices : [];
+  const myTurn = !!choices.length && !s.finished && s.phase !== 'kyokuEnd';
+  G.dom.hand.classList.toggle('my-turn', myTurn);
   if (!choices.length) {
     hint.textContent = s.finished ? '' : (s.phase === 'kyokuEnd' ? '' : 'CPUの手番です');
     return;
@@ -724,6 +729,30 @@ function winHandView(d) {
   return box;
 }
 
+/**
+ * 局の終わりに、まず結果を一言だけ大きく出す。
+ * いきなり明細を開くより、何が起きたのかが伝わる。
+ */
+function flashResult(res, next) {
+  if (!res) { next(); return; }
+  let label = '流局';
+  let tone = 'draw';
+  if (res.kind === 'win') {
+    const mine = res.details.find((d) => d.seat === 0);
+    const d = mine || res.details[0];
+    label = d.tsumo ? 'ツモ' : 'ロン';
+    tone = mine ? 'win' : 'lose';
+    if (d.yakuman) { label = d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満'; tone = 'yakuman'; }
+  }
+  const el = h(`div.flash.flash-${tone}`, h('span.flash-text', { text: label }));
+  G.dom.toasts.parentElement.appendChild(el);
+  const wait = tone === 'yakuman' ? 1500 : 850;
+  G.timer = setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => { el.remove(); next(); }, 220);
+  }, wait);
+}
+
 function showKyokuResult() {
   const e = G.engine;
   const res = e.kyokuEnd;
@@ -757,7 +786,11 @@ function showKyokuResult() {
       if (extras.length) list.appendChild(h('div.yaku-item', h('span', { text: extras.join(' / ') }), h('span')));
       body.appendChild(list);
       if (d.substituted) {
-        body.appendChild(h('div.notice', { text: `${d.substituted.from} をオールマイティとして ${d.substituted.to} の代わりに使用しました。` }));
+        body.appendChild(h('div.notice', {
+          text: d.substituted.mighty
+            ? `足りない1枚を ${d.substituted.to} として使いました（少牌マイティ）。`
+            : `${d.substituted.from} をオールマイティとして ${d.substituted.to} の代わりに使用しました。`,
+        }));
       }
       if (d.aliceFlips && d.aliceFlips.length) {
         body.appendChild(h('div', { style: { margin: '10px 0' } },
