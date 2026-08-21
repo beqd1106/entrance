@@ -499,6 +499,9 @@ function renderLeft(left, state, onChange) {
     switchRow('ゾロ目で振り直し', '', R.local.dice.rerollOnDoubles, (v) => { R.local.dice.rerollOnDoubles = v; onChange(); }),
     control({ type: 'number', path: 'local.dice.cap', label: 'BPの上限', step: 10 }, R, onChange)));
 
+  toggleWithDetail('少牌マイティ', 'local.shouhaiMighty',
+    '手牌を1枚少なく配り、足りない1枚を「何にでもなる牌」として常に持っている扱いにします。テンパイ形がそのまま和了になります',
+    () => h('div', control({ type: 'number', path: 'local.shouhaiMighty.count', label: '少なく配る枚数', step: 1 }, R, onChange)));
   toggleWithDetail('焼き鳥', 'local.yakitori', '一度も和了できずに終わるとBPマイナス', () => h('div',
     control({ type: 'number', path: 'local.yakitori.penalty', label: 'マイナスBP', step: 1 }, R, onChange)));
   toggleWithDetail('トビ賞', 'local.tobiBonus', 'トバした人にBP', () => h('div',

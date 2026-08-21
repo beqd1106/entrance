@@ -15,7 +15,7 @@
 import {
   T, NUM_TYPES, typeToCode, codeToType, tileName, typeName, isYaochu, numOf, isFlower, doraNext, sortTiles,
 } from './tiles.js';
-import { shanten, waits, countsFromTiles } from './hand.js';
+import { shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild } from './hand.js';
 import { evaluate } from './yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from './score.js';
 import { Wall, makeRng, FLOWER_ID, FLOWER_LABEL } from './wall.js';
@@ -60,6 +60,15 @@ export class GameEngine {
   // =========================================================================
   // 局の開始
   // =========================================================================
+  /**
+   * 「何にでもなる牌」を何枚持っている前提か。
+   * 少牌マイティでは配牌を1枚減らし、その1枚を常に持っているものとして扱う。
+   */
+  get wild() {
+    const m = this.rules.local.shouhaiMighty;
+    return m && m.enabled ? Math.max(1, m.count || 1) : 0;
+  }
+
   startKyoku() {
     const R = this.rules;
     this.wall = new Wall(R, this.rng, this.debug);
@@ -93,8 +102,8 @@ export class GameEngine {
       p.nagashi = true;
       p.effectAcc = emptyEffect();
     }
-    // 配牌
-    for (let r = 0; r < 13; r++) {
+    // 配牌。少牌マイティのときは、その枚数だけ少なく配る
+    for (let r = 0; r < 13 - this.wild; r++) {
       for (let i = 0; i < this.n; i++) {
         const seat = (this.round.dealer + i) % this.n;
         this.players[seat].hand.push(this.wall.draw());
@@ -261,7 +270,7 @@ export class GameEngine {
       const options = [];
       for (const tile of this.uniqueTiles(p.hand)) {
         const rest = p.hand.filter((t) => t.id !== tile.id);
-        if (shanten(countsFromTiles(rest), p.melds.length) === 0) options.push(tile.id);
+        if (shantenWithWild(countsFromTiles(rest), p.melds.length, this.wild) === 0) options.push(tile.id);
       }
       if (options.length) {
         out.push({ type: 'riichi', label: 'リーチ', tileIds: options });
@@ -337,7 +346,12 @@ export class GameEngine {
     const hand = tsumo ? p.hand : [...p.hand, winTile];
     let counts = countsFromTiles(hand);
     if (shanten(counts, p.melds.length) !== -1) {
-      // オールマイティ牌による和了を試す
+      // 少牌マイティ：足りない1枚を、いちばん高くなる牌として当てはめる
+      if (this.wild > 0) {
+        const best = this.tryMighty(seat, p, hand, winTile, tsumo, opts);
+        if (best) return best;
+      }
+      // オールマイティ牌（白ポッチ・特殊牌）による和了を試す
       const almighty = almightyTiles(R, hand, this.flagsFor(p, tsumo, opts), tsumo);
       if (!almighty.length) return null;
       const sub = this.tryAlmighty(p, hand, almighty);
@@ -345,6 +359,30 @@ export class GameEngine {
       return this.evaluateWin(seat, winTile, tsumo, sub.hand, opts, sub.substituted);
     }
     return this.evaluateWin(seat, winTile, tsumo, hand, opts);
+  }
+
+  /**
+   * 少牌マイティの1枚を当てはめる。
+   * 和了形になる牌が複数あるときは、いちばん高くなるものを選ぶ。
+   * （どれを選んでも和了なので、打ち手が損をしない側に寄せる）
+   */
+  tryMighty(seat, p, hand, winTile, tsumo, opts) {
+    const counts = countsFromTiles(hand);
+    let best = null;
+    let bestScore = -Infinity;
+    for (let t = 0; t < NUM_TYPES; t++) {
+      if (counts[t] >= 4) continue;
+      counts[t]++;
+      const ok = shanten(counts, p.melds.length) === -1;
+      counts[t]--;
+      if (!ok) continue;
+      const virt = { id: `mighty-${p.seat}-${t}`, t, red: false, gold: false, dot: false, sp: null, wild: true, mighty: true };
+      const res = this.evaluateWin(seat, winTile, tsumo, [...hand, virt], opts, { from: virt, to: t });
+      if (!res) continue;
+      const score = (res.isYakuman ? 1000 : 0) + (res.baseHan || 0) * 10 + (res.fu || 0) / 100;
+      if (score > bestScore) { bestScore = score; best = res; }
+    }
+    return best;
   }
 
   tryAlmighty(p, hand, almighty) {
@@ -991,8 +1029,8 @@ export class GameEngine {
     const R = this.rules;
     const tenpai = [];
     for (const p of this.players) {
-      const s = shanten(countsFromTiles(p.hand), p.melds.length);
-      const w = waits(countsFromTiles(p.hand), p.melds.length);
+      const s = shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild);
+      const w = waitsWithWild(countsFromTiles(p.hand), p.melds.length, this.wild);
       let isTenpai = s === 0;
       if (isTenpai && !R.win.formalTenpai) {
         const hasYaku = true; // 形式テンパイ非採用の厳密判定は将来対応（要検討）
@@ -1289,8 +1327,8 @@ export class GameEngine {
     // 13枚形（ツモ前）のときだけ出す
     if (p.hand.length % 3 !== 1) return null;
     const counts = countsFromTiles(p.hand);
-    if (shanten(counts, p.melds.length) !== 0) return null;
-    return this.waitDetail(waits(counts, p.melds.length), counts);
+    if (shantenWithWild(counts, p.melds.length, this.wild) !== 0) return null;
+    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild), counts);
   }
 
   /** 表示用：指定の牌を切ったらどんな待ちになるか（切る前に確認できるようにする） */
@@ -1300,8 +1338,8 @@ export class GameEngine {
     const rest = p.hand.filter((t) => t.id !== tileId);
     if (rest.length === p.hand.length) return null;
     const counts = countsFromTiles(rest);
-    if (shanten(counts, p.melds.length) !== 0) return null;
-    return this.waitDetail(waits(counts, p.melds.length), counts);
+    if (shantenWithWild(counts, p.melds.length, this.wild) !== 0) return null;
+    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild), counts);
   }
 
   /** 待ち牌に「まだ見えていない枚数」を添える */
@@ -1379,7 +1417,7 @@ export class GameEngine {
     }
     p.hand = sortTiles(p.hand);
     // 14枚形で向聴0＝どれかを切ればテンパイ
-    return shanten(countsFromTiles(p.hand), 0) === 0;
+    return shantenWithWild(countsFromTiles(p.hand), 0, this.wild) === 0;
   }
 
   snapshot(viewerSeat = 0) {
@@ -1414,13 +1452,14 @@ export class GameEngine {
           ? p.hand.map((t) => this.tileInfo(t))
           : p.hand.map(() => ({ hidden: true })),
         handCount: p.hand.length,
+        mighty: this.wild,
         drawn: p.drawn && (p.seat === viewerSeat || reveal) ? this.tileInfo(p.drawn) : (p.drawn ? { hidden: true } : null),
         melds: p.melds.map((m) => ({ kind: m.kind, concealed: m.concealed, tiles: m.tiles.map((t) => this.tileInfo(t)) })),
         discards: p.discards.map((t) => this.tileInfo(t)),
         kita: p.kita.map((t) => this.tileInfo(t)),
         kitaCount: p.kita.length,
         flowers: p.flowers.map((t) => this.tileInfo(t)),
-        shanten: (p.seat === viewerSeat || reveal) ? shanten(countsFromTiles(p.hand), p.melds.length) : null,
+        shanten: (p.seat === viewerSeat || reveal) ? shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild) : null,
       })),
     };
   }

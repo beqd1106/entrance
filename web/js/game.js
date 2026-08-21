@@ -106,6 +106,16 @@ function pregamePoints() {
     + (R.scoring.mode === 'flat' ? '／点数の数え方が特殊です' : `／${fmt(R.scoring.startingPoints)}点持ち${fmt(R.scoring.returnPoints)}点返し`),
     'slate');
 
+  if (R.local.shouhaiMighty && R.local.shouhaiMighty.enabled) {
+    const n = R.local.shouhaiMighty.count || 1;
+    push('少牌マイティ',
+      `手牌が${n}枚少ない代わりに、足りない${n}枚は「何にでもなる牌」として常に持っています。`
+      + 'テンパイの形になったら、その時点で和了です。',
+      'amber');
+  }
+  if (R.game.pointCapEnd && R.game.pointCapEnd.enabled) {
+    push('点数で打ち切り', `だれかが${fmt(R.game.pointCapEnd.points)}点に達した局で対局が終わります。`, 'slate');
+  }
   if (R.local.shiroPocchi.enabled) {
     const cond = { always: 'いつでも', any_tsumo: 'ツモのとき', riichi_tsumo: 'リーチ後のツモのとき' }[R.local.shiroPocchi.almightyCondition];
     push('白ポッチ', `白に赤い点が付いた特別な牌が${R.local.shiroPocchi.count}枚。${cond}、好きな牌の代わりに使えます。`, 'sky');
@@ -614,6 +624,11 @@ function drawMy(s) {
   };
   tiles.forEach((t) => hand.appendChild(render(t, false)));
   if (drawnId) hand.appendChild(render(me.drawn, true));
+  // 少牌マイティ：手元にある「何にでもなる1枚」を、切れない牌として並べて見せる
+  for (let i = 0; i < (me.mighty || 0); i++) {
+    hand.appendChild(h('div.tile.tile-lg.mighty-tile', { title: '何にでもなる牌（切れません）' },
+      h('div.tile-face', h('span.mighty-mark', { text: '萬能' }))));
+  }
 }
 
 function onTileClick(t) {

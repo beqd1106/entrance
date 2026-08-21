@@ -8,7 +8,7 @@
  *   4. 鳴きは向聴が進み、かつ役の目処がある時のみ
  *   5. level で 初心者 / 標準 / 上級 を切り替え（拡張余地を確保）
  */
-import { shanten, waits, ukeire, countsFromTiles } from './hand.js';
+import { shanten, waits, ukeire, countsFromTiles, shantenWithWild } from './hand.js';
 import { isHonor, isTerminal, isYaochu, numOf, suitOf, doraNext, T } from './tiles.js';
 
 const LEVELS = {
@@ -32,7 +32,7 @@ export function decide(engine, seat, choices) {
   // --- 手番フェーズ
   if (choices.some((c) => c.type === 'tsumo')) return { type: 'tsumo' };
   const kyuushu = choices.find((c) => c.type === 'kyuushu');
-  if (kyuushu && shanten(countsFromTiles(p.hand), 0) >= 4) return { type: 'kyuushu' };
+  if (kyuushu && shantenWithWild(countsFromTiles(p.hand), 0, engine.wild) >= 4) return { type: 'kyuushu' };
 
   // 北抜き（三麻）：役満狙いでなければ即抜き
   const kita = choices.find((c) => c.type === 'kita');
@@ -47,9 +47,9 @@ export function decide(engine, seat, choices) {
   // 暗槓：手が進むなら
   const kan = choices.find((c) => c.type === 'kan');
   if (kan && danger === 0) {
-    const before = shanten(countsFromTiles(p.hand), p.melds.length);
+    const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
     const rest = p.hand.filter((t) => t.t !== kan.t);
-    const after = shanten(countsFromTiles(rest), p.melds.length + 1);
+    const after = shantenWithWild(countsFromTiles(rest), p.melds.length + 1, engine.wild);
     if (after <= before) return { type: 'kan', kind: kan.kind, t: kan.t };
   }
 
@@ -66,7 +66,7 @@ export function decide(engine, seat, choices) {
   if (!discard) return choices[0] && choices[0].type === 'pass' ? { type: 'pass' } : (choices[0] || { type: 'pass' });
 
   const ids = discard.tileIds;
-  const sh = shanten(countsFromTiles(p.hand), p.melds.length);
+  const sh = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
 
   // ベタオリ判定
   if (danger > 0 && sh >= cfg.foldThreshold && !p.riichi) {
@@ -89,7 +89,7 @@ function pickEfficient(engine, p, ids, cfg, danger) {
     const tile = handTilesById(p, id);
     if (!tile) continue;
     const counts = countsFromTiles(p.hand.filter((t) => t.id !== id));
-    const sh = shanten(counts, p.melds.length);
+    const sh = shantenWithWild(counts, p.melds.length, engine.wild);
     first.push({ id, tile, counts, sh });
     if (sh < minSh) minSh = sh;
   }
@@ -203,7 +203,7 @@ function decideCall(engine, seat, choices, cfg) {
   const p = engine.players[seat];
   const R = engine.rules;
   const tile = engine.pending.tile;
-  const before = shanten(countsFromTiles(p.hand), p.melds.length);
+  const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
   const danger = dangerLevel(engine, seat);
   const doraTypes = engine.doraTypes();
 
@@ -216,7 +216,7 @@ function decideCall(engine, seat, choices, cfg) {
 
   const evalAfter = (removeIds, addTiles, meldDelta) => {
     const rest = p.hand.filter((t) => !removeIds.includes(t.id));
-    return shanten(countsFromTiles(rest), p.melds.length + meldDelta);
+    return shantenWithWild(countsFromTiles(rest), p.melds.length + meldDelta, engine.wild);
   };
 
   // カン（大明槓）：テンパイ維持かつ役有り見込み

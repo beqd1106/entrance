@@ -43,9 +43,10 @@ function checkTiles(engine, label, errors) {
   for (let t = 0; t < 34; t++) {
     if (typeCount[t] > 4) errors.push(`${label}: 牌タイプ${t}が${typeCount[t]}枚`);
   }
-  // 手牌枚数の妥当性
+  // 手牌枚数の妥当性（少牌マイティは常にその枚数だけ少ない）
+  const wild = engine.wild || 0;
   engine.players.forEach((p, i) => {
-    const n = p.hand.length + p.melds.length * 3;
+    const n = p.hand.length + p.melds.length * 3 + wild;
     if (n < 13 || n > 14) errors.push(`${label}: player${i} 手牌枚数異常 ${p.hand.length}+melds${p.melds.length}`);
   });
 }

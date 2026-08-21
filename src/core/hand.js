@@ -155,6 +155,45 @@ export function shanten(counts, meldCount = 0) {
   return v;
 }
 
+/**
+ * オールマイティ牌を wild 枚持っている前提の向聴数。
+ *
+ * 少牌マイティのように「好きな牌を常に1枚持っている」形を扱うためのもの。
+ * 34種すべてを当てはめて、いちばん良い数字を返す。
+ * counts は実際に持っている牌だけを数えたもの（ワイルドは含めない）。
+ */
+export function shantenWithWild(counts, meldCount = 0, wild = 0) {
+  if (wild <= 0) return shanten(counts, meldCount);
+  let best = 99;
+  const c = counts.slice();
+  for (let t = 0; t < NUM_TYPES; t++) {
+    if (c[t] >= 4) continue;
+    c[t]++;
+    const v = shantenWithWild(c, meldCount, wild - 1);
+    c[t]--;
+    if (v < best) best = v;
+    if (best === -1) break;
+  }
+  return best === 99 ? shanten(counts, meldCount) : best;
+}
+
+/**
+ * ワイルドを wild 枚持っている前提の待ち牌。
+ * 「これを引けば（またはロンできれば）和了」になる牌を返す。
+ */
+export function waitsWithWild(counts, meldCount = 0, wild = 0) {
+  if (wild <= 0) return waits(counts, meldCount);
+  const out = [];
+  const c = counts.slice();
+  for (let t = 0; t < NUM_TYPES; t++) {
+    if (c[t] >= 4) continue;
+    c[t]++;
+    if (shantenWithWild(c, meldCount, wild) === -1) out.push(t);
+    c[t]--;
+  }
+  return out;
+}
+
 /** 和了形か（14枚 or 副露込みで枚数が揃っている状態） */
 export function isAgariCounts(counts, meldCount = 0) {
   return shanten(counts, meldCount) === -1;

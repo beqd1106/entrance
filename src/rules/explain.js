@@ -118,6 +118,11 @@ export function explainRules(r) {
   if (r.local.alice.enabled) local.push(aliceText(r.local.alice, 'アリス'));
   if (r.local.tulip.enabled) local.push(aliceText(r.local.tulip, 'チューリップ'));
   if (r.local.openRiichi.enabled) local.push(`オープンリーチあり（+${r.local.openRiichi.han}翻${r.local.openRiichi.bonus ? `・${r.local.openRiichi.bonus}BP` : ''}）。`);
+  if (r.local.shouhaiMighty && r.local.shouhaiMighty.enabled) {
+    const n = r.local.shouhaiMighty.count || 1;
+    local.push(`少牌マイティ。手牌が常に${n}枚少なく、足りない${n}枚は「何にでもなる牌」として持っている扱いになります。`);
+    local.push('テンパイの形になった時点で和了なので、通常よりずっと速く決着します。');
+  }
   if (r.local.wareme.enabled) {
     const W = r.local.wareme;
     if (W.allPlayers) local.push(`全員割れ目。すべての支払いが${W.multiplier}倍になります。`);
@@ -323,6 +328,8 @@ const DIFF_TARGETS = [
   ['local.wareme.enabled', '割れ目', (v) => (v ? 'あり' : 'なし')],
   ['local.dice.enabled', 'サイコロチャンス', (v) => (v ? 'あり' : 'なし')],
   ['local.yakitori.enabled', '焼き鳥', (v) => (v ? 'あり' : 'なし')],
+  ['local.shouhaiMighty.enabled', '少牌マイティ', (v) => (v ? 'あり' : 'なし')],
+  ['game.pointCapEnd.enabled', '点数で打ち切り', (v) => (v ? 'あり' : 'なし')],
   ['flowers.enabled', '華牌（春夏秋冬）', (v) => (v ? 'あり' : 'なし')],
   ['scoring.mode', '点数体系', (v) => (v === 'flat' ? '東天紅系（点計算）' : '通常')],
   ['dora.bakuDora', '爆ドラ', (v) => (v ? `追加${v}枚` : 'なし')],
@@ -389,6 +396,8 @@ export function shortSummary(r) {
   if (r.local.shiroPocchi.enabled) parts.push('白ポッチ');
   if (r.local.alice.enabled) parts.push('アリス');
   if (r.local.tulip.enabled) parts.push('チューリップ');
+  if (r.local.shouhaiMighty && r.local.shouhaiMighty.enabled) parts.push('少牌マイティ');
+  if (r.game.pointCapEnd && r.game.pointCapEnd.enabled) parts.push(`${num(r.game.pointCapEnd.points)}点で終了`);
   if (r.local.wareme.enabled) parts.push('割れ目');
   if (r.local.openRiichi.enabled) parts.push('オープンリーチ');
   if (r.flowers.enabled) parts.push('華牌');

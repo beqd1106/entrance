@@ -213,6 +213,15 @@ export const DEFAULT_RULES = {
       enabled: false,
       value: 2,                 // トビ賞（トバした側が受け取るボーナス）
     },
+    /**
+     * 少牌マイティ。
+     * 手牌を1枚少なく配り、足りない分を「何にでもなる牌」として常に持っている扱いにする。
+     * テンパイ形＝和了になるので、進行がとても速くなる。
+     */
+    shouhaiMighty: {
+      enabled: false,
+      count: 1,                 // 少なく配る枚数＝マイティ牌の数
+    },
     kokushiAnkanRon: false,     // 国士の暗槓ロン
   },
 

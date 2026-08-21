@@ -2256,3 +2256,19 @@ body.op-mode::before { display: none; }
   .sp-row > .sp-label { flex: none; padding-top: 0; }
   .sp-eff-row select { max-width: none; }
 }
+
+/* 少牌マイティの「何にでもなる1枚」。手牌の右端に、切れない牌として置く */
+.mighty-tile {
+  background: linear-gradient(#fffdf6, #f3e8c9) padding-box,
+    linear-gradient(130deg, #d9b45f, #f0dca6, #b4893a) border-box;
+  border: 2px solid transparent;
+  cursor: default;
+  display: grid; place-items: center;
+}
+.mighty-tile .tile-face { display: grid; place-items: center; }
+.mighty-mark {
+  font-family: var(--tile-serif); font-weight: 700;
+  font-size: calc(var(--tw) * 0.42); line-height: 1.15;
+  color: #8a6516; letter-spacing: 0.02em;
+  writing-mode: vertical-rl; text-orientation: upright;
+}

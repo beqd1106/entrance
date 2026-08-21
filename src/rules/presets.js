@@ -348,6 +348,22 @@ export const PRESETS = [
     },
   },
   {
+    id: 'mighty3',
+    name: '少牌マイティ風',
+    category: '特殊',
+    tags: ['三麻', '少牌マイティ', '高速'],
+    description: '手牌が常に1枚少なく、足りない1枚は何にでもなる牌として扱います。テンパイ形がそのまま和了になるので、驚くほど速く決着します。',
+    rules: {
+      meta: { id: 'mighty3', name: '少牌マイティ風' },
+      game: { players: 3, length: 'east' },
+      local: { shouhaiMighty: { enabled: true, count: 1 } },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
+      sanma: { tsumoLoss: false },
+      dora: { indicators: 1, red: { '5p': 2, '5s': 2 } },
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
+    },
+  },
+  {
     id: 'chinitsu3',
     name: '清一色ゲーム風',
     category: '特殊',
