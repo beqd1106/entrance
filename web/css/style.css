@@ -570,6 +570,8 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .center-info { min-height: 0; padding: 6px; gap: 3px; }
   .center-kyoku { font-size: 17px; }
   .center-sub { font-size: 10px; }
+  /* BPの注記は、卓の真ん中で行を使わないよう控えめに */
+  .center-sub:last-child { font-size: 9.5px; opacity: 0.72; }
   .discards { grid-template-columns: repeat(6, auto); gap: 1px; margin-top: 3px; }
   .melds { gap: 5px; margin-top: 3px; }
   .tile { --tw: 17px; }
@@ -1968,6 +1970,14 @@ body.op-mode::before { display: none; }
   .btn-sm { padding: 8px 14px; }
   .btn-lg { padding: 12px 22px; font-size: 15px; }
   .nav-links a, .footer-link { min-height: 32px; display: inline-flex; align-items: center; }
+  /* 指で押す対象は34px以上。スイッチと牌と、帯の中の小さな切替は除く */
+  #app button:not(.sw):not(.seg-btn):not(.act):not(.tile),
+  #app a.btn, #app .chip-btn, .nav a, .tbl-back, .brand, .footer-link {
+    min-height: 34px;
+  }
+  #app a.btn, .tbl-back, .brand { display: inline-flex; align-items: center; }
+  .chip, .chip-btn { min-height: 32px; }
+  .tbl-tune { min-height: 34px; }
 
   /* ルール設定：項目が多いので、目次はナビの下に貼り付けておく */
   .editor-jump {
@@ -1983,6 +1993,8 @@ body.op-mode::before { display: none; }
   }
   .editor-jump::-webkit-scrollbar { display: none; }
   .jump-chip { flex: 0 0 auto; }
+  /* 目次を1行にすると列が押し広げられるので、列の下限を0にしておく */
+  .editor-grid, .editor-grid > * { min-width: 0; }
 
   /* 店舗検索：絞り込みで画面が埋まらないよう、左右に分ける */
   .stores-layout {
@@ -2139,4 +2151,20 @@ body.op-mode::before { display: none; }
   .bottom-bar .tile.tsumo-gap { animation: none; }
   .btn:active, .op-tile:active, .tbl-row:active, .chip-btn:active, .seg-btn:active, .act:active { transform: none; }
   .op-tile:hover .op-tile-mark { transform: none; }
+}
+
+/* =========================================================================
+   指で触る端末（iPhoneアプリはこちら）
+   マウスを持たない端末では :hover が押したあと居座るので、浮き上がりを止める。
+   選択中の表示（.sel）は残す。
+   ========================================================================= */
+@media (hover: none) {
+  .card:hover, .store-card:hover, .op-tile:hover, .btn:hover,
+  .chip-lg:hover, .tbl-row:hover, .hub-card:hover { transform: none; }
+  .store-card:hover { box-shadow: var(--shadow-1); border-color: var(--line); }
+  .store-card:hover .card-tile { transform: rotate(calc((var(--i) - 1) * 4deg)); }
+  .op-tile:hover .op-tile-mark { transform: none; }
+  .op-tile:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.12); }
+  .op-tile.tone-primary:hover { background: linear-gradient(140deg, rgba(14, 166, 114, 0.92), rgba(9, 116, 80, 0.92)); }
+  .tile-clickable:hover:not(.sel) { transform: none; box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(16, 24, 40, 0.14), 0 6px 10px rgba(16, 24, 40, 0.06); }
 }

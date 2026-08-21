@@ -394,7 +394,13 @@ function drawRuleCard(s) {
 function drawTop(s) {
   const top = clear(G.dom.top);
   const item = (k, v) => h('div', h('div.k', { text: k }), h('div.v', { text: v }));
-  top.appendChild(h('a.chip.chip-btn', { href: '#/stores', text: '← 店舗一覧' }));
+  // どこから来たかは分からないので、来た道を戻す。履歴が無いときはホームへ。
+  const back = h('button.chip.chip-btn.game-back', { type: 'button' }, h('span', { text: '← もどる' }));
+  back.addEventListener('click', () => {
+    if (history.length > 1) history.back();
+    else location.hash = '#/';
+  });
+  top.appendChild(back);
   top.appendChild(item('ルール', G.preset.name));
   if (G.event) top.appendChild(h('span.chip.chip-brass', { text: `イベント卓：${G.event.name}` }));
   top.appendChild(item('場', `${s.round.windName}${s.round.kyoku}局 ${s.round.honba}本場`));

@@ -22,6 +22,8 @@ import { renderTable } from './table.js';
 import { matchText, presetHaystack, storeHaystack, searchField } from './search.js';
 
 const app = document.getElementById('app');
+// iPhoneアプリの中（独自スキームで配信）だけに効かせたい調整のための目印
+if (location.protocol === 'houserule:') document.body.classList.add('is-app');
 let cleanup = null;
 const rulesOf = (presetId) => resolveRules(lookupPreset(presetId).rules);
 
