@@ -100,6 +100,28 @@ const FLOWER_EFFECTS = [
 ];
 const FLOWER_KEYS = [['spring', '春'], ['summer', '夏'], ['autumn', '秋'], ['winter', '冬']];
 
+/**
+ * 翻数を変えることがある標準役。
+ * 雀荘で実際に取り決めを見かけるものだけを並べる（全役を出しても選べない）。
+ */
+const MAJOR_YAKU = [
+  { name: '清一色', base: '門前6翻／鳴き5翻' },
+  { name: '混一色', base: '門前3翻／鳴き2翻' },
+  { name: '七対子', base: '2翻' },
+  { name: '一気通貫', base: '門前2翻／鳴き1翻' },
+  { name: '三色同順', base: '門前2翻／鳴き1翻' },
+  { name: '対々和', base: '2翻' },
+  { name: '混老頭', base: '2翻' },
+  { name: '三暗刻', base: '2翻' },
+  { name: '純全帯幺九', base: '門前3翻／鳴き2翻' },
+  { name: '一発', base: '1翻' },
+  { name: '裏ドラ', base: 'ドラ扱い' },
+  { name: '国士無双', base: '役満' },
+  { name: '四暗刻', base: '役満' },
+  { name: '大三元', base: '役満' },
+  { name: '九蓮宝燈', base: '役満' },
+];
+
 /** 基本パネルのスキーマ（advanced:true は「詳細設定」に隠す） */
 const GROUPS = [
   {
@@ -680,6 +702,54 @@ function renderLeft(left, state, onChange) {
   });
   evBox.appendChild(addEv);
   left.appendChild(evBox);
+
+  // --- 標準役の翻数（店ごとの取り決め）
+  const yo = h('div.card.card-pad', { style: { marginBottom: '18px' } },
+    h('h3', { style: { fontSize: '16px', marginBottom: '6px' }, text: '標準役の翻数' }),
+    h('p.tiny.muted', { style: { marginTop: '0' }, text: '「清一色は役満」「七対子は3翻」のような取り決めがある場合だけ変えてください。触らなければ一般的な翻数のままです。' }));
+  R.yakuOverrides = R.yakuOverrides || {};
+  for (const y of MAJOR_YAKU) {
+    const cur = R.yakuOverrides[y.name];
+    const on = !!cur;
+    const toggle = h('button.sw', { class: on ? 'on' : '' });
+    toggle.addEventListener('click', () => {
+      if (on) delete R.yakuOverrides[y.name];
+      else R.yakuOverrides[y.name] = { han: 2 };
+      onChange();
+    });
+    const right = h('div.row.gap-8');
+    if (on) {
+      const isYakuman = !!cur.yakuman;
+      const sel = h('select', { style: { width: '92px' } });
+      sel.appendChild(h('option', { value: 'han', text: '翻数', selected: !isYakuman }));
+      sel.appendChild(h('option', { value: 'yakuman', text: '役満', selected: isYakuman }));
+      sel.appendChild(h('option', { value: 'off', text: '採用しない', selected: cur.enabled === false }));
+      if (cur.enabled === false) sel.value = 'off';
+      sel.addEventListener('change', () => {
+        if (sel.value === 'yakuman') R.yakuOverrides[y.name] = { yakuman: 1 };
+        else if (sel.value === 'off') R.yakuOverrides[y.name] = { enabled: false };
+        else R.yakuOverrides[y.name] = { han: 2 };
+        onChange();
+      });
+      right.appendChild(sel);
+      if (cur.enabled !== false) {
+        const val = h('input', {
+          type: 'number', step: '1', style: { width: '62px' },
+          value: String(isYakuman ? cur.yakuman : (cur.han ?? 2)),
+        });
+        val.addEventListener('change', () => {
+          if (isYakuman) R.yakuOverrides[y.name] = { yakuman: Number(val.value) };
+          else R.yakuOverrides[y.name] = { han: Number(val.value) };
+          onChange();
+        });
+        right.appendChild(val);
+      }
+    }
+    yo.appendChild(h('div.switch',
+      h('div.grow', h('div.sw-label', { text: y.name }), h('div.sw-desc', { text: `既定：${y.base}` })),
+      right, toggle));
+  }
+  left.appendChild(yo);
 
   // --- 特殊牌
   const sp = h('div.card.card-pad', { style: { marginBottom: '18px' } },

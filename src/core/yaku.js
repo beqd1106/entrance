@@ -380,8 +380,39 @@ export function evaluate(ctx) {
   return candidates[0];
 }
 
+/**
+ * 店ごとの取り決めで、標準役の翻数を差し替える。
+ * 役満に格上げされたものは役満側へ移す。採用しない指定なら消す。
+ */
+function applyYakuOverrides(rules, yaku, yakumanList) {
+  const ov = rules.yakuOverrides;
+  if (!ov || !Object.keys(ov).length) return { yaku, yakumanList };
+  const outYaku = [];
+  let outYakuman = [...yakumanList];
+  for (const y of yaku) {
+    const o = ov[y.name];
+    if (!o) { outYaku.push(y); continue; }
+    if (o.enabled === false) continue;
+    if (o.yakuman) { outYakuman.push({ name: y.name, yakuman: o.yakuman }); continue; }
+    outYaku.push(typeof o.han === 'number' ? { ...y, han: o.han } : y);
+  }
+  // 役満側も、翻数へ引き下げたり採用外にできる
+  const kept = [];
+  for (const y of outYakuman) {
+    const o = ov[y.name];
+    if (!o) { kept.push(y); continue; }
+    if (o.enabled === false) continue;
+    if (o.yakuman) { kept.push({ ...y, yakuman: o.yakuman }); continue; }
+    if (typeof o.han === 'number') { outYaku.push({ name: y.name, han: o.han }); continue; }
+    kept.push(y);
+  }
+  outYakuman = kept;
+  return { yaku: outYaku, yakumanList: outYakuman };
+}
+
 function buildResult(ctx, yaku, yakumanList, sets, decomp, counts) {
   const R = ctx.rules;
+  ({ yaku, yakumanList } = applyYakuOverrides(R, yaku, yakumanList));
   const doraDetail = countDora(ctx);
   // 通常役リストに紛れ込んだ役満（字一色など）を役満側へ寄せる
   const embedded = yaku.filter((y) => y.yakuman);

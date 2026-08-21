@@ -295,6 +295,16 @@ export const DEFAULT_RULES = {
   localYaku: [],
 
   /**
+   * 標準役の翻数の上書き。
+   * 「清一色は役満」「七対子は3翻」のような店ごとの取り決めを表す。
+   *   { '清一色': { han: 8 } }      … 翻数を変える
+   *   { '清一色': { yakuman: 1 } }  … 役満として扱う
+   *   { '一発': { enabled: false } }… その役を採用しない
+   * 門前と鳴きで翻が違う役（清一色など）は、指定した値で固定される。
+   */
+  yakuOverrides: {},
+
+  /**
    * イベント卓（日替わり・イベント限定でルールを上書きする）
    * { id, name, enabled, note, ruleOverrides:{ 部分的なRuleConfig } }
    */

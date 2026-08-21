@@ -118,6 +118,16 @@ export function explainRules(r) {
   if (r.local.alice.enabled) local.push(aliceText(r.local.alice, 'アリス'));
   if (r.local.tulip.enabled) local.push(aliceText(r.local.tulip, 'チューリップ'));
   if (r.local.openRiichi.enabled) local.push(`オープンリーチあり（+${r.local.openRiichi.han}翻${r.local.openRiichi.bonus ? `・${r.local.openRiichi.bonus}BP` : ''}）。`);
+  // 標準役の翻数を変えている店は、それを最初に伝える
+  const ov = Object.entries(r.yakuOverrides || {});
+  if (ov.length) {
+    const parts = ov.map(([name, o]) => {
+      if (o.enabled === false) return `${name}は採用なし`;
+      if (o.yakuman) return `${name}は役満${o.yakuman > 1 ? `×${o.yakuman}` : ''}`;
+      return `${name}は${o.han}翻`;
+    });
+    local.push(`役の翻数が一般と違います：${parts.join('／')}。`);
+  }
   if (r.local.shouhaiMighty && r.local.shouhaiMighty.enabled) {
     const n = r.local.shouhaiMighty.count || 1;
     local.push(`少牌マイティ。手牌が常に${n}枚少なく、足りない${n}枚は「何にでもなる牌」として持っている扱いになります。`);
