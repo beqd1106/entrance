@@ -269,6 +269,7 @@ svg { display: block; }
 
 /* ---------------- 卓 ---------------- */
 .table-shell {
+  position: relative;
   height: calc(100dvh - var(--nav-h));
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px;
   background:
@@ -2348,4 +2349,50 @@ body.op-mode::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .tile.just, .seat.active, .hand-row.my-turn::before { animation: none; }
   .flash, .flash-text { animation: none; }
+}
+
+/* 鳴き・リーチを卓の上に一瞬だけ出す */
+.callban {
+  position: absolute; left: 50%; top: 18%;
+  transform: translateX(-50%);
+  z-index: 70; pointer-events: none;
+  padding: 8px 22px; border-radius: 999px;
+  font-size: clamp(15px, 2.4vw, 20px); font-weight: 700; letter-spacing: 0.14em;
+  color: #fbf8f1;
+  background: rgba(4, 16, 14, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  animation: callIn 0.9s var(--ease) both;
+}
+.callban-riichi { border-color: rgba(229, 72, 77, 0.6); color: #fecaca; }
+.callban-call { border-color: rgba(227, 192, 122, 0.6); color: #f5e3bd; }
+@keyframes callIn {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.9); }
+  18% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+
+/* 点棒の増減を、その席の上に浮かせる */
+.pt-float {
+  position: absolute; left: 50%; top: 8px;
+  transform: translateX(-50%);
+  z-index: 30; pointer-events: none;
+  font-family: var(--mono); font-weight: 700;
+  font-size: clamp(14px, 2vw, 20px);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  animation: ptFloat 1.6s var(--ease) both;
+}
+.pt-float.plus { color: #86efac; }
+.pt-float.minus { color: #fca5a5; }
+@keyframes ptFloat {
+  0% { opacity: 0; transform: translate(-50%, 6px); }
+  16% { opacity: 1; transform: translate(-50%, 0); }
+  74% { opacity: 1; transform: translate(-50%, -14px); }
+  100% { opacity: 0; transform: translate(-50%, -24px); }
+}
+.seat, .my-area { position: relative; }
+
+@media (prefers-reduced-motion: reduce) {
+  .callban, .pt-float { animation-duration: 0.01s; }
 }

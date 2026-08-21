@@ -309,8 +309,14 @@ function drainLog() {
       case 'riichi':
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
         toast(ev.open ? 'オープンリーチ' : 'リーチ', nameOf(ev.seat), 'rose');
+        callBanner(ev.open ? 'オープンリーチ' : 'リーチ', 'riichi');
         break;
-      case 'call': pushLog('', `${nameOf(ev.seat)}：${{ pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind}（${nameOf(ev.from)}の${ev.tile.name}）`); break;
+      case 'call': {
+        const label = { pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind;
+        pushLog('', `${nameOf(ev.seat)}：${label}（${nameOf(ev.from)}の${ev.tile.name}）`);
+        callBanner(label, 'call');
+        break;
+      }
       case 'kan': pushLog('', `${nameOf(ev.seat)}：${{ ankan: '暗槓', kakan: '加槓' }[ev.kind] || 'カン'} ${typeName(ev.t)}`); break;
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
       case 'kita': pushLog('rule', `${nameOf(ev.seat)}：${ev.tile.name}を抜く（${ev.count}枚目）`); break;
@@ -730,6 +736,35 @@ function winHandView(d) {
 }
 
 /**
+ * 鳴き・リーチを、卓の上に一瞬だけ出す。
+ * ログを目で追わなくても、何が起きたかが分かるようにする。
+ */
+function callBanner(text, tone) {
+  if (!G || !G.dom || !G.dom.toasts) return;
+  const host = G.dom.toasts.parentElement;
+  if (!host) return;
+  const el = h(`div.callban.callban-${tone}`, h('span', { text }));
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+/** 点棒の増減を、その席の上に浮かせる */
+function floatPoints(deltas) {
+  if (!deltas || !G.dom.board) return;
+  const n = G.engine.n;
+  deltas.forEach((d, seat) => {
+    if (!d) return;
+    const pos = seatPos(n, seat);
+    // 自分の席は卓の枠ではなく手元エリアに出す（下辺は自分の場所なので）
+    const el = pos === 'bottom' ? G.dom.myArea : G.dom.board.querySelector(`.seat-${pos}`);
+    if (!el) return;
+    const tag = h(`div.pt-float${d > 0 ? '.plus' : '.minus'}`, { text: signed(d) });
+    el.appendChild(tag);
+    setTimeout(() => tag.remove(), 1600);
+  });
+}
+
+/**
  * 局の終わりに、まず結果を一言だけ大きく出す。
  * いきなり明細を開くより、何が起きたのかが伝わる。
  */
@@ -744,6 +779,7 @@ function flashResult(res, next) {
     tone = mine ? 'win' : 'lose';
     if (d.yakuman) { label = d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満'; tone = 'yakuman'; }
   }
+  floatPoints(res.deltas);
   const el = h(`div.flash.flash-${tone}`, h('span.flash-text', { text: label }));
   G.dom.toasts.parentElement.appendChild(el);
   const wait = tone === 'yakuman' ? 1500 : 850;
@@ -853,7 +889,12 @@ function showFinal() {
   for (const f of r.finals) {
     list.appendChild(h('div.mini-item',
       h('div.seat-wind', { text: String(f.rank) }),
-      h('div.grow', h('div', { text: f.name }), h('div.tiny.muted', { text: `${fmt(f.points)}点` })),
+      h('div.grow', h('div', { text: f.name }),
+        h('div.tiny.muted', {
+          text: `${fmt(f.points)}点`
+            + (f.uma ? `　ウマ ${signed(f.uma)}` : '')
+            + (f.kubi ? `　クビ ${signed(f.kubi)}` : ''),
+        })),
       h('div', { style: { textAlign: 'right' } },
         h('div.num', { text: `${f.total > 0 ? '+' : ''}${f.total}` }),
         G.rules.bonus.enabled ? h('div.tiny', { class: 'muted', text: `${signed(f.bonus)}BP` }) : null)));

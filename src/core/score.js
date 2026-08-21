@@ -206,13 +206,39 @@ export function finalScores(points, rules) {
   const oka = ((S.returnPoints - S.startingPoints) * n) / 1000;
   // 東天紅系（flat）は点そのものが成績。1000で割らない。
   const divisor = S.mode === 'flat' ? 1 : 1000;
+
+  /**
+   * 素点の丸め。フリー雀荘では五捨六入（500点以下は切り捨て・600点以上は切り上げ）が多い。
+   * 単位は「点数 ÷ 1000」後の値なので、0.5 を境に見る。
+   */
+  const roundRaw = (v) => {
+    const mode = S.rawRounding || 'none';
+    if (mode === 'none' || divisor === 1) return v;
+    if (mode === 'ceil') return v >= 0 ? Math.ceil(v) : -Math.ceil(-v);
+    if (mode === 'floor') return v >= 0 ? Math.floor(v) : -Math.floor(-v);
+    // 五捨六入：絶対値の小数部が 0.5 以下なら捨て、0.6 以上なら上げる
+    const sign = v < 0 ? -1 : 1;
+    const a = Math.abs(v);
+    const int = Math.floor(a);
+    const frac = Math.round((a - int) * 10) / 10;
+    const rounded = sign * (frac <= 0.5 ? int : int + 1);
+    return rounded === 0 ? 0 : rounded;  // -0 を作らない
+  };
+
+  const K = S.kubi || {};
   return order.map((o, rank) => {
-    const raw = S.rankOnly ? 0 : (o.p - S.returnPoints) / divisor;
+    const raw = S.rankOnly ? 0 : roundRaw((o.p - S.returnPoints) / divisor);
     let total = raw + umas[rank];
     if (!S.rankOnly && S.okaToTop && rank === 0) total += oka;
+    // クビ：規定点に届かなければスコアから引く
+    let kubi = 0;
+    if (K.enabled && o.p < (K.threshold ?? 0) && !(K.exceptTop && rank === 0)) {
+      kubi = K.penalty ?? 0;
+      total += kubi;
+    }
     return {
       seat: o.seat, rank: rank + 1, points: o.p,
-      raw: round1(raw), uma: umas[rank], total: round1(total),
+      raw: round1(raw), uma: umas[rank], kubi, total: round1(total),
     };
   });
 }

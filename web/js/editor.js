@@ -70,6 +70,14 @@ const TIMINGS = [
   { value: 'always', label: '手牌にあるだけで' },
 ];
 const DESIGNS = ['none', 'blue', 'silver', 'green', 'gold', 'red', 'star', 'rainbow'];
+/** ウマの定番。雀荘でよく見る組み合わせを、選ぶだけで入るようにする */
+const UMA_PRESETS = [
+  { key: '5-10', label: 'ゴットー（5-10）', four: [10, 5, -5, -10], three: [10, 0, -10] },
+  { key: '10-20', label: 'ワンツー（10-20）', four: [20, 10, -10, -20], three: [20, 0, -20] },
+  { key: '10-30', label: 'ワンスリー（10-30）', four: [30, 10, -10, -30], three: [30, 0, -30] },
+  { key: '20-30', label: 'ツースリー（20-30）', four: [30, 20, -20, -30], three: [30, 0, -30] },
+  { key: '15-5', label: '5-15（Mリーグ型）', four: [15, 5, -5, -15], three: [15, -5, -10] },
+];
 /** 特殊牌にできる牌。数牌は1〜9すべて、字牌も全種。金8索・虹3筒のような指定に対応する */
 const TILE_SUITS = [
   { key: 'm', label: '萬子', codes: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m'] },
@@ -132,6 +140,24 @@ const GROUPS = [
       { type: 'number', path: 'ryuukyoku.notenPenalty', label: 'ノーテン罰符（場）', step: 1000, advanced: true },
       { type: 'number', path: 'scoring.honbaPoints', label: '1本場の点数', step: 100, advanced: true },
       { type: 'switch', path: 'scoring.umaZeroSum', label: 'トップのウマを自動計算', advanced: true },
+      { type: 'umaPreset' },
+      {
+        type: 'select', path: 'scoring.rawRounding', label: '素点の丸め方',
+        options: [
+          { value: 'none', label: '丸めない（競技寄り）' },
+          { value: 'go', label: '五捨六入（フリー雀荘の定番）' },
+          { value: 'ceil', label: '切り上げ' },
+          { value: 'floor', label: '切り捨て' },
+        ],
+        desc: '最終スコアを出すときに、1000点未満をどう扱うか',
+      },
+      {
+        type: 'switch', path: 'scoring.kubi.enabled', label: 'クビ（規定点に届かないとマイナス）',
+        desc: '終局時に規定の持ち点へ届かなかった人のスコアを引きます（四万点クビなど）',
+      },
+      { type: 'number', path: 'scoring.kubi.threshold', label: 'クビの規定点', step: 1000 },
+      { type: 'number', path: 'scoring.kubi.penalty', label: 'クビのスコア', step: 1 },
+      { type: 'switch', path: 'scoring.kubi.exceptTop', label: 'トップは免除', advanced: true },
       { type: 'switch', path: 'scoring.okaToTop', label: 'オカをトップへ', advanced: true },
       {
         type: 'switch', path: 'game.pointCapEnd.enabled', label: '点数で打ち切り',
@@ -299,6 +325,24 @@ function control(item, R, onChange) {
           onChange();
         });
       return field('人数', row);
+    }
+    case 'umaPreset': {
+      const three = R.game.players === 3;
+      const cur = UMA_PRESETS.find((u) => {
+        const arr = three ? u.three : u.four;
+        return arr.length === R.scoring.uma.length && arr.every((v, i) => v === R.scoring.uma[i]);
+      });
+      const box = h('div.row.gap-8.wrapflex');
+      for (const u of UMA_PRESETS) {
+        const on = cur && cur.key === u.key;
+        const b = h(`span.chip.chip-btn${on ? '.on' : ''}`, { text: u.label });
+        b.addEventListener('click', () => {
+          R.scoring.uma = [...(three ? u.three : u.four)];
+          onChange();
+        });
+        box.appendChild(b);
+      }
+      return field('ウマ（よくある組み合わせ）', box, '押すとその値が入ります。下の欄で細かく直せます');
     }
     case 'uma': {
       const row = h('div.row.gap-8.wrapflex');
