@@ -430,14 +430,25 @@ function drawTop(s) {
   top.appendChild(item('ルール', G.preset.name));
   if (G.event) top.appendChild(h('span.chip.chip-brass', { text: `イベント卓：${G.event.name}` }));
   top.appendChild(item('場', `${s.round.windName}${s.round.kyoku}局 ${s.round.honba}本場`));
-  top.appendChild(item('残り', String(s.wallRemaining)));
+  // 残り牌は、数字だけだと「あと何巡あるか」が掴みにくいのでゲージも出す
+  const total = Math.max(1, s.wallTotal || 70);
+  const ratio = Math.max(0, Math.min(1, s.wallRemaining / total));
+  const low = s.wallRemaining <= 8;
+  top.appendChild(h('div.wall-box',
+    h('div.k', { text: '残り' }),
+    h('div.row.gap-4',
+      h('div.v', { class: low ? 'low' : '', text: String(s.wallRemaining) }),
+      h('div.wall-gauge', h('div.wall-gauge-fill', {
+        class: low ? 'low' : '',
+        style: { width: `${(ratio * 100).toFixed(0)}%` },
+      })))));
   top.appendChild(h('div',
     h('div.k', { text: '供託' }),
     h('div.row.gap-4', { style: { height: '22px' } },
       s.round.kyotaku ? Array.from({ length: s.round.kyotaku }, () => h('div.stick')) : h('div.v', { text: '0' }))));
   const dora = h('div.dora-box');
-  dora.appendChild(h('div.k', { text: 'ドラ' }));
-  s.dora.forEach((d) => dora.appendChild(tileEl(d, { size: 'sm' })));
+  dora.appendChild(h('div.k', { text: 'ドラ表示' }));
+  s.dora.forEach((d) => dora.appendChild(tileEl(d, { size: 'sm', cls: 'dora-ind' })));
   top.appendChild(dora);
   top.appendChild(h('div.grow'));
   const sp = h('div.row.gap-4');
@@ -660,7 +671,12 @@ function drawActions(s) {
   const myTurn = !!choices.length && !s.finished && s.phase !== 'kyokuEnd';
   G.dom.hand.classList.toggle('my-turn', myTurn);
   if (!choices.length) {
-    hint.textContent = s.finished ? '' : (s.phase === 'kyokuEnd' ? '' : 'CPUの手番です');
+    clear(hint);
+    if (!s.finished && s.phase !== 'kyokuEnd') {
+      // 止まっているのか考えているのか分かるよう、点を打たせる
+      hint.appendChild(h('span', { text: 'CPUの手番です' }));
+      hint.appendChild(h('span.thinking', h('i'), h('i'), h('i')));
+    }
     return;
   }
   if (G.mode === 'riichiSelect') {
@@ -887,7 +903,7 @@ function showFinal() {
   body.appendChild(h('div.muted', { text: `終了理由：${r.reason} ／ ${r.kyokuCount}局` }));
   const list = h('div.mini-list', { style: { marginTop: '12px' } });
   for (const f of r.finals) {
-    list.appendChild(h('div.mini-item',
+    list.appendChild(h(`div.mini-item${f.rank === 1 ? '.is-top' : ''}`,
       h('div.seat-wind', { text: String(f.rank) }),
       h('div.grow', h('div', { text: f.name }),
         h('div.tiny.muted', {

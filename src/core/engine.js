@@ -124,6 +124,8 @@ export class GameEngine {
     this.kyokuEnd = null;
     this.pushEvent({ type: 'kyokuStart', wind: this.round.wind, kyoku: this.round.kyoku, honba: this.round.honba, dealer: this.round.dealer });
     this.drawTile(this.turn, false);
+    // ゲージの分母。配り終えたあとの残り枚数を、その局の満タンとする
+    this.wallAtStart = this.wall.remaining;
     return this;
   }
 
@@ -1436,6 +1438,8 @@ export class GameEngine {
       rules: { name: this.rules.meta.name, players: this.n, bonusLabel: this.rules.bonus.label },
       round: { ...this.round, windName: WINDS[this.round.wind] },
       wallRemaining: this.wall ? this.wall.remaining : 0,
+      // ゲージの分母。局の最初に引ける枚数（王牌を除いた山）
+      wallTotal: this.wallAtStart || (this.wall ? this.wall.remaining : 0),
       dora: this.wall ? this.wall.doraIndicators.map((t) => this.tileInfo(t)) : [],
       ura: this.finished && this.wall ? this.wall.uraIndicators.map((t) => this.tileInfo(t)) : [],
       wareme: this.wareme,
