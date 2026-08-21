@@ -592,10 +592,16 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .table-top { padding: 5px 10px; gap: 10px; font-size: 11px; border-radius: 10px; }
   .table-top .v { font-size: 12px; }
   .table-top .k { font-size: 8.5px; }
+  /* 横持ちは縦が足りない。ゲージは畳んで数字だけ残す（帯が2段になるのを防ぐ） */
+  .wall-gauge { display: none; }
   .table-main { grid-template-columns: minmax(0, 1fr) 190px; gap: 6px; }
   .side-panel { gap: 5px; }
   .side-panel { flex-direction: column; }
-  .side-card.rule-summary { display: block; font-size: 10px; padding: 6px 9px; line-height: 1.4; flex: 0 0 auto; }
+  .side-card.rule-summary {
+    display: block; font-size: 10px; padding: 6px 9px; line-height: 1.4;
+    /* 特殊ルールが多い店だと縦に伸びて手牌に被るので、中でスクロールさせる */
+    flex: 0 1 auto; max-height: 52%; overflow-y: auto;
+  }
   .board-scroll { justify-content: flex-start; }
   .side-card .rule-item span:first-child { flex: 0 0 56px; }
   .logbox { font-size: 10px; padding: 6px 8px; min-height: 40px; line-height: 1.5; }
