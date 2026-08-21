@@ -43,45 +43,76 @@ function pinzu(n) {
 // ---------------------------------------------------------------------------
 // 索子（竹）
 // ---------------------------------------------------------------------------
-/** 竹1本（節つき） */
+/**
+ * 竹1本。
+ * ただの角丸の棒だと、小さく表示したときに何本あるのか読み取りにくい。
+ * 実物の牌と同じく「中央がくびれ、上下に節がある」形にして、
+ * 本と本のあいだに隙間が見えるようにする。
+ */
 function bamboo(x, y, h, cls = 'green') {
-  const w = h * 0.62;
-  const nodeW = w * 1.18;
-  const nodeH = h * 0.11;
-  return `<g class="${cls}">`
-    + `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="${w * 0.3}"/>`
-    + `<rect x="${x - nodeW / 2}" y="${y - h * 0.30 - nodeH / 2}" width="${nodeW}" height="${nodeH}" rx="${nodeH / 2}"/>`
-    + `<rect x="${x - nodeW / 2}" y="${y + h * 0.30 - nodeH / 2}" width="${nodeW}" height="${nodeH}" rx="${nodeH / 2}"/>`
-    + `</g>`;
+  const f = (v) => Number(v).toFixed(1);
+  const w = h * 0.56;           // 節の幅（いちばん太いところ）
+  const waist = w * 0.62;       // 中央のくびれ
+  const nodeH = h * 0.155;      // 節の高さ
+  const top = y - h / 2;
+  const bot = y + h / 2;
+  const innerTop = top + nodeH * 0.9;
+  const innerBot = bot - nodeH * 0.9;
+  // くびれた胴（左右対称のベジェ）
+  const body = `<path d="M${f(x - waist / 2)} ${f(innerTop)}`
+    + ` C${f(x - w * 0.30)} ${f(y - h * 0.16)} ${f(x - w * 0.30)} ${f(y + h * 0.16)} ${f(x - waist / 2)} ${f(innerBot)}`
+    + ` L${f(x + waist / 2)} ${f(innerBot)}`
+    + ` C${f(x + w * 0.30)} ${f(y + h * 0.16)} ${f(x + w * 0.30)} ${f(y - h * 0.16)} ${f(x + waist / 2)} ${f(innerTop)} Z"/>`;
+  // 上下の節
+  const node = (cy) => `<rect x="${f(x - w / 2)}" y="${f(cy - nodeH / 2)}" width="${f(w)}"`
+    + ` height="${f(nodeH)}" rx="${f(nodeH * 0.42)}"/>`;
+  // 胴の中央に細い抜きを入れて、竹らしい溝を作る
+  const groove = h >= 30
+    ? `<rect x="${f(x - waist * 0.12)}" y="${f(y - h * 0.13)}" width="${f(waist * 0.24)}"`
+      + ` height="${f(h * 0.26)}" rx="${f(waist * 0.12)}" class="face"/>`
+    : '';
+  return `<g class="${cls}">${body}${node(top + nodeH / 2)}${node(bot - nodeH / 2)}</g>${groove}`;
 }
 
-/** 一索は鳥 */
+/**
+ * 一索は鳥（孔雀）。
+ * 小さく表示しても鳥だと分かるよう、頭・くちばし・胴・尾を大きめの塊で描く。
+ */
 function bird() {
   return `<svg ${VB}>`
-    + `<ellipse cx="50" cy="78" rx="20" ry="26" class="green"/>`
-    + `<path d="M50 52 C36 60 32 78 40 94 C46 84 46 66 50 52Z" class="face"/>`
-    + `<circle cx="50" cy="42" r="13" class="green"/>`
-    + `<circle cx="50" cy="40" r="3.4" class="face"/>`
-    + `<path d="M50 27 C44 20 46 12 52 10 C56 14 55 22 50 27Z" class="red"/>`
-    + `<path d="M60 46 L74 42 L61 52Z" class="red"/>`
-    + `<path d="M42 100 C46 116 54 122 62 126 C52 122 48 112 46 102Z" class="green"/>`
-    + `<path d="M38 104 C40 118 46 126 54 130 C44 128 38 118 34 106Z" class="red"/>`
+    // 尾（下へ流れる羽。緑と赤を重ねて牌らしい色に）
+    + `<path d="M46 96 C40 116 34 128 24 136 C40 132 50 120 56 104Z" class="green"/>`
+    + `<path d="M54 98 C54 118 50 130 42 138 C56 134 64 120 66 104Z" class="red"/>`
+    // 胴
+    + `<path d="M50 46 C68 50 76 68 72 88 C68 106 56 112 46 104 C36 96 34 62 50 46Z" class="green"/>`
+    // 胸の抜き
+    + `<path d="M50 58 C42 68 42 88 50 98 C56 90 56 68 50 58Z" class="face"/>`
+    // 頭
+    + `<circle cx="46" cy="36" r="14" class="green"/>`
+    + `<circle cx="43" cy="33" r="3.6" class="face"/>`
+    // くちばし
+    + `<path d="M33 38 L18 43 L34 47Z" class="red"/>`
+    // 冠羽
+    + `<path d="M50 22 C46 14 50 8 57 8 C58 15 55 20 50 24Z" class="red"/>`
+    + `<path d="M58 26 C58 18 63 14 69 15 C68 22 64 26 58 29Z" class="green"/>`
+    // 脚
+    + `<path d="M62 108 L66 122 M62 108 L56 120" stroke-width="3.5" class="red-stroke"/>`
     + `</svg>`;
 }
 
 const SOU_LAYOUT = {
-  2: [[50, 42, 40, 'green'], [50, 100, 40, 'green']],
-  3: [[50, 34, 36, 'green'], [30, 102, 36, 'green'], [70, 102, 36, 'green']],
-  4: [[30, 42, 38, 'green'], [70, 42, 38, 'green'], [30, 100, 38, 'green'], [70, 100, 38, 'green']],
-  5: [[28, 36, 32, 'green'], [72, 36, 32, 'green'], [50, 70, 32, 'red'], [28, 104, 32, 'green'], [72, 104, 32, 'green']],
-  6: [[30, 32, 30, 'green'], [70, 32, 30, 'green'], [30, 70, 30, 'green'], [70, 70, 30, 'green'], [30, 108, 30, 'green'], [70, 108, 30, 'green']],
-  7: [[50, 26, 28, 'red'], [30, 72, 28, 'green'], [70, 72, 28, 'green'], [50, 72, 28, 'green'],
-    [30, 114, 28, 'green'], [70, 114, 28, 'green'], [50, 114, 28, 'green']],
-  8: [[32, 28, 28, 'green'], [68, 28, 28, 'green'], [32, 62, 28, 'green'], [68, 62, 28, 'green'],
-    [32, 96, 28, 'green'], [68, 96, 28, 'green'], [32, 126, 24, 'green'], [68, 126, 24, 'green']],
-  9: [[26, 30, 28, 'red'], [50, 30, 28, 'red'], [74, 30, 28, 'red'],
-    [26, 70, 28, 'green'], [50, 70, 28, 'green'], [74, 70, 28, 'green'],
-    [26, 110, 28, 'green'], [50, 110, 28, 'green'], [74, 110, 28, 'green']],
+  2: [[50, 44, 50, 'green'], [50, 100, 50, 'green']],
+  3: [[50, 36, 46, 'green'], [30, 100, 46, 'green'], [70, 100, 46, 'green']],
+  4: [[31, 42, 46, 'green'], [69, 42, 46, 'green'], [31, 100, 46, 'green'], [69, 100, 46, 'green']],
+  5: [[28, 36, 40, 'green'], [72, 36, 40, 'green'], [50, 70, 40, 'red'], [28, 104, 40, 'green'], [72, 104, 40, 'green']],
+  6: [[30, 34, 38, 'green'], [70, 34, 38, 'green'], [30, 72, 38, 'green'], [70, 72, 38, 'green'], [30, 110, 38, 'green'], [70, 110, 38, 'green']],
+  7: [[50, 28, 34, 'red'], [30, 74, 34, 'green'], [70, 74, 34, 'green'], [50, 74, 34, 'green'],
+    [30, 116, 34, 'green'], [70, 116, 34, 'green'], [50, 116, 34, 'green']],
+  8: [[32, 30, 34, 'green'], [68, 30, 34, 'green'], [32, 66, 34, 'green'], [68, 66, 34, 'green'],
+    [32, 102, 34, 'green'], [68, 102, 34, 'green'], [32, 132, 30, 'green'], [68, 132, 30, 'green']],
+  9: [[26, 32, 34, 'red'], [50, 32, 34, 'red'], [74, 32, 34, 'red'],
+    [26, 72, 34, 'green'], [50, 72, 34, 'green'], [74, 72, 34, 'green'],
+    [26, 112, 34, 'green'], [50, 112, 34, 'green'], [74, 112, 34, 'green']],
 };
 
 function souzu(n) {

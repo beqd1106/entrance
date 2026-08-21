@@ -172,6 +172,7 @@ svg { display: block; }
 .tile-face .face { fill: #fffdf8; }
 .tile-face .face-stroke { fill: #fffdf8; opacity: 0.85; }
 .tile-face .blue-stroke { fill: none; stroke: #2b5b8c; stroke-width: 5; }
+.tile-face .red-stroke { fill: none; stroke: #b4362f; stroke-linecap: round; }
 .tile-face .blue-stroke.thin { stroke-width: 3; }
 .tile-face .glyph {
   font-family: var(--tile-serif); font-weight: 700; text-anchor: middle; dominant-baseline: alphabetic;
