@@ -68,6 +68,8 @@ export function tileEl(info, opts = {}) {
   if (info.rainbow) cls.push('rainbow-tile');
   if (info.dot) cls.push('dot');
   if (info.flower || isFlower(info.t)) cls.push('flower');
+  // 2セット混ぜのルールでは、牌の裏の色を下辺の帯で示す（背一色を狙えるように）
+  if (info.back) cls.push(`back-${info.back}`);
   if (info.sp) { cls.push('sp'); if (opts.spColor) cls.push(`sp-${opts.spColor}`); }
   if (opts.dim) cls.push('dim');
   if (opts.clickable) cls.push('tile-clickable');

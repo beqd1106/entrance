@@ -1352,6 +1352,9 @@ export class GameEngine {
       id: t.id, t: t.t, code: typeToCode(t.t), name: tileName(t),
       red: t.red, gold: t.gold, blue: t.blue, star: t.star, rainbow: t.rainbow,
       dot: t.dot, sp: t.sp, flower: t.flower || null,
+      // 牌の裏の色。2セットを混ぜるルール（清一色ゲーム）で背一色を狙うには、
+      // 自分の手牌の裏が何色かが見えている必要がある
+      back: t.back || null,
     };
   }
 
