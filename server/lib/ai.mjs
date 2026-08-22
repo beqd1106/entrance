@@ -15,6 +15,18 @@ const REGION = process.env.AWS_REGION || 'ap-northeast-1';
 const MODEL = process.env.BEDROCK_MODEL || 'jp.anthropic.claude-haiku-4-5-20251001-v1:0';
 
 /**
+ * 呼び先は2通りある。
+ *   ANTHROPIC_API_KEY があれば Claude API を直接叩く
+ *   無ければ Bedrock（AWSの署名付きリクエスト）
+ * Bedrock はモデルアクセスの利用用途フォームを出すまで使えないため、
+ * 申請を待たずに動かしたいときは API キーを環境変数に入れれば切り替わる。
+ * 鍵はサーバ（Lambda）の環境変数だけに置き、フロントには渡さない。
+ */
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || '';
+// 文章から設定を起こすだけの軽い用途なので、必要なら安いモデルを環境変数で指定する
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5';
+
+/**
  * 書き換えを許す項目。
  * ここに無いものは、モデルが返してきても採用しない。
  */
@@ -69,8 +81,27 @@ ${Object.entries(FIELDS).map(([k, v]) => {
   return `- ${k} (${v.label}): ${t}`;
 }).join('\n')}`;
 
-/** 文章から設定の下書きを作る */
-export async function draftRulesFromText(text) {
+/** Claude API を直接叩く（ANTHROPIC_API_KEY があるとき） */
+async function askClaudeApi(text) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 1200,
+      system: SYSTEM,
+      messages: [{ role: 'user', content: text }],
+    }),
+  });
+  return { ok: res.ok, status: res.status, text: await res.text() };
+}
+
+/** Bedrock を叩く（AWSの署名付きリクエスト） */
+async function askBedrock(text) {
   const body = JSON.stringify({
     anthropic_version: 'bedrock-2023-05-31',
     max_tokens: 1200,
@@ -78,20 +109,27 @@ export async function draftRulesFromText(text) {
     system: SYSTEM,
     messages: [{ role: 'user', content: [{ type: 'text', text }] }],
   });
+  return signedFetch({
+    service: 'bedrock', region: REGION, method: 'POST',
+    url: `https://bedrock-runtime.${REGION}.amazonaws.com/model/${encodeURIComponent(MODEL)}/invoke`,
+    body, headers: { 'content-type': 'application/json' },
+  });
+}
 
+/** 文章から設定の下書きを作る */
+export async function draftRulesFromText(text) {
   let res;
   try {
-    res = await signedFetch({
-      service: 'bedrock', region: REGION, method: 'POST',
-      url: `https://bedrock-runtime.${REGION}.amazonaws.com/model/${encodeURIComponent(MODEL)}/invoke`,
-      body, headers: { 'content-type': 'application/json' },
-    });
+    res = ANTHROPIC_KEY ? await askClaudeApi(text) : await askBedrock(text);
   } catch (err) {
-    console.error('bedrock request failed', err?.message);
+    console.error('AI request failed', err?.message);
     return { ok: false, message: '下書きの生成に失敗しました' };
   }
   if (!res.ok) {
-    console.error('bedrock error', res.status, res.text.slice(0, 400));
+    console.error('AI error', res.status, res.text.slice(0, 400));
+    if (ANTHROPIC_KEY && (res.status === 401 || res.status === 403)) {
+      return { ok: false, message: 'AIの鍵が正しくありません。サーバの設定を確認してください' };
+    }
     // 何が足りないのかを伝える。「失敗しました」だけだと打つ手が分からない。
     if (/use case details/i.test(res.text)) {
       return {
