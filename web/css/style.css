@@ -514,20 +514,38 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brass-2); o
 .switch:last-child { border-bottom: 0; }
 .switch .sw-label { flex: 1; font-size: 13.5px; }
 .switch .sw-desc { font-size: 11.5px; color: var(--ink-4); }
+/* スイッチ。
+   見た目は 42×24 のトグルだが、ボタン自体は 58×44 まで広げてある。
+   ルール設定にはスイッチが数十個並ぶので、見た目どおりの 24px だと
+   横持ちのスマホで押し間違える。トラックとノブは疑似要素で描き、
+   押せる範囲だけを外に広げている。 */
 .sw {
-  position: relative; width: 42px; height: 24px; border-radius: 999px; background: var(--line-2);
-  border: 0; transition: 0.18s var(--ease); flex: 0 0 auto;
+  position: relative; width: 58px; height: 44px;
+  background: none; border: 0; padding: 0;
+  flex: 0 0 auto; cursor: pointer;
+}
+.sw::before {
+  content: ''; position: absolute; top: 10px; left: 8px;
+  width: 42px; height: 24px; border-radius: 999px;
+  background: var(--line-2); transition: 0.18s var(--ease);
 }
 .sw::after {
-  content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+  content: ''; position: absolute; top: 13px; left: 11px; width: 18px; height: 18px;
   border-radius: 50%; background: #fff; transition: 0.18s var(--ease); box-shadow: var(--shadow-1);
 }
-.sw.on { background: var(--brass-2); }
+.sw.on::before { background: var(--brass-2); }
 .sw.on::after { transform: translateX(18px); }
+
 .stepper { display: inline-flex; align-items: center; gap: 8px; }
 .stepper button {
+  position: relative;
   width: 30px; height: 30px; border-radius: var(--r-s); border: 1px solid var(--line-2);
   background: var(--paper-2); font-size: 16px; line-height: 1; color: var(--ink-2);
+}
+/* 増減ボタンも同じ考え方で、押せる範囲を広げる */
+.stepper button::before {
+  content: ''; position: absolute; inset: -8px; border-radius: var(--r-m);
+  background: rgba(0, 0, 0, 0.001);
 }
 .stepper button:hover { background: var(--paper-3); }
 .stepper .val { font-family: var(--mono); min-width: 26px; text-align: center; }
@@ -1812,6 +1830,8 @@ body.op-mode .nav { display: none; }
 .seg-btn {
   border: 0; background: none; border-radius: 999px;
   padding: 7px 16px; font-size: 13px; color: var(--ink-3);
+  /* 横持ちのスマホでも押し間違えない高さを保つ */
+  min-height: 34px;
   transition: 0.15s var(--ease);
 }
 .seg-btn:hover { color: var(--ink); }
