@@ -11,6 +11,12 @@ export const STORES = [
     id: 'yonma_kan',
     // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
     photoFile: 'img/store-yonma_kan.webp',
+    // 会員クーポン（店頭提示の案内。アプリ内で金銭のやり取りはしない）
+    coupons: [
+      { id: 'yk_first', title: '初回1時間無料', body: 'はじめての来店で、セット1時間ぶんが無料になります。', requires: {} },
+      { id: 'yk_play3', title: 'フリー1半荘 100円引き', body: 'アプリでこの店のルールを3回体験した方へ。', requires: { plays: 3 } },
+      { id: 'yk_visit3', title: 'ドリンク1杯サービス', body: '3回めの来店から。スタッフに会員番号をお伝えください。', requires: { checkins: 3 } },
+    ],
     name: 'DEMO雀荘 四麻館',
     catch: 'はじめての1半荘を、いちばん安心して打てる店。',
     presetId: 'store_yonma_kan',
@@ -47,6 +53,10 @@ export const STORES = [
     id: 'tokushu_kan',
     // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
     photoFile: 'img/store-tokushu_kan.webp',
+    coupons: [
+      { id: 'tk_play2', title: '特殊牌の解説カード進呈', body: 'アプリで2回体験した方へ。卓上カードと同じものをお渡しします。', requires: { plays: 2 } },
+      { id: 'tk_visit2', title: 'セット30分延長', body: '2回めの来店から使えます。', requires: { checkins: 2 } },
+    ],
     name: 'DEMO雀荘 特殊牌館',
     catch: '牌に意味がある。1枚めくるたびに空気が変わる店。',
     presetId: 'store_tokushu_kan',
@@ -83,6 +93,10 @@ export const STORES = [
     id: 'goto_kan',
     // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
     photoFile: 'img/store-goto_kan.webp',
+    coupons: [
+      { id: 'gk_play1', title: '五等サンマ講習を無料に', body: 'アプリで1回でも打ってから来ていただいた方へ。', requires: { plays: 1 } },
+      { id: 'gk_visit5', title: 'フリー1半荘無料', body: '5回めの来店から。常連さんへのお礼です。', requires: { checkins: 5 } },
+    ],
     name: 'DEMO雀荘 五等サンマ館',
     catch: '春夏秋冬を抜いて、点数以外の何かも動かす三人麻雀。',
     presetId: 'store_goto_kan',

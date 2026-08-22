@@ -2446,3 +2446,89 @@ body.op-mode::before { display: none; }
 .mini-item.is-top .seat-wind { background: linear-gradient(140deg, #e3c07a, #c39a3c); color: #3b2a08; }
 
 @media (prefers-reduced-motion: reduce) { .thinking i { animation: none; } }
+
+/* =========================================================================
+   会員カードとクーポン
+   店頭で見せるものなので、券面は大きく・番号は読み上げやすく。
+   ========================================================================= */
+.memcard {
+  position: relative;
+  border-radius: var(--r-l);
+  padding: clamp(18px, 3vw, 26px);
+  color: #f6f2e9;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 100% at 85% 0%, hsl(var(--hue) 45% 26%), transparent 60%),
+    linear-gradient(140deg, #123a33, #0b2822 60%, #081d19);
+  box-shadow: var(--shadow-2);
+  border: 1px solid rgba(227, 192, 122, 0.28);
+}
+.memcard::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(227, 192, 122, 0.18) 1px, transparent 1px);
+  background-size: 14px 14px;
+  -webkit-mask-image: linear-gradient(200deg, #000, transparent 70%);
+  mask-image: linear-gradient(200deg, #000, transparent 70%);
+  pointer-events: none;
+}
+.memcard-top { display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 1; }
+.memcard-label { font-size: 10.5px; letter-spacing: 0.22em; color: #e3c07a; font-weight: 700; }
+.memcard-store { font-size: clamp(16px, 2.4vw, 20px); font-weight: 700; margin-top: 4px; }
+.memcard-mark { margin-left: auto; color: #e3c07a; opacity: 0.85; }
+.memcard-no {
+  position: relative; z-index: 1;
+  font-family: var(--mono); font-weight: 700;
+  font-size: clamp(26px, 5.6vw, 40px);
+  letter-spacing: 0.14em;
+  margin: clamp(18px, 3vw, 30px) 0 clamp(14px, 2vw, 22px);
+}
+.memcard-foot {
+  position: relative; z-index: 1;
+  display: flex; gap: 22px; flex-wrap: wrap;
+  font-size: 12.5px; color: rgba(246, 242, 233, 0.86);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding-top: 12px;
+}
+.memcard-k { color: rgba(246, 242, 233, 0.5); margin-right: 6px; font-size: 11px; }
+
+.memcard-mini { display: block; }
+.memcard-mini-no {
+  font-family: var(--mono); font-weight: 700; font-size: 17px;
+  letter-spacing: 0.1em; margin: 6px 0 4px; color: var(--ink-2);
+}
+
+.coupon-list { display: grid; gap: 10px; }
+.coupon {
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  padding: 14px 16px;
+  background: var(--surface);
+  /* 券らしく、左側にミシン目を入れる */
+  position: relative;
+}
+.coupon::before {
+  content: '';
+  position: absolute; left: 6px; top: 10px; bottom: 10px;
+  border-left: 2px dashed var(--line-2);
+}
+.coupon-main { flex: 1 1 auto; min-width: 0; padding-left: 12px; }
+.coupon-title { font-size: 15.5px; margin: 0; }
+.coupon-body { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.7; }
+.coupon-progress { margin-top: 8px; font-size: 11.5px; color: var(--ink-4); font-family: var(--mono); }
+.coupon-state {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--paper-3); color: var(--ink-3);
+}
+.coupon-act { flex: 0 0 auto; }
+.coupon.is-ready { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-3); }
+.coupon.is-ready .coupon-state { background: var(--brass-3); color: #076a4b; }
+.coupon.is-used, .coupon.is-expired { opacity: 0.6; }
+.coupon.is-used .coupon-title, .coupon.is-expired .coupon-title { text-decoration: line-through; }
+
+@media (max-width: 560px) {
+  .coupon { flex-direction: column; align-items: stretch; }
+  .coupon-act .btn { width: 100%; }
+}

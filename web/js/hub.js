@@ -108,6 +108,7 @@ export function renderHub(root) {
       h('footer.op-foot',
         h('a.op-foot-link', { href: '#/manual' }, h('span', { text: '使い方' })),
         helpBtn,
+        h('a.op-foot-link', { href: '#/cards' }, h('span', { text: '会員カード' })),
         h('a.op-foot-link', { href: '#/about' }, h('span', { text: 'このアプリについて' })),
         h('span.op-note', { text: 'デモ版／ポイントは非換金' }))));
 

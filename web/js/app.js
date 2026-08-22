@@ -20,6 +20,9 @@ import { renderManual } from './manual.js';
 import { renderHub } from './hub.js';
 import { renderTable } from './table.js';
 import { matchText, presetHaystack, storeHaystack, searchField } from './search.js';
+import {
+  getCard, hasCard, allCards, couponState, couponProgress, useCoupon, statsOf,
+} from './member.js';
 
 const app = document.getElementById('app');
 // iPhoneアプリの中（独自スキームで配信）だけに効かせたい調整のための目印
@@ -53,6 +56,8 @@ function route() {
     case 'stores': viewStores(params); break;
     case 'store': viewStore(arg); break;
     case 'search': viewSearch(params); break;
+    case 'card': viewCard(arg); break;
+    case 'cards': viewCards(); break;
     case 'compare': viewCompare(params); break;
     case 'table': cleanup = renderTable(app, params); break;
     case 'play': cleanup = renderGame(app, params); break;
@@ -393,6 +398,109 @@ function viewSearch(params) {
 }
 
 // ---------------------------------------------------------------------------
+// 会員カードとクーポン
+//   アプリで体験した人が、店頭で名乗れる形を持てるようにする。
+//   クーポンは店頭提示の案内で、アプリの中で金銭のやり取りはしない。
+// ---------------------------------------------------------------------------
+function couponCard(store, c) {
+  const state = couponState(store.id, c);
+  const label = {
+    ready: '使えます', locked: 'もう少し', used: '使用済み', expired: '期限切れ',
+  }[state];
+  const box = h(`div.coupon.is-${state}`,
+    h('div.coupon-main',
+      h('div.row.gap-8', { style: { marginBottom: '4px' } },
+        h('span.coupon-state', { text: label }),
+        c.until ? h('span.tiny.muted', { text: `${c.until} まで` }) : null),
+      h('h4.coupon-title', { text: c.title }),
+      h('p.coupon-body', { text: c.body }),
+      state === 'locked' ? h('div.coupon-progress', { text: couponProgress(store.id, c) }) : null));
+  if (state === 'ready') {
+    const use = h('button.btn.btn-sm.btn-primary', { text: '店頭で使う' });
+    use.addEventListener('click', () => {
+      // 二度押しを避けるため、使う前に一度確認する
+      if (!window.confirm(`「${c.title}」を使用済みにします。店員さんの前で押してください。`)) return;
+      useCoupon(store.id, c.id);
+      route();
+    });
+    box.appendChild(h('div.coupon-act', use));
+  }
+  return box;
+}
+
+function viewCard(storeId) {
+  const s = resolveStore(storeId);
+  const card = getCard(s.id, { create: true });
+  const st = statsOf(s.id);
+  const coupons = s.coupons || [];
+  const ready = coupons.filter((c) => couponState(s.id, c) === 'ready').length;
+
+  const sec = h('section.section', h('div.wrap-narrow'));
+  const wrap = sec.firstChild;
+  wrap.appendChild(h('div.row.gap-8', { style: { marginBottom: '14px' } },
+    h('a.btn.btn-sm.btn-ghost', { href: `#/store/${s.id}`, text: '← 店舗ページ' }),
+    h('div.grow'),
+    h('a.btn.btn-sm.btn-ghost', { href: '#/cards', text: 'カード一覧' })));
+
+  // 券面
+  wrap.appendChild(h('div.memcard', { style: { '--hue': String(s.photo.hue) } },
+    h('div.memcard-top',
+      h('div',
+        h('div.memcard-label', { text: 'MEMBER' }),
+        h('div.memcard-store', { text: s.name })),
+      h('div.memcard-mark', icon('qr', 28))),
+    h('div.memcard-no', { text: card.no }),
+    h('div.memcard-foot',
+      h('div', h('span.memcard-k', { text: '発行' }), h('span', { text: new Date(card.since).toLocaleDateString('ja-JP') })),
+      h('div', h('span.memcard-k', { text: '体験' }), h('span', { text: `${st.plays}回` })),
+      h('div', h('span.memcard-k', { text: '来店' }), h('span', { text: `${st.checkins}回` })))));
+  wrap.appendChild(h('p.tiny.muted', { style: { marginTop: '10px' },
+    text: '店頭では、この会員番号をスタッフにお伝えください。番号は端末のなかにだけ保存され、どこにも送信されません。' }));
+
+  wrap.appendChild(h('div.rule-line'));
+  wrap.appendChild(sectionHead('01', 'クーポン', ready ? `いま使えるものが${ready}件あります。` : '通うほど使えるものが増えます。'));
+  if (coupons.length) {
+    wrap.appendChild(h('div.coupon-list', coupons.map((c) => couponCard(s, c))));
+  } else {
+    wrap.appendChild(emptyState('この店のクーポンはまだありません', '店舗側で作成すると、ここに並びます。', null));
+  }
+  wrap.appendChild(h('p.tiny.muted', { style: { marginTop: '16px' },
+    text: 'クーポンは店頭で提示する案内です。アプリの中で金銭のやり取りはありません。ゲーム内ポイント（BP）とも交換しません。' }));
+  app.appendChild(sec);
+  app.appendChild(footer());
+}
+
+function viewCards() {
+  const cards = allCards();
+  const sec = h('section.section', h('div.wrap'));
+  const wrap = sec.firstChild;
+  wrap.appendChild(sectionHead('01', '会員カード', 'この端末で発行したカードです。店ごとに1枚持てます。'));
+  if (!cards.length) {
+    wrap.appendChild(emptyState(
+      'まだカードがありません',
+      '店舗ページの「会員カードを作る」から発行できます。',
+      h('a.btn.btn-primary', { href: '#/stores', text: '店舗をさがす' })));
+  } else {
+    const grid = h('div.store-grid');
+    for (const c of cards) {
+      const s = resolveStore(c.storeId);
+      const st = statsOf(c.storeId);
+      const ready = (s.coupons || []).filter((x) => couponState(c.storeId, x) === 'ready').length;
+      grid.appendChild(h('a.card.card-pad.memcard-mini', { href: `#/card/${c.storeId}` },
+        h('div.row.gap-8', { style: { marginBottom: '6px' } },
+          chip(s.area), h('div.grow'),
+          ready ? h('span.chip.chip-brass', { text: `クーポン${ready}件` }) : null),
+        h('h3', { style: { fontSize: '16px' }, text: s.name }),
+        h('div.memcard-mini-no', { text: c.no }),
+        h('div.tiny.muted', { text: `体験${st.plays}回 ／ 来店${st.checkins}回` })));
+    }
+    wrap.appendChild(grid);
+  }
+  app.appendChild(sec);
+  app.appendChild(footer());
+}
+
+// ---------------------------------------------------------------------------
 // 店舗ページ
 // ---------------------------------------------------------------------------
 /**
@@ -604,6 +712,9 @@ function viewStore(id) {
   app.appendChild(sec);
   app.appendChild(footer());
   // スマホ横持ちでは、画面が長くなって「打つ」が遠くなるので、下に出しっぱなしにする
+  wrap.appendChild(h('div.row.gap-8.wrapflex', { style: { marginTop: '12px' } },
+    h('a.btn.btn-ghost', { href: `#/card/${s.id}` }, icon('qr', 15),
+      hasCard(s.id) ? '会員カードを見る' : '会員カードを作る（無料）')));
   app.appendChild(h('div.store-cta-bar',
     h('div.store-cta-name', { text: s.name }),
     h('a.btn.btn-primary.store-cta-btn', { href: `#/play?preset=${s.presetId}` }, icon('play', 14), 'このルールで打つ')));
