@@ -23,6 +23,7 @@ import { barcodeSVG } from './barcode.js';
 import { matchText, presetHaystack, storeHaystack, searchField } from './search.js';
 import {
   getCard, hasCard, allCards, couponState, couponProgress, useCoupon, statsOf,
+  ensureCard, refreshCard,
 } from './member.js';
 
 const app = document.getElementById('app');
@@ -418,20 +419,36 @@ function couponCard(store, c) {
       state === 'locked' ? h('div.coupon-progress', { text: couponProgress(store.id, c) }) : null));
   if (state === 'ready') {
     const use = h('button.btn.btn-sm.btn-primary', { text: '店頭で使う' });
-    use.addEventListener('click', () => {
+    const err = h('div.tiny.err');
+    use.addEventListener('click', async () => {
       // 二度押しを避けるため、使う前に一度確認する
       if (!window.confirm(`「${c.title}」を使用済みにします。店員さんの前で押してください。`)) return;
-      useCoupon(store.id, c.id);
+      use.disabled = true;
+      use.textContent = '記録しています…';
+      const r = await useCoupon(store.id, c.id);
+      if (!r.ok) {
+        // 使えていないのに使用済みにはしない。店頭で困るのはお客様のほう。
+        use.disabled = false;
+        use.textContent = '店頭で使う';
+        err.textContent = `${r.error}。もう一度お試しください。`;
+        return;
+      }
       route();
     });
-    box.appendChild(h('div.coupon-act', use));
+    box.appendChild(h('div.coupon-act', use, err));
   }
   return box;
 }
 
 function viewCard(storeId) {
   const s = resolveStore(storeId);
-  const card = getCard(s.id, { create: true });
+  const card = getCard(s.id);
+  if (!card) return viewCardIssuing(s);
+  // 別の端末で打った回数や、店頭で使ったクーポンを取り直す。
+  // 取れたら描き直すが、取れなくても手元の内容で見られる。
+  refreshCard(s.id).then((changed) => {
+    if (changed && location.hash.includes(`/card/${s.id}`)) route();
+  });
   const st = statsOf(s.id);
   const coupons = s.coupons || [];
   const ready = coupons.filter((c) => couponState(s.id, c) === 'ready').length;
@@ -459,7 +476,9 @@ function viewCard(storeId) {
       h('div', h('span.memcard-k', { text: '体験' }), h('span', { text: `${st.plays}回` })),
       h('div', h('span.memcard-k', { text: '来店' }), h('span', { text: `${st.checkins}回` })))));
   wrap.appendChild(h('p.tiny.muted', { style: { marginTop: '10px' },
-    text: '店頭では、このバーコードを読み取ってもらうか、会員番号をお伝えください。番号は端末のなかにだけ保存され、どこにも送信されません。' }));
+    text: card.local
+      ? '店頭では、このバーコードを読み取ってもらうか、会員番号をお伝えください。この番号は端末のなかにだけ保存されています。'
+      : '店頭では、このバーコードを読み取ってもらうか、会員番号をお伝えください。番号と回数はお店に登録されているので、機種を変えても続けて使えます。氏名や連絡先は送っていません。' }));
 
   wrap.appendChild(h('div.rule-line'));
   wrap.appendChild(sectionHead('01', 'クーポン', ready ? `いま使えるものが${ready}件あります。` : '通うほど使えるものが増えます。'));
@@ -472,6 +491,31 @@ function viewCard(storeId) {
     text: 'クーポンは店頭で提示する案内です。アプリの中で金銭のやり取りはありません。ゲーム内ポイント（BP）とも交換しません。' }));
   app.appendChild(sec);
   app.appendChild(footer());
+}
+
+/** 会員番号を発行している間の画面。番号はお店側で作るので、少しだけ待つ */
+function viewCardIssuing(s) {
+  const sec = h('section.section', h('div.wrap-narrow'));
+  const wrap = sec.firstChild;
+  wrap.appendChild(h('div.row.gap-8', { style: { marginBottom: '14px' } },
+    h('a.btn.btn-sm.btn-ghost', { href: `#/store/${s.id}`, text: '← 店舗ページ' })));
+  const box = h('div.card.card-pad',
+    h('h2', { style: { fontSize: '18px', marginBottom: '6px' }, text: '会員カードを発行しています' }),
+    h('p.tiny.muted', { style: { margin: 0 }, text: `${s.name} の会員番号をお店に登録しています。少しだけお待ちください。` }));
+  wrap.appendChild(box);
+  app.appendChild(sec);
+  app.appendChild(footer());
+
+  ensureCard(s.id).then(({ card, error }) => {
+    if (!location.hash.includes(`/card/${s.id}`)) return;
+    if (card) { route(); return; }
+    clear(box);
+    const retry = h('button.btn.btn-primary', { text: 'もう一度' });
+    retry.addEventListener('click', () => route());
+    box.appendChild(h('h2', { style: { fontSize: '18px', marginBottom: '6px' }, text: '会員カードを発行できませんでした' }));
+    box.appendChild(h('p.tiny.muted', { text: `${error}。通信の状態をご確認のうえ、もう一度お試しください。` }));
+    box.appendChild(h('div', { style: { marginTop: '12px' } }, retry));
+  });
 }
 
 function viewCards() {

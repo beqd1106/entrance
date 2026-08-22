@@ -14,7 +14,10 @@ import { STORES, getStore } from '../../src/data/stores.js';
 import { lookupPreset, loadCustomPresets } from './custom.js';
 import { resolveStore } from './storeedit.js';
 import { h, clear, icon, chip, ruleChip, sectionHead, stars } from './ui.js';
-import { hasServer, fetchStats, recordPlay as apiPlay, recordCheckin as apiCheckin } from './api.js';
+import {
+  hasServer, fetchStats, recordPlay as apiPlay, recordCheckin as apiCheckin, lookupMember,
+} from './api.js';
+import { memberAuth } from './member.js';
 
 const KEY = 'houserule.storeStats.v1';
 
@@ -39,7 +42,8 @@ export function recordPlay(presetId) {
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch { /* 記録できなくても対局は続行する */ }
   // サーバにも送る。届かなくても対局には影響させない。
-  if (hasServer()) apiPlay(store.id);
+  // 会員カードを持っていれば一緒に名乗り、その人の回数にも積んでもらう。
+  if (hasServer()) apiPlay(store.id, memberAuth(store.id));
 }
 
 export function recordCheckin(storeId) {
@@ -50,7 +54,7 @@ export function recordCheckin(storeId) {
     all[storeId] = cur;
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch { /* 同上 */ }
-  if (hasServer()) apiCheckin(storeId);
+  if (hasServer()) apiCheckin(storeId, memberAuth(storeId));
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +234,10 @@ export function renderDashboard(root, params) {
     }
   }
 
+  // --- 店頭での会員照会
+  wrap.appendChild(h('div.rule-line'));
+  wrap.appendChild(memberLookup(store));
+
   wrap.appendChild(h('div.notice', { style: { marginTop: '26px' },
     text: hasServer()
       ? '体験プレイ数と来店数はサーバで集計しています。通信できないときは、この端末の記録を表示します。'
@@ -237,6 +245,65 @@ export function renderDashboard(root, params) {
 
   root.appendChild(sec);
   return () => {};
+}
+
+/**
+ * 店頭でお客様の会員番号を確かめる。
+ *
+ * カウンターで「このクーポン使えますか」と聞かれたときに、
+ * スタッフが番号を打ち込んで、回数と使用済みのクーポンを見る。
+ * ここが無いと、会員番号があっても店側は確かめようがない。
+ */
+function memberLookup(store) {
+  const box = h('div');
+  box.appendChild(sectionHead('04', '会員番号の照会', 'お客様の番号を入れると、来店回数と使用済みのクーポンが分かります。'));
+  if (!hasServer()) {
+    box.appendChild(h('div.notice', { text: 'サーバに接続していないため、いまは照会できません。' }));
+    return box;
+  }
+  const input = h('input', {
+    type: 'text', inputmode: 'numeric', placeholder: '0000-0000',
+    style: { maxWidth: '200px', letterSpacing: '.1em' },
+  });
+  const btn = h('button.btn.btn-primary', { text: '照会する' });
+  const out = h('div', { style: { marginTop: '12px' } });
+  const run = async () => {
+    const no = input.value.trim();
+    if (!no) return;
+    clear(out);
+    btn.disabled = true;
+    out.appendChild(h('p.tiny.muted', { text: '照会しています…' }));
+    const r = await lookupMember(store.id, no);
+    btn.disabled = false;
+    clear(out);
+    if (!r.ok) {
+      out.appendChild(h('div.issue.issue-warn', h('div',
+        h('b', { text: '見つかりませんでした' }),
+        h('span', { text: r.error === 'offline' ? '通信できませんでした' : r.error }))));
+      return;
+    }
+    const c = r.data.card;
+    const used = new Set((c.used || []).map((u) => u.id));
+    const rows = (store.coupons || []).map((cp) => h('div.check-item' + (used.has(cp.id) ? '' : '.ok'),
+      h('span.check-mark', { html: used.has(cp.id) ? MARK_TODO : MARK_OK }),
+      h('div.grow',
+        h('div.check-label', { text: cp.title }),
+        h('div.check-detail', { text: used.has(cp.id) ? '使用済み' : 'まだ使われていません' }))));
+    out.appendChild(h('div.card.card-pad',
+      h('div.row.gap-12.wrapflex', { style: { marginBottom: '10px' } },
+        h('div', h('div.tiny.muted', { text: '会員番号' }), h('b', { style: { fontSize: '18px', letterSpacing: '.08em' }, text: c.no })),
+        h('div', h('div.tiny.muted', { text: '体験プレイ' }), h('b', { text: `${c.plays || 0}回` })),
+        h('div', h('div.tiny.muted', { text: '来店' }), h('b', { text: `${c.checkins || 0}回` })),
+        // 発行したばかりのカードで来店回数を主張されたときに気づけるよう、日付も出す
+        h('div', h('div.tiny.muted', { text: '発行' }),
+          h('b', { text: c.since ? new Date(c.since).toLocaleDateString('ja-JP') : '—' }))),
+      rows.length ? h('div.check-grid', rows) : h('p.tiny.muted', { style: { margin: 0 }, text: 'この店のクーポンはまだありません。' })));
+  };
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+  box.appendChild(h('div.row.gap-8.wrapflex', input, btn));
+  box.appendChild(out);
+  return box;
 }
 
 const MARK_OK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';

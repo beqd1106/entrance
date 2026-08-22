@@ -15,9 +15,17 @@
  *   POST /stores/{id}/play        体験プレイを1件記録
  *   POST /stores/{id}/checkin     来店を1件記録
  *   GET  /stores/{id}/stats       集計値
+ *   POST /stores/{id}/member      会員番号を発行（合鍵を返す。以後この番号で名乗る）
+ *   GET  /stores/{id}/member      自分の会員カード（要 合鍵）
+ *   POST /stores/{id}/coupon-use  クーポンを使ったことを記録（要 合鍵）
+ *   GET  /stores/{id}/members/{番号} 店頭での照会（要 編集トークン）
  *   POST /rules/draft             文章からルール設定の下書きを作る
  */
-import { getItem, putItem, queryPk, bump, underDailyLimit, underGlobalDailyLimit } from './lib/db.mjs';
+import {
+  getItem, putItem, putIfAbsent, updateFields, queryPk, bump,
+  underDailyLimit, underGlobalDailyLimit,
+} from './lib/db.mjs';
+import { createHash } from 'node:crypto';
 import { presignS3Put, presignS3Get } from './lib/sign.mjs';
 import { draftRulesFromText } from './lib/ai.mjs';
 
@@ -35,6 +43,7 @@ const DAILY = {
   write: Number(process.env.DAILY_WRITE || 500),   // 店舗の保存・写真URLの発行
   record: Number(process.env.DAILY_RECORD || 5000), // 体験プレイ・来店の記録
   photo: Number(process.env.DAILY_PHOTO || 20000),  // 画像URLの発行（転送量に直結する）
+  member: Number(process.env.DAILY_MEMBER || 2000), // 会員番号の発行・クーポンの使用記録
 };
 
 /** 画像URLの有効期限（秒）。短いほど、1回の発行で持ち出せる量が減る。 */
@@ -42,7 +51,7 @@ const PHOTO_URL_TTL = 900;
 
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'content-type,x-edit-token',
+  'access-control-allow-headers': 'content-type,x-edit-token,x-member-token,x-member-no',
   'access-control-allow-methods': 'GET,POST,PUT,OPTIONS',
   'access-control-max-age': '86400',
 };
@@ -84,6 +93,10 @@ async function route(method, path, event) {
     if (seg[2] === 'play' && method === 'POST') return record(id, 'plays', event);
     if (seg[2] === 'checkin' && method === 'POST') return record(id, 'checkins', event);
     if (seg[2] === 'photo-url' && method === 'POST') return photoUrl(id, event);
+    if (seg[2] === 'member' && seg.length === 3 && method === 'POST') return issueMember(id, event);
+    if (seg[2] === 'member' && seg.length === 3 && method === 'GET') return myMember(id, event);
+    if (seg[2] === 'coupon-use' && method === 'POST') return useCoupon(id, event);
+    if (seg[2] === 'members' && seg.length === 4 && method === 'GET') return lookupMember(id, seg[3], event);
   }
 
   if (path === '/rules/draft' && method === 'POST') return rulesDraft(event);
@@ -186,7 +199,116 @@ async function record(id, field, event) {
     return json(200, { ok: true, counted: false, reason: '同じ端末からの記録が多すぎます' });
   }
   const s = await bump(`STORE#${id}`, 'STATS', field, 1);
-  return json(200, { ok: true, counted: true, plays: s?.plays || 0, checkins: s?.checkins || 0 });
+  // 会員として名乗っていれば、その人の回数も一緒に増やす（クーポンの条件に使う）
+  let card = null;
+  const mine = await memberFrom(id, event, memberNoOf(event));
+  if (mine) {
+    const m = await bump(`STORE#${id}`, `MEMBER#${mine.no}`, field, 1);
+    if (m) card = publicCard(m);
+  }
+  return json(200, { ok: true, counted: true, plays: s?.plays || 0, checkins: s?.checkins || 0, card });
+}
+
+/* ------------------------------------------------------------------ *
+ * 会員カード
+ *
+ * 店頭で名乗るための番号を、店ごとに1つ持たせる。
+ * 端末のなかだけに持たせると、機種変更で消え、別端末で作り直せば
+ * クーポンを何度でも使えてしまう。番号は店の持ちものとしてここに置く。
+ *
+ * 持たせるのは番号と回数だけで、氏名や連絡先は受け取らない。
+ * 端末は発行時に「合鍵」を受け取り、以後それで自分の番号を名乗る。
+ * 合鍵はそのままではなく、照合できる形（ハッシュ）にして保管する。
+ * ------------------------------------------------------------------ */
+
+const hash = (v) => createHash('sha256').update(String(v)).digest('hex');
+
+/** 0000-0000 の形。読み上げやすいよう数字だけにする */
+function memberNumber() {
+  const n = [...crypto.getRandomValues(new Uint32Array(2))]
+    .map((x) => String(x % 10000).padStart(4, '0'));
+  return `${n[0]}-${n[1]}`;
+}
+
+/** 会員番号を発行する。番号が既に有ったら、空くまで数回やり直す。 */
+async function issueMember(id, event) {
+  const profile = await getItem(`STORE#${id}`, 'PROFILE');
+  if (!profile) return bad(404, 'その店舗は登録されていません');
+  if (!(await underGlobalDailyLimit('member', DAILY.member))) {
+    return bad(429, '本日の発行数の上限に達しました');
+  }
+  if (!(await underDailyLimit(`member:${id}:${clientKey(event)}`, 5))) {
+    return bad(429, '同じ端末からの発行が多すぎます');
+  }
+  const secret = randomToken();
+  for (let i = 0; i < 6; i++) {
+    const no = memberNumber();
+    const ok = await putIfAbsent({
+      pk: `STORE#${id}`, sk: `MEMBER#${no}`,
+      no, secretHash: hash(secret), plays: 0, checkins: 0, used: [],
+      since: new Date().toISOString(),
+    });
+    if (ok) return json(200, { no, token: secret, plays: 0, checkins: 0, used: [] });
+  }
+  return bad(503, '会員番号を発行できませんでした。少し時間をおいて試してください');
+}
+
+/** 合鍵から会員カードを取り出す。名乗れなければ null。 */
+async function memberFrom(id, event, no) {
+  const token = header(event, 'x-member-token');
+  if (!token || !no) return null;
+  const card = await getItem(`STORE#${id}`, `MEMBER#${no}`);
+  if (!card || card.secretHash !== hash(token)) return null;
+  return card;
+}
+
+/** 番号は本文かヘッダで受け取る（GETでも名乗れるようにヘッダを見る） */
+function memberNoOf(event) {
+  const body = parseBody(event) || {};
+  return String(body.no || header(event, 'x-member-no') || '').slice(0, 12);
+}
+
+const publicCard = (c) => ({
+  no: c.no, plays: c.plays || 0, checkins: c.checkins || 0,
+  used: Array.isArray(c.used) ? c.used : [], since: c.since,
+});
+
+async function myMember(id, event) {
+  const card = await memberFrom(id, event, memberNoOf(event));
+  if (!card) return bad(401, '会員カードを確認できませんでした');
+  return json(200, { card: publicCard(card) });
+}
+
+/**
+ * クーポンを使ったことを記録する。
+ * 同じクーポンを二度使えないようにするのが目的なので、
+ * すでに使っていたときも失敗にはせず、使用済みとして返す。
+ */
+async function useCoupon(id, event) {
+  const body = parseBody(event) || {};
+  const couponId = String(body.couponId || '').slice(0, 40);
+  if (!couponId) return bad(400, 'クーポンが指定されていません');
+  const card = await memberFrom(id, event, memberNoOf(event));
+  if (!card) return bad(401, '会員カードを確認できませんでした');
+  if (!(await underGlobalDailyLimit('member', DAILY.member))) {
+    return bad(429, '本日の受付数の上限に達しました');
+  }
+  const used = Array.isArray(card.used) ? card.used : [];
+  if (used.some((u) => u && u.id === couponId)) {
+    return json(200, { ok: true, already: true, card: publicCard({ ...card, used }) });
+  }
+  const next = [...used, { id: couponId, at: new Date().toISOString() }].slice(-100);
+  await updateFields(`STORE#${id}`, `MEMBER#${card.no}`, { used: next });
+  return json(200, { ok: true, already: false, card: publicCard({ ...card, used: next }) });
+}
+
+/** 店頭での照会。番号を聞いて、使えるかどうかをスタッフが確かめる。 */
+async function lookupMember(id, no, event) {
+  const auth = await authorize(id, event);
+  if (!auth.ok) return bad(auth.code, auth.message);
+  const card = await getItem(`STORE#${id}`, `MEMBER#${decodeURIComponent(no)}`);
+  if (!card) return bad(404, 'その番号の会員カードはありません');
+  return json(200, { card: publicCard(card) });
 }
 
 async function photoUrl(id, event) {

@@ -6,6 +6,7 @@
  *   pk = STORE#<id>   sk = PROFILE   店舗プロフィール
  *   pk = STORE#<id>   sk = RULES     ハウスルール（rules パッチ）
  *   pk = STORE#<id>   sk = STATS     体験プレイ数・来店数などのカウンタ
+ *   pk = STORE#<id>   sk = MEMBER#<番号> 会員カード（番号・合鍵・使ったクーポン）
  *   pk = STORES       sk = STORE#<id> 一覧用の軽い索引
  *   pk = GUARD#<key>  sk = <日付>     連打よけ（TTLで自動的に消える）
  *
@@ -37,6 +38,44 @@ export async function queryPk(pk) {
     ExpressionAttributeValues: M({ ':p': pk }),
   }));
   return (r.Items || []).map((i) => unmarshall(i));
+}
+
+/**
+ * まだ無いときだけ書く。すでに有れば false。
+ * 会員番号のように「重複させたくないもの」を作るときに使う。
+ */
+export async function putIfAbsent(item) {
+  try {
+    await ddb.send(new PutItemCommand({
+      TableName: TABLE, Item: M(item),
+      ConditionExpression: 'attribute_not_exists(pk)',
+    }));
+    return true;
+  } catch (e) {
+    if (e && e.name === 'ConditionalCheckFailedException') return false;
+    throw e;
+  }
+}
+
+/** 項目の一部だけ書き換える。無ければ作らない（会員カードの更新に使う） */
+export async function updateFields(pk, sk, fields) {
+  const names = {};
+  const values = { ':t': new Date().toISOString() };
+  const sets = ['updatedAt = :t'];
+  Object.entries(fields).forEach(([k, v], i) => {
+    names[`#f${i}`] = k;
+    values[`:v${i}`] = v;
+    sets.push(`#f${i} = :v${i}`);
+  });
+  const r = await ddb.send(new UpdateItemCommand({
+    TableName: TABLE, Key: M({ pk, sk }),
+    UpdateExpression: `SET ${sets.join(', ')}`,
+    ConditionExpression: 'attribute_exists(pk)',
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: M(values),
+    ReturnValues: 'ALL_NEW',
+  }));
+  return r.Attributes ? unmarshall(r.Attributes) : null;
 }
 
 /** カウンタを1つ増やす。競合しても数え漏れないよう ADD を使う。 */

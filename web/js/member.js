@@ -5,10 +5,24 @@
  * アプリで体験した人が、店頭で名乗れる形（会員番号）を持ち、
  * 通った回数に応じてクーポンが開く。
  *
+ * 番号は店の持ちものとしてサーバに置く。
+ *   - 端末のなかだけに持つと、機種変更で消える
+ *   - 別の端末で作り直せば、同じクーポンを何度でも使えてしまう
+ *   - 店頭で番号を聞いても、店側が照会できない
+ * 端末は発行時に「合鍵」を受け取り、以後それで自分の番号を名乗る。
+ * 受け渡すのは番号と回数だけで、氏名や連絡先はやり取りしない。
+ *
+ * サーバが無い設定のとき（デモ・機内など）は、これまでどおり
+ * 端末のなかだけで番号を作って動く。
+ *
  * 法務上の前提：
  *   クーポンは「店頭で提示する案内」であって、アプリ内で金銭のやり取りはしない。
  *   ゲーム内ポイント（BP）とも交換しない。デモでは記録だけを持つ。
  */
+import {
+  hasServer, issueMember, fetchMember, useCouponOnServer,
+} from './api.js';
+
 const KEY = 'houserule.member.v1';
 const STATS_KEY = 'houserule.storeStats.v1';
 
@@ -30,8 +44,8 @@ function writeAll(all) {
   try { localStorage.setItem(KEY, JSON.stringify(all)); } catch { /* 保存できなくても画面は動く */ }
 }
 
-/** 会員番号。店ごとに一度だけ作って、以後は変えない */
-function issueNumber(storeId) {
+/** サーバが無いときの会員番号。端末のなかだけで完結する */
+function localNumber(storeId) {
   const seed = `${storeId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   let hash = 0;
   for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
@@ -40,7 +54,7 @@ function issueNumber(storeId) {
 }
 
 /** 店ごとの成績（体験プレイ・チェックイン回数）。dashboard と同じ記録を読む */
-export function statsOf(storeId) {
+function localStats(storeId) {
   try {
     const all = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
     return all[storeId] || { plays: 0, visits: 0, checkins: 0 };
@@ -49,18 +63,86 @@ export function statsOf(storeId) {
   }
 }
 
-/** 会員カードを取り出す。無ければ作る */
-export function getCard(storeId, { create = false } = {}) {
-  const all = readAll();
-  if (!all[storeId] && create) {
-    all[storeId] = { no: issueNumber(storeId), since: Date.now(), used: [] };
-    writeAll(all);
-  }
-  return all[storeId] || null;
+/**
+ * クーポンの条件に使う回数。
+ * サーバのカードに記録があればそちらを使う（機種を変えても続く）。
+ * 端末の記録のほうが多いときは、そちらを採る。カードを作る前に
+ * 打った体験プレイは、サーバのカードには載っていないため。
+ */
+export function statsOf(storeId) {
+  const local = localStats(storeId);
+  const card = readAll()[storeId];
+  if (!card || card.local) return local;
+  return {
+    ...local,
+    plays: Math.max(local.plays || 0, card.plays || 0),
+    checkins: Math.max(local.checkins || 0, card.checkins || 0),
+  };
+}
+
+/** 会員カードを取り出す。無ければ null（発行は ensureCard） */
+export function getCard(storeId) {
+  return readAll()[storeId] || null;
 }
 
 export function hasCard(storeId) {
   return !!readAll()[storeId];
+}
+
+/** この端末が名乗るための情報。api.js にそのまま渡す */
+export function memberAuth(storeId) {
+  const c = readAll()[storeId];
+  return c && c.token ? { no: c.no, token: c.token } : null;
+}
+
+/**
+ * 会員カードを用意する。すでに有ればそれを返す。
+ * @returns {Promise<{card:object|null, error:string|null}>}
+ */
+export async function ensureCard(storeId) {
+  const existing = readAll()[storeId];
+  if (existing) return { card: existing, error: null };
+
+  if (!hasServer()) {
+    const card = { no: localNumber(storeId), since: Date.now(), used: [], local: true };
+    const all = readAll();
+    all[storeId] = card;
+    writeAll(all);
+    return { card, error: null };
+  }
+
+  const r = await issueMember(storeId);
+  if (!r.ok) {
+    return { card: null, error: r.error === 'offline' ? 'いまは発行できません' : r.error };
+  }
+  const card = {
+    no: r.data.no, token: r.data.token, since: Date.now(),
+    used: r.data.used || [], plays: r.data.plays || 0, checkins: r.data.checkins || 0,
+  };
+  const all = readAll();
+  all[storeId] = card;
+  writeAll(all);
+  return { card, error: null };
+}
+
+/**
+ * サーバのカードで手元を上書きする（回数・使用済みクーポン）。
+ * 取れなくても手元の内容はそのまま使う。
+ * @returns {Promise<boolean>} 内容が変わったか
+ */
+export async function refreshCard(storeId) {
+  const card = readAll()[storeId];
+  if (!card || card.local || !card.token || !hasServer()) return false;
+  const r = await fetchMember(storeId, { no: card.no, token: card.token });
+  if (!r.ok || !r.data || !r.data.card) return false;
+  const s = r.data.card;
+  const changed = (card.plays || 0) !== (s.plays || 0)
+    || (card.checkins || 0) !== (s.checkins || 0)
+    || (card.used || []).length !== (s.used || []).length;
+  const all = readAll();
+  all[storeId] = { ...card, plays: s.plays, checkins: s.checkins, used: s.used };
+  writeAll(all);
+  return changed;
 }
 
 /** 発行済みカードの一覧（新しい順） */
@@ -105,12 +187,38 @@ export function couponProgress(storeId, coupon) {
   return parts.join('　');
 }
 
-/** クーポンを使う（記録するだけ。金銭のやり取りはしない） */
-export function useCoupon(storeId, couponId) {
+/**
+ * クーポンを使う（記録するだけ。金銭のやり取りはしない）。
+ *
+ * 画面はすぐ「使用済み」に変わってほしいので、先に手元へ書いてから
+ * サーバへ送る。サーバに届かなかったときは手元の印を戻す。
+ * ここを戻さないと、店頭で使えなかったクーポンが消えたままになる。
+ * @returns {Promise<{ok:boolean, error:string|null}>}
+ */
+export async function useCoupon(storeId, couponId) {
   const all = readAll();
   const card = all[storeId];
-  if (!card) return false;
-  card.used = [...(card.used || []), { id: couponId, at: Date.now() }];
+  if (!card) return { ok: false, error: '会員カードがありません' };
+
+  const before = card.used || [];
+  card.used = [...before, { id: couponId, at: Date.now() }];
   writeAll(all);
-  return true;
+
+  if (card.local || !card.token || !hasServer()) return { ok: true, error: null };
+
+  const r = await useCouponOnServer(storeId, { no: card.no, token: card.token }, couponId);
+  if (!r.ok) {
+    const now = readAll();
+    if (now[storeId]) {
+      now[storeId].used = before;
+      writeAll(now);
+    }
+    return { ok: false, error: r.error === 'offline' ? '通信できませんでした' : r.error };
+  }
+  const now = readAll();
+  if (now[storeId] && r.data && r.data.card) {
+    now[storeId].used = r.data.card.used || now[storeId].used;
+    writeAll(now);
+  }
+  return { ok: true, error: null };
 }

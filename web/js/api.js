@@ -37,7 +37,7 @@ export function saveEditToken(storeId, token) {
  * 通信の共通部分。
  * 失敗は例外にせず { ok, data, error } で返す。呼び出し側が握りつぶしやすい形にする。
  */
-async function call(path, { method = 'GET', body, storeId, timeoutMs = 12000 } = {}) {
+async function call(path, { method = 'GET', body, storeId, member, timeoutMs = 12000 } = {}) {
   if (!BASE) return { ok: false, error: 'offline' };
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -46,6 +46,10 @@ async function call(path, { method = 'GET', body, storeId, timeoutMs = 12000 } =
     if (body !== undefined) headers['content-type'] = 'application/json; charset=utf-8';
     const t = storeId ? editToken(storeId) : null;
     if (t) headers['x-edit-token'] = t;
+    if (member && member.token && member.no) {
+      headers['x-member-token'] = member.token;
+      headers['x-member-no'] = member.no;
+    }
 
     const res = await fetch(`${BASE}${path}`, {
       method, headers, signal: ctrl.signal,
@@ -75,9 +79,27 @@ export async function saveStore(id, payload) {
   return r;
 }
 
-/** 体験プレイ・来店の記録。数えられなくても対局や画面は止めない。 */
-export const recordPlay = (id) => call(`/stores/${encodeURIComponent(id)}/play`, { method: 'POST', body: {} });
-export const recordCheckin = (id) => call(`/stores/${encodeURIComponent(id)}/checkin`, { method: 'POST', body: {} });
+/**
+ * 体験プレイ・来店の記録。数えられなくても対局や画面は止めない。
+ * 会員カードを持っていれば一緒に名乗り、その人の回数も増やしてもらう。
+ */
+export const recordPlay = (id, member) => call(`/stores/${encodeURIComponent(id)}/play`, { method: 'POST', body: {}, member });
+export const recordCheckin = (id, member) => call(`/stores/${encodeURIComponent(id)}/checkin`, { method: 'POST', body: {}, member });
+
+// --- 会員カード ---------------------------------------------------------
+/** 会員番号を発行してもらう。返る token は、以後この番号を名乗るための合鍵。 */
+export const issueMember = (id) => call(`/stores/${encodeURIComponent(id)}/member`, { method: 'POST', body: {} });
+
+/** サーバ側の会員カード（回数・使用済みクーポン）を取り直す */
+export const fetchMember = (id, member) => call(`/stores/${encodeURIComponent(id)}/member`, { member });
+
+/** クーポンを使ったことを記録する。二度目は already:true で返る。 */
+export const useCouponOnServer = (id, member, couponId) =>
+  call(`/stores/${encodeURIComponent(id)}/coupon-use`, { method: 'POST', body: { couponId }, member });
+
+/** 店頭での照会（店舗の編集トークンが要る） */
+export const lookupMember = (id, no) =>
+  call(`/stores/${encodeURIComponent(id)}/members/${encodeURIComponent(no)}`, { storeId: id });
 
 /** 文章からルール設定の下書きを作る */
 export const draftRules = (text) => call('/rules/draft', { method: 'POST', body: { text }, timeoutMs: 30000 });
