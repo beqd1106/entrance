@@ -310,7 +310,21 @@ export function renderEditor(root, params) {
 }
 
 // ---------------------------------------------------------------------------
+/**
+ * 1項目ぶんの操作。
+ * あとから「検索で絞る」「変えたところだけ見る」ができるよう、
+ * 探すための言葉と、どの設定かを要素に持たせておく。
+ */
 function control(item, R, onChange) {
+  const el = buildControl(item, R, onChange);
+  if (el && el.dataset) {
+    el.dataset.search = [item.label, item.desc, item.path].filter(Boolean).join(' ');
+    if (item.path) el.dataset.path = item.path;
+  }
+  return el;
+}
+
+function buildControl(item, R, onChange) {
   const v = item.path ? get(R, item.path) : null;
   switch (item.type) {
     case 'switch':
@@ -414,6 +428,9 @@ function renderLeft(left, state, onChange) {
   left.appendChild(h('div.card.card-pad', { style: { marginBottom: '18px' } },
     field('ルール名（お客様に表示されます）', nameInp),
     field('ベースにするルール', baseSel, '選び直すとその設定を読み込みます')));
+
+  // 設定は項目が多い。探せること・変えたところが分かることを優先する
+  left.appendChild(filterBar(left, state));
 
   const draft = draftCard(state, onChange);
   if (draft) left.appendChild(draft);
@@ -938,9 +955,14 @@ function renderRight(right, state, onChange) {
     description: shortSummary(R), rules: clone(state.rules),
   });
   const save = h('button.btn.btn-primary.btn-block', { text: 'このルールを保存' });
+  const savedNote = h('div.tiny.muted.ed-saved.hide', { style: { marginTop: '8px' } },
+    h('span', { text: '保存しました。' }),
+    h('a', { href: '#/table', style: { color: 'var(--brass)' }, text: '卓を立てる' }),
+    h('span', { text: 'の「自作」から、いつでもこの設定で打てます。' }));
   save.addEventListener('click', () => {
     saveCustomPreset(payload());
     save.textContent = '保存しました';
+    savedNote.classList.remove('hide');
     setTimeout(() => { save.textContent = 'このルールを保存'; }, 1600);
   });
   const play = h('a.btn.btn-brass.btn-block', { href: '#', style: { marginTop: '8px' } }, icon('play', 14), 'このルールで遊ぶ');
@@ -951,6 +973,7 @@ function renderRight(right, state, onChange) {
   });
   actions.appendChild(save);
   actions.appendChild(play);
+  actions.appendChild(savedNote);
   actions.appendChild(h('div.tiny.muted', { style: { marginTop: '10px' }, text: shortSummary(R) }));
   right.appendChild(actions);
 
@@ -1122,5 +1145,95 @@ function specialTileCard(def, index, R, onChange) {
     h('div.sp-row', h('div.sp-label', { text: '効果' }), h('div.grow', effBox)),
     h('div.sp-row', h('div.sp-label', { text: 'いつ効くか' }), h('div.grow.row.gap-8.wrapflex', timing, condBox)),
     h('div.sp-row', h('div.sp-label', { text: '説明' }), h('div.grow', descI)));
+}
+
+// ---------------------------------------------------------------------------
+// 設定の絞り込み
+//   項目数が多いので、言葉で探せることと、既定から変えた場所が
+//   ひと目で分かることを用意する。表示だけの操作で、設定値には触らない。
+// ---------------------------------------------------------------------------
+function filterBar(left, state) {
+  const bar = h('div.card.card-pad.ed-filter');
+  const input = h('input.ed-filter-input', {
+    type: 'search', id: 'edFilter', name: 'edFilter',
+    placeholder: '設定をさがす（例：赤、喰いタン、ウマ、割れ目）',
+    autocomplete: 'off', 'aria-label': '設定をさがす',
+  });
+  const count = h('span.tiny.muted.ed-filter-count');
+  const onlyChanged = h('span.chip.chip-btn', { text: '変えたところだけ' });
+
+  const apply = () => {
+    const q = normalize(input.value);
+    const only = onlyChanged.classList.contains('on');
+    let shown = 0;
+    // 個別の項目
+    for (const el of left.querySelectorAll('[data-search]')) {
+      const hitWord = !q || normalize(el.dataset.search).includes(q);
+      const hitChanged = !only || el.dataset.changed === '1';
+      const show = hitWord && hitChanged;
+      el.classList.toggle('hide', !show);
+      if (show) shown += 1;
+    }
+    // 項目が1つも残らなかったカードは畳む
+    for (const card of left.querySelectorAll('.card.card-pad')) {
+      if (card.classList.contains('ed-filter')) continue;
+      const items = card.querySelectorAll('[data-search]');
+      if (items.length) {
+        const alive = [...items].some((e) => !e.classList.contains('hide'));
+        card.classList.toggle('hide', !alive);
+        continue;
+      }
+      // 自前で組んだカード（ドラ・特殊牌など）は、カードの文言で判定する
+      const text = normalize(card.textContent || '');
+      const hit = (!q || text.includes(q)) && !only;
+      card.classList.toggle('hide', !hit);
+      if (hit) shown += 1;
+    }
+    count.textContent = q || only ? `${shown}件` : '';
+  };
+
+  input.addEventListener('input', apply);
+  onlyChanged.addEventListener('click', () => {
+    onlyChanged.classList.toggle('on');
+    apply();
+  });
+  const clearBtn = h('button.btn.btn-sm.btn-ghost', { type: 'button', text: 'すべて表示' });
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    onlyChanged.classList.remove('on');
+    apply();
+  });
+
+  bar.appendChild(h('div.ed-filter-row',
+    h('span.ed-filter-icon', icon('search', 15)), input, count));
+  bar.appendChild(h('div.row.gap-8.wrapflex', { style: { marginTop: '10px' } },
+    onlyChanged, h('div.grow'), clearBtn));
+  // 描き終わってから判定する（このバー自身より後ろの項目を見るため）
+  setTimeout(() => { markChanged(left, state); apply(); }, 0);
+  return bar;
+}
+
+/** ベースのルールと比べて、値が変わっている項目に印を付ける */
+function markChanged(left, state) {
+  let base;
+  try { base = resolveRules(lookupPreset(state.baseId).rules); } catch { return; }
+  const R = state.rules;
+  for (const el of left.querySelectorAll('[data-path]')) {
+    const path = el.dataset.path;
+    const a = JSON.stringify(get(base, path) ?? null);
+    const b = JSON.stringify(get(R, path) ?? null);
+    const changed = a !== b;
+    el.dataset.changed = changed ? '1' : '0';
+    el.classList.toggle('is-changed', changed);
+  }
+}
+
+/** 検索用の正規化（search.js と同じ考え方で、表記ゆれを吸収する） */
+function normalize(v) {
+  return String(v || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[\s・･、,.／/]/g, '');
 }
 
