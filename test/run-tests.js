@@ -3,7 +3,7 @@
  * 使い方: node test/run-tests.js
  */
 import { codeToType, typeToCode, T } from '../src/core/tiles.js';
-import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, makeHandOpts } from '../src/core/hand.js';
+import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, isChiiseimukou, makeHandOpts } from '../src/core/hand.js';
 import { evaluate } from '../src/core/yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from '../src/core/score.js';
 import { GameEngine } from '../src/core/engine.js';
@@ -1064,6 +1064,46 @@ it('少牌マイティ：公式ルールどおりの設定になっている', (
   ok(r.win.openRiichi.enabled, 'オープンリーチあり');
   ok(r.local.chiitoiMultiPair, '4枚使い七対子あり');
   ok(r.localYaku.some((y) => y.id === 'daisharin' && y.yakuman === 1), '大車輪は役満');
+});
+
+describe('未実装だったローカル役（燕返し・七星無靠）');
+
+it('燕返し：相手のリーチ宣言牌をロンすると成立する', () => {
+  const rules = resolveRules({ localYaku: [{ id: 'tsubamegaeshi', enabled: true }] });
+  const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
+  const flags = { ...baseCtx().flags, tsubame: true };
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: false, flags }));
+  ok(res.yaku.some((y) => y.name === '燕返し'), '燕返しが付く');
+});
+
+it('燕返し：ふつうのロンでは成立しない', () => {
+  const rules = resolveRules({ localYaku: [{ id: 'tsubamegaeshi', enabled: true }] });
+  const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: false }));
+  no(res.yaku.some((y) => y.name === '燕返し'), '燕返しは付かない');
+});
+
+it('七星無靠：字牌7種と色ごとに別の筋の数牌で和了になる', () => {
+  const rules = resolveRules({ localYaku: [{ id: 'chiiseimukou', enabled: true }] });
+  const opts = makeHandOpts(null, false, true);
+  const hand = mk('1m 4m 7m 2p 5p 8p 3s 1z 2z 3z 4z 5z 6z 7z');
+  const counts = countsFromTiles(hand);
+  ok(isChiiseimukou(counts), '和了形として認められる');
+  eq(shanten(counts, 0, opts), -1, '向聴数は -1（和了）');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true, handOpts: opts }));
+  ok(res && res.isYakuman, '役満として成立する');
+  ok(res.yaku.some((y) => y.name === '七星無靠'), '七星無靠が付く');
+});
+
+it('七星無靠：同じ筋を2色で使うと成立しない', () => {
+  const hand = mk('1m 4m 7m 1p 4p 7p 3s 1z 2z 3z 4z 5z 6z 7z');
+  no(isChiiseimukou(countsFromTiles(hand)), '同じ筋の重複は不可');
+});
+
+it('七星無靠：採用していないルールでは和了形にならない', () => {
+  const hand = mk('1m 4m 7m 2p 5p 8p 3s 1z 2z 3z 4z 5z 6z 7z');
+  const counts = countsFromTiles(hand);
+  ok(shanten(counts, 0) > -1, '既定のルールでは和了ではない');
 });
 
 // ===========================================================================

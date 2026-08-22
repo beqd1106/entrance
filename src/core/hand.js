@@ -23,13 +23,16 @@ const CACHE_LIMIT = 300000;
  * @param {number[]|null} limits 牌種ごとの最大枚数（null で一律4枚）
  * @param {boolean} chiitoiMultiPair 七対子の8枚使いを認めるか
  */
-export function makeHandOpts(limits = null, chiitoiMultiPair = false) {
+export function makeHandOpts(limits = null, chiitoiMultiPair = false, chiiseimukou = false) {
   const plain = !limits || limits.every((v) => v === 4);
   return {
     limits: plain ? null : limits,
     chiitoiMultiPair: !!chiitoiMultiPair,
+    // 七星無靠は面子でも対子でもない特殊形なので、採用している店でだけ和了形に数える
+    chiiseimukou: !!chiiseimukou,
     // キャッシュを混ぜないための識別子。既定のルールでは空文字＝従来と同じキー。
-    sig: (plain ? '' : 'L' + limits.join('.')) + (chiitoiMultiPair ? 'M' : ''),
+    sig: (plain ? '' : 'L' + limits.join('.'))
+      + (chiitoiMultiPair ? 'M' : '') + (chiiseimukou ? 'Q' : ''),
   };
 }
 
@@ -152,6 +155,53 @@ export function shantenChiitoi(counts, meldCount = 0, opts = PLAIN_OPTS) {
   return s;
 }
 
+// 七星無靠で使える筋（1-4-7 / 2-5-8 / 3-6-9）と、3色への割り当て6通り
+const SUJI = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
+const SUJI_PERMS = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+
+/**
+ * 七星無靠の向聴数。
+ * 字牌7種すべてと、色ごとに別々の筋から取った数牌7枚（合計14枚）で完成する。
+ * どの色にどの筋を割り当てるかで枚数が変わるので、6通りすべて試して最良を返す。
+ */
+export function shantenChiiseimukou(counts, meldCount = 0) {
+  if (meldCount > 0) return 99;
+  let honors = 0;
+  for (let t = 27; t < NUM_TYPES; t++) if (counts[t] >= 1) honors++;
+  let best = 99;
+  for (const perm of SUJI_PERMS) {
+    let nums = 0;
+    for (let suit = 0; suit < 3; suit++) {
+      for (const i of SUJI[perm[suit]]) if (counts[suit * 9 + i] >= 1) nums++;
+    }
+    const usable = Math.min(honors, 7) + Math.min(nums, 7);
+    const s = 13 - usable;
+    if (s < best) best = s;
+  }
+  return best;
+}
+
+/** 七星無靠の和了形か（14枚すべてが1枚ずつで、字牌7種＋色ごとに別の筋の数牌7枚） */
+export function isChiiseimukou(counts) {
+  let total = 0;
+  for (let t = 0; t < NUM_TYPES; t++) {
+    if (counts[t] > 1) return false;   // 同じ牌が2枚あれば孤立形にならない
+    total += counts[t];
+  }
+  if (total !== 14) return false;
+  for (let t = 27; t < NUM_TYPES; t++) if (counts[t] !== 1) return false;
+  const used = new Set();
+  for (let suit = 0; suit < 3; suit++) {
+    const idx = [];
+    for (let i = 0; i < 9; i++) if (counts[suit * 9 + i]) idx.push(i);
+    if (!idx.length) continue;
+    const g = SUJI.findIndex((row) => idx.every((i) => row.includes(i)));
+    if (g < 0 || used.has(g)) return false;
+    used.add(g);
+  }
+  return true;
+}
+
 export function shantenKokushi(counts, meldCount = 0) {
   if (meldCount > 0) return 99;
   let kinds = 0, hasPair = false;
@@ -183,6 +233,10 @@ export function shanten(counts, meldCount = 0, opts = PLAIN_OPTS) {
   if (a < v) v = a;
   const b = shantenKokushi(counts, meldCount);
   if (b < v) v = b;
+  if (opts && opts.chiiseimukou) {
+    const c = shantenChiiseimukou(counts, meldCount);
+    if (c < v) v = c;
+  }
   if (shantenCache.size > CACHE_LIMIT) shantenCache.clear();
   shantenCache.set(key, v);
   return v;

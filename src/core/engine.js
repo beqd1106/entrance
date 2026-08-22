@@ -74,7 +74,11 @@ export class GameEngine {
     this.wall = new Wall(R, this.rng, this.debug);
     // 手牌計算の前提（同じ牌の上限枚数・七対子の8枚使い）は牌山の作り方で変わる。
     // 局ごとに1度だけ作って、向聴数・待ち・受け入れの計算すべてに渡す。
-    this.handOpts = makeHandOpts(tileLimits(this.wall.all), R.local.chiitoiMultiPair);
+    const localOn = new Set((R.localYaku || [])
+      .filter((y) => y && y.enabled !== false).map((y) => y.id));
+    this.handOpts = makeHandOpts(
+      tileLimits(this.wall.all), R.local.chiitoiMultiPair, localOn.has('chiiseimukou'),
+    );
     this.kyokuCount++;
     this.wareme = null;
     if (R.local.wareme.enabled) {
@@ -417,7 +421,16 @@ export class GameEngine {
       chiihou: tsumo && this.firstGoAround && p.seat !== this.round.dealer && p.discards.length === 0 && !this.anyCall,
       renho: !tsumo && this.firstGoAround && p.seat !== this.round.dealer
         && p.discards.length === 0 && !this.anyCall,
+      // 燕返し：放銃者のリーチ宣言牌をそのままロンした形
+      tsubame: !tsumo && this.isRiichiDeclarationTile(this.lastDiscard),
     };
+  }
+
+  /** その捨て牌が、捨てた本人のリーチ宣言牌かどうか */
+  isRiichiDeclarationTile(last) {
+    if (!last) return false;
+    const from = this.players[last.seat];
+    return !!from && !!from.riichiTileId && from.riichiTileId === last.tile.id;
   }
 
   doraTypes() {

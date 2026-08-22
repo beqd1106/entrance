@@ -7,7 +7,7 @@
 import {
   NUM_TYPES, isHonor, isTerminal, isYaochu, isGreen, suitOf, numOf, T,
 } from './tiles.js';
-import { decomposeStandard, isChiitoi, isKokushi, countsFromTiles } from './hand.js';
+import { decomposeStandard, isChiitoi, isKokushi, isChiiseimukou, countsFromTiles } from './hand.js';
 
 /**
  * @typedef {Object} WinContext
@@ -368,6 +368,12 @@ export function evaluate(ctx) {
     const ym = checkYakuman(ctx, counts, null, null);
     candidates.push(buildResult(ctx, [], ym, null, null, counts));
   }
+  // 七星無靠は面子でも対子でもない特殊形。採用している店でだけ和了として数える
+  if (meldCount === 0 && ctx.handOpts && ctx.handOpts.chiiseimukou && isChiiseimukou(counts)) {
+    const local = checkLocalYaku(ctx, counts, null, null);
+    const ym = [...checkYakuman(ctx, counts, null, null), ...local.filter((y) => y.yakuman)];
+    candidates.push(buildResult(ctx, local.filter((y) => !y.yakuman), ym, null, null, counts));
+  }
   const decomps = decomposeStandard(counts, needSets);
   for (const d of decomps) {
     const sets = setsFromContext(ctx, d);
@@ -530,6 +536,39 @@ export const LOCAL_YAKU_DEFS = {
       // 牌の裏に色が無いルール（1セットで打つ通常の麻雀）では成立しない
       if (!first) return false;
       return tiles.every((t) => t.back === first);
+    },
+  },
+  tsubamegaeshi: {
+    name: '燕返し', defaultYakuman: 1,
+    desc: '相手のリーチ宣言牌をそのままロンする',
+    test: (ctx) => !ctx.tsumo && !!ctx.flags.tsubame,
+  },
+  chiiseimukou: {
+    name: '七星無靠', defaultYakuman: 1,
+    desc: '字牌7種すべてと、色ごとに 1-4-7／2-5-8／3-6-9 の別々の筋で組んだ孤立形',
+    test: (ctx, counts, sets, decomp, menzen) => {
+      if (!menzen) return false;
+      // 字牌は7種すべてを1枚ずつ
+      for (let t = 27; t < NUM_TYPES; t++) if (counts[t] !== 1) return false;
+      // 数牌は各色1枚ずつの孤立牌で、色ごとに違う筋を使う
+      const suji = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
+      const used = new Set();
+      let numTiles = 0;
+      for (let suit = 0; suit < 3; suit++) {
+        const idx = [];
+        for (let i = 0; i < 9; i++) {
+          const c = counts[suit * 9 + i];
+          if (c === 0) continue;
+          if (c !== 1) return false;   // 同じ牌が2枚あれば孤立形にならない
+          idx.push(i);
+        }
+        if (!idx.length) continue;
+        numTiles += idx.length;
+        const g = suji.findIndex((row) => idx.every((i) => row.includes(i)));
+        if (g < 0 || used.has(g)) return false;
+        used.add(g);
+      }
+      return numTiles === 7;
     },
   },
   daichisei: {
