@@ -161,8 +161,8 @@ export class GameEngine {
         }
       }
     }
-    // 花牌を引いた場合は自動で抜いて即補充
-    if (isFlower(tile.t)) {
+    // 花牌を引いた場合。自分で抜く設定なら、抜かずに手番へ渡す
+    if (isFlower(tile.t) && !this.rules.flowers.manualDraw) {
       this.resolveFlowersInHand(p, false);
       return p.drawn;
     }
@@ -252,6 +252,19 @@ export class GameEngine {
       for (const code of this.nukiTypes()) {
         const tile = p.hand.find((t) => t.t === code);
         if (tile) out.push({ type: 'kita', label: `${typeName(code)}抜き`, tileId: tile.id, t: code });
+      }
+    }
+
+    // 華牌を抜く（自分で抜く設定のとき）。
+    // 補充牌が無い海底では抜けない。抜くと手牌が1枚減ったまま局が終わる
+    if (R.flowers.enabled && R.flowers.manualDraw && this.wall.remaining > 0) {
+      for (const tile of p.hand) {
+        if (isFlower(tile.t)) {
+          out.push({
+            type: 'flower', label: `華牌「${FLOWER_LABEL[tile.t]}」を抜く`,
+            tileId: tile.id, t: tile.t,
+          });
+        }
       }
     }
 
@@ -548,6 +561,15 @@ export class GameEngine {
       }
       case 'kan': {
         return this.doKan(seat, action);
+      }
+      case 'flower': {
+        const idx = p.hand.findIndex((t) => isFlower(t.t)
+          && (action.tileId === undefined || t.id === action.tileId));
+        if (idx < 0) return { error: '華牌がありません' };
+        // 抜く処理は自動のときと同じ。抜いた瞬間に効果が出て、補充を1枚引く。
+        // 手番の設定も resolveFlowersInHand の中で行われる
+        this.resolveFlowersInHand(p, false);
+        return { ok: true };
       }
       case 'kita': {
         const want = action.t !== undefined ? action.t : T.NORTH;

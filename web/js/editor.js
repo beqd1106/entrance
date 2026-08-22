@@ -514,6 +514,10 @@ function renderLeft(left, state, onChange) {
       R.wall.backColors.enabled = v;
       onChange();
     }));
+  wallBox.appendChild(switchRow('華牌は自分で抜く',
+    '引いた瞬間に自動で抜かず、タップして抜きます（華牌を使うルールのとき）',
+    !!R.flowers.manualDraw,
+    (v) => { R.flowers.manualDraw = v; onChange(); }));
   wallBox.appendChild(switchRow('七対子の8枚使い',
     '同じ牌4枚を2つの対子として七対子に数えます（同じ牌が5枚以上あるルール向け）',
     !!R.local.chiitoiMultiPair,

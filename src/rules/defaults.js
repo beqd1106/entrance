@@ -283,6 +283,9 @@ export const DEFAULT_RULES = {
   // 花牌（華牌）エフェクトエンジン ---------------------------------------
   flowers: {
     enabled: false,
+    // 引いた瞬間に自動で抜くか、自分でタップして抜くか。
+    // 抜く間合いも打ち手の判断のうち、と考える店があるため選べるようにする
+    manualDraw: false,
     tiles: ['spring', 'summer', 'autumn', 'winter'],
     isDora: false,              // 抜いた花牌をドラとして数える
     bonusPerTile: 0,

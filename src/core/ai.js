@@ -34,6 +34,11 @@ export function decide(engine, seat, choices) {
   const kyuushu = choices.find((c) => c.type === 'kyuushu');
   if (kyuushu && shantenWithWild(countsFromTiles(p.hand), 0, engine.wild, engine.handOpts) >= 4) return { type: 'kyuushu' };
 
+  // 華牌は手牌に置いておく意味がないので、選べるなら必ず抜く。
+  // （自分で抜く設定のとき、CPUがこれを選ばないと華牌が手牌に残り続ける）
+  const flower = choices.find((c) => c.type === 'flower');
+  if (flower) return { type: 'flower', tileId: flower.tileId };
+
   // 北抜き（三麻）：役満狙いでなければ即抜き
   const kita = choices.find((c) => c.type === 'kita');
   if (kita) {
