@@ -11,6 +11,25 @@ export const STORES = [
     id: 'yonma_kan',
     // 店舗写真（生成素材。文字は入れていない）。サーバに写真が無いときはこれを使う
     photoFile: 'img/store-yonma_kan.webp',
+    /**
+     * お知らせ・イベント情報。
+     * 掲載期間（startAt〜endAt）の内側だけ店舗ページに出る。
+     * 対局のルールには影響しない、案内のためのもの。
+     */
+    notices: [
+      {
+        id: 'yk_ev1', kind: 'event',
+        title: '毎週水曜は初心者卓の日',
+        body: 'ルール説明つきの卓を立てます。打ち方が分からなくても大丈夫です。',
+        startAt: '', endAt: '',
+      },
+      {
+        id: 'yk_ev2', kind: 'notice',
+        title: '年末年始の営業について',
+        body: '12/31は24時まで、1/1は休みです。1/2から通常どおり開けます。',
+        startAt: '2026-12-01', endAt: '2027-01-03',
+      },
+    ],
     // 会員クーポン（店頭提示の案内。アプリ内で金銭のやり取りはしない）
     coupons: [
       { id: 'yk_first', title: '初回1時間無料', body: 'はじめての来店で、セット1時間ぶんが無料になります。', requires: {} },

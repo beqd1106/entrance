@@ -242,6 +242,46 @@ function renderForm(left, state, onChange) {
   look.appendChild(field('ウェブサイト', sw2));
   left.appendChild(look);
 
+  // --- お知らせ・イベント（店舗ページの「イベント・来店」に並ぶ）
+  const nt = h('div.card.card-pad', { style: { marginBottom: '18px' } },
+    h('h3', { style: { fontSize: '16px', marginBottom: '6px' }, text: 'お知らせ・イベント' }),
+    h('p.tiny.muted', { style: { marginTop: '0' },
+      text: '店舗ページの「イベント・来店」に出ます。掲載する期間を決められます（空欄なら常時掲載）。対局のルールには影響しません。' }));
+  d.notices = d.notices || [];
+  d.notices.forEach((n, i) => {
+    const title = h('input', { type: 'text', value: n.title || '', placeholder: '例：毎週水曜は初心者卓の日' });
+    title.addEventListener('input', () => { n.title = title.value; onChange(); });
+    const body = h('textarea', { rows: '2', value: n.body || '', placeholder: '内容（任意）' });
+    body.addEventListener('input', () => { n.body = body.value; onChange(); });
+    const kind = h('select');
+    for (const [v, label] of [['notice', 'お知らせ'], ['event', 'イベント']]) {
+      kind.appendChild(h('option', { value: v, text: label, selected: (n.kind || 'notice') === v }));
+    }
+    kind.addEventListener('change', () => { n.kind = kind.value; onChange(); });
+    const from = h('input', { type: 'date', value: n.startAt || '' });
+    from.addEventListener('change', () => { n.startAt = from.value; onChange(); });
+    const to = h('input', { type: 'date', value: n.endAt || '' });
+    to.addEventListener('change', () => { n.endAt = to.value; onChange(); });
+    const del = h('button.btn.btn-sm.btn-ghost', { text: '削除' });
+    del.addEventListener('click', () => { d.notices.splice(i, 1); onChange(); });
+    nt.appendChild(h('div.coupon-edit',
+      h('div.row.gap-8', { style: { marginBottom: '8px' } },
+        h('span.tiny.muted', { text: `${i + 1}件目` }), h('div.grow'), del),
+      field('種類', kind, 'イベントにすると朱色で目立ちます'),
+      field('見出し', title),
+      field('内容', body),
+      h('div.row.gap-12.wrapflex',
+        field('掲載開始', from, '空欄なら今すぐから'),
+        field('掲載終了', to, '空欄なら期限なし'))));
+  });
+  const addNt = h('button.btn.btn-sm.btn-ghost', { text: '＋お知らせを追加' });
+  addNt.addEventListener('click', () => {
+    d.notices.push({ id: `n_${Date.now().toString(36)}`, kind: 'notice', title: '新しいお知らせ', body: '', startAt: '', endAt: '' });
+    onChange();
+  });
+  nt.appendChild(addNt);
+  left.appendChild(nt);
+
   // --- クーポン（会員カードに並ぶ）
   const cp = h('div.card.card-pad', { style: { marginBottom: '18px' } },
     h('h3', { style: { fontSize: '16px', marginBottom: '6px' }, text: 'クーポン' }),

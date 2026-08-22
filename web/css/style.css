@@ -1525,6 +1525,23 @@ textarea { resize: vertical; min-height: 56px; }
 .jump-chip.on {
   background: var(--brass); border-color: var(--brass); color: #fff; font-weight: 700;
 }
+/* お店からのお知らせ・イベント */
+.notice-list { display: flex; flex-direction: column; gap: 10px; }
+.notice-item {
+  border: 1px solid var(--line); border-left: 3px solid var(--line-2);
+  border-radius: var(--r-m); padding: 12px 14px; background: var(--paper-2);
+}
+.notice-item.is-event { border-left-color: var(--brass); background: var(--brass-3); }
+.notice-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.notice-head b { font-size: 14.5px; }
+.notice-kind {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--paper-3); color: var(--ink-2);
+}
+.notice-item.is-event .notice-kind { background: var(--brass); color: #fff; }
+.notice-item p { margin: 0; font-size: 13px; line-height: 1.75; color: var(--ink-2); }
+
 /* 特殊ルールの追加パネル */
 .add-panel { border-color: var(--line-2); }
 .add-on-list { display: flex; flex-direction: column; gap: 8px; }

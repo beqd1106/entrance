@@ -527,6 +527,22 @@ function signatureTiles(r) {
   return out.slice(0, 5);
 }
 
+/** 掲載期間の内側にあるお知らせだけを返す（日付が空なら常時掲載） */
+function activeNotices(list) {
+  if (!Array.isArray(list)) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  return list.filter((n) => n && n.title
+    && (!n.startAt || n.startAt <= today)
+    && (!n.endAt || n.endAt >= today));
+}
+
+/** 2026-12-01 → 12/1 */
+function jpDate(v) {
+  if (!v) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  return m ? `${Number(m[2])}/${Number(m[3])}` : v;
+}
+
 function viewStore(id) {
   const s = resolveStore(id);
   const r = rulesOf(s.presetId);
@@ -715,6 +731,18 @@ function viewStore(id) {
 
   // イベント・来店
   panelEvent.appendChild(sectionHead('01', 'イベントと来店', 'QRチェックインは非換金の記録のみ。景品・金銭とは結び付けません。'));
+
+  // お店からのお知らせ。掲載期間の内側だけ出す
+  const notices = activeNotices(s.notices);
+  if (notices.length) {
+    panelEvent.appendChild(h('div.notice-list', { style: { marginBottom: '26px' } },
+      notices.map((n) => h('div.notice-item', { class: n.kind === 'event' ? 'is-event' : '' },
+        h('div.notice-head',
+          h('span.notice-kind', { text: n.kind === 'event' ? 'イベント' : 'お知らせ' }),
+          h('b', { text: n.title }),
+          n.endAt ? h('span.tiny.muted', { text: `${jpDate(n.startAt)}〜${jpDate(n.endAt)}` }) : null),
+        n.body ? h('p', { text: n.body }) : null))));
+  }
   panelEvent.appendChild(h('div.store-grid',
     h('div.card.card-pad',
       h('h4', { style: { marginBottom: '10px' } }, 'イベント'),

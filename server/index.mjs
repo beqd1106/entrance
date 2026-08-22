@@ -265,7 +265,27 @@ function pickProfile(s) {
     ruleHighlights: arr(s.ruleHighlights, 8, 24),
     sns: s.sns && typeof s.sns === 'object'
       ? { x: str(s.sns.x, 80), web: str(s.sns.web, 200) } : undefined,
+    notices: pickNotices(s.notices),
   };
+}
+
+/**
+ * お知らせ・イベント情報。
+ * 店舗が自由に書くところなので、件数・長さ・日付の形をここで抑える。
+ * 掲載期間は「いつからいつまで出すか」で、対局のルールには影響しない。
+ */
+function pickNotices(list) {
+  if (!Array.isArray(list)) return undefined;
+  const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+  const day = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
+  return list.slice(0, 20).map((n, i) => ({
+    id: str(n && n.id, 40) || `n${i}`,
+    kind: n && n.kind === 'event' ? 'event' : 'notice',
+    title: str(n && n.title, 60),
+    body: str(n && n.body, 400),
+    startAt: day(n && n.startAt),
+    endAt: day(n && n.endAt),
+  })).filter((n) => n.title);
 }
 
 /** トークンは外へ出さない */
