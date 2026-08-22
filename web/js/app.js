@@ -19,6 +19,7 @@ import { renderStoreEdit, resolveStore, primeServerStores } from './storeedit.js
 import { renderManual } from './manual.js';
 import { renderHub } from './hub.js';
 import { renderTable } from './table.js';
+import { barcodeSVG } from './barcode.js';
 import { matchText, presetHaystack, storeHaystack, searchField } from './search.js';
 import {
   getCard, hasCard, allCards, couponState, couponProgress, useCoupon, statsOf,
@@ -450,12 +451,15 @@ function viewCard(storeId) {
         h('div.memcard-store', { text: s.name })),
       h('div.memcard-mark', icon('qr', 28))),
     h('div.memcard-no', { text: card.no }),
+    // 店頭で読み取ってもらうためのバーコード（Code128）。
+    // 番号を読み上げなくても済むように、券面のいちばん見やすい場所に置く
+    h('div.memcard-barcode', { html: barcodeSVG(card.no, { height: 56, module: 2 }) }),
     h('div.memcard-foot',
       h('div', h('span.memcard-k', { text: '発行' }), h('span', { text: new Date(card.since).toLocaleDateString('ja-JP') })),
       h('div', h('span.memcard-k', { text: '体験' }), h('span', { text: `${st.plays}回` })),
       h('div', h('span.memcard-k', { text: '来店' }), h('span', { text: `${st.checkins}回` })))));
   wrap.appendChild(h('p.tiny.muted', { style: { marginTop: '10px' },
-    text: '店頭では、この会員番号をスタッフにお伝えください。番号は端末のなかにだけ保存され、どこにも送信されません。' }));
+    text: '店頭では、このバーコードを読み取ってもらうか、会員番号をお伝えください。番号は端末のなかにだけ保存され、どこにも送信されません。' }));
 
   wrap.appendChild(h('div.rule-line'));
   wrap.appendChild(sectionHead('01', 'クーポン', ready ? `いま使えるものが${ready}件あります。` : '通うほど使えるものが増えます。'));

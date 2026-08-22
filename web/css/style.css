@@ -1525,6 +1525,13 @@ textarea { resize: vertical; min-height: 56px; }
 .jump-chip.on {
   background: var(--brass); border-color: var(--brass); color: #fff; font-weight: 700;
 }
+/* 会員証のバーコード。読み取り機に向けるので、白地のまま大きく出す */
+.memcard-barcode {
+  background: #fff; border-radius: 8px; padding: 8px 6px 6px;
+  margin: 10px 0 12px;
+}
+.memcard-barcode svg { display: block; }
+
 /* お店からのお知らせ・イベント */
 .notice-list { display: flex; flex-direction: column; gap: 10px; }
 .notice-item {
