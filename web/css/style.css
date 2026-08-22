@@ -1408,6 +1408,14 @@ textarea { resize: vertical; min-height: 56px; }
   color: var(--ink-2); transition: 0.15s var(--ease); white-space: nowrap;
 }
 .jump-chip:hover { background: var(--brass-3); border-color: var(--brass); color: var(--brass); }
+/* 選んでいる分野。ここだけが下に表示される */
+.jump-chip.on {
+  background: var(--brass); border-color: var(--brass); color: #fff; font-weight: 700;
+}
+/* 絞り込みで隠している分野 */
+.card.sec-off { display: none; }
+/* 分野へ飛んだとき、見出しが上の帯に隠れないようにする */
+.card[id^='edsec-'] { scroll-margin-top: 80px; }
 @media (max-width: 680px) {
   .editor-jump { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
 }

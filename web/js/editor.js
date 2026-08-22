@@ -897,19 +897,40 @@ function deepMerge(target, patch) {
 }
 
 /**
- * 編集フォームの目次。カード内の h3 を拾って、そこへスクロールする。
- * 店舗スタッフが「特殊牌だけ直したい」ときに、延々スクロールしなくて済むようにする。
+ * 編集フォームの絞り込み。カード内の h3 を拾って、分野ごとに切り替える。
+ *
+ * 以前はここへスクロールするだけの目次だったが、設定が縦に9,000px近く
+ * 続くため、目当ての項目にたどり着くまでが遠かった。
+ * 選んだ分野だけを出すようにして、一度に見る量を減らす。
+ * ルール名・ベースにするルール・設定の検索は、どの分野でも要るので
+ * 見出しを持たせておらず、絞り込んでも残る。
  */
 function sectionJump(left) {
   const nav = h('div.editor-jump');
   const heads = [...left.querySelectorAll('.card-pad > h3')];
-  heads.forEach((head, i) => {
+  const cards = heads.map((head, i) => {
     const card = head.parentElement;
     if (!card.id) card.id = `edsec-${i}`;
+    return card;
+  });
+  const chips = [];
+  /** idx が -1 のときは全部見せる */
+  const select = (idx) => {
+    cards.forEach((c, i) => c.classList.toggle('sec-off', idx >= 0 && i !== idx));
+    chips.forEach((c, i) => c.classList.toggle('on', i === idx + 1));
+    // 分野を選んだら、その場所まで運ぶ。選んだのに画面が変わらないと
+    // 「効いていない」と見える
+    if (idx >= 0) cards[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const all = h('button.jump-chip.on', { text: 'すべて' });
+  all.addEventListener('click', () => select(-1));
+  chips.push(all);
+  nav.appendChild(all);
+  heads.forEach((head, i) => {
     const b = h('button.jump-chip', { text: head.textContent });
-    b.addEventListener('click', () => {
-      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    b.addEventListener('click', () => select(i));
+    chips.push(b);
     nav.appendChild(b);
   });
   return nav;
