@@ -1191,6 +1191,59 @@ it('空白区切りはAND検索になる', () => {
   no(matchText(hay, 'しんじゅく ごとう'), '片方が無ければヒットしない');
 });
 
+describe('ジュエル（宝石牌）の役');
+
+const jewelRules = () => resolveRules({
+  specialTiles: [
+    { id: 'amethyst5p', name: 'アメジスト5筒', tile: '5p', count: 1, color: 'blue' },
+    { id: 'pearl5s', name: 'パール5索', tile: '5s', count: 1, color: 'silver' },
+    { id: 'lapis5m', name: 'ラピス5萬', tile: '5m', count: 1, color: 'blue' },
+  ],
+  localYaku: [{ id: 'jewel', enabled: true }, { id: 'jewelbox', enabled: true }],
+});
+
+it('宝石牌を3種類そろえるとジュエルが付く', () => {
+  // 卓に4種類あるうち3種類なので、宝石箱（役満）にはならない。
+  // 役満が成立すると通常役は出ないため、1翻の役を確かめるには
+  // 全種類そろっていない形にする必要がある
+  const rules = resolveRules({
+    specialTiles: [
+      { id: 'amethyst5p', name: 'アメジスト5筒', tile: '5p', count: 1, color: 'blue' },
+      { id: 'pearl5s', name: 'パール5索', tile: '5s', count: 1, color: 'silver' },
+      { id: 'lapis5m', name: 'ラピス5萬', tile: '5m', count: 1, color: 'blue' },
+      { id: 'topaz_haku', name: '琥珀白', tile: '5z', count: 1, color: 'gold' },
+    ],
+    localYaku: [{ id: 'jewel', enabled: true }, { id: 'jewelbox', enabled: true }],
+  });
+  const hand = mk('3p 4p s:amethyst5p:5p 3s 4s s:pearl5s:5s 3m 4m s:lapis5m:5m 1p 1p 1p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  ok(res, '和了として評価される');
+  no(res.isYakuman, '全種類そろっていないので役満ではない');
+  ok(res.yaku.some((y) => y.name === 'ジュエル'), 'ジュエルが付く');
+});
+
+it('宝石牌が2種類ではジュエルにならない', () => {
+  const rules = jewelRules();
+  const hand = mk('3p 4p s:amethyst5p:5p 3s 4s s:pearl5s:5s 3m 4m 5m 1p 1p 1p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  no(res.yaku.some((y) => y.name === 'ジュエル'), '3種類に満たない');
+});
+
+it('その卓の宝石牌を全種類そろえると宝石箱（役満）', () => {
+  const rules = jewelRules();
+  const hand = mk('3p 4p s:amethyst5p:5p 3s 4s s:pearl5s:5s 3m 4m s:lapis5m:5m 1p 1p 1p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  ok(res.isYakuman, '役満として成立する');
+  ok(res.yaku.some((y) => y.name === '宝石箱'), '宝石箱が付く');
+});
+
+it('宝石牌を置いていないルールでは、どちらも成立しない', () => {
+  const rules = resolveRules({ localYaku: [{ id: 'jewel', enabled: true }, { id: 'jewelbox', enabled: true }] });
+  const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  no(res.yaku.some((y) => y.name === 'ジュエル' || y.name === '宝石箱'), 'どちらも付かない');
+});
+
 // ===========================================================================
 console.log(`\n=== 結果: ${pass} 件成功 / ${fail} 件失敗 ===`);
 if (fail) {

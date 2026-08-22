@@ -571,6 +571,29 @@ export const LOCAL_YAKU_DEFS = {
       return numTiles === 7;
     },
   },
+  jewel: {
+    name: 'ジュエル', defaultHan: 1,
+    desc: '宝石牌（特殊牌）を3種類以上そろえて和了る',
+    test: (ctx) => {
+      const kinds = new Set();
+      for (const t of ctx.hand) if (t.sp) kinds.add(t.sp);
+      for (const m of ctx.melds || []) for (const t of m.tiles) if (t.sp) kinds.add(t.sp);
+      return kinds.size >= 3;
+    },
+  },
+  jewelbox: {
+    name: '宝石箱', defaultYakuman: 1,
+    desc: 'その卓に入っている宝石牌を全種類そろえて和了る',
+    test: (ctx) => {
+      const all = new Set((ctx.rules.specialTiles || []).map((d) => d.id));
+      if (all.size < 2) return false;
+      const kinds = new Set();
+      for (const t of ctx.hand) if (t.sp) kinds.add(t.sp);
+      for (const m of ctx.melds || []) for (const t of m.tiles) if (t.sp) kinds.add(t.sp);
+      for (const id of all) if (!kinds.has(id)) return false;
+      return true;
+    },
+  },
   manzuhonitsu: {
     name: '萬子の混一色', defaultYakuman: 1,
     desc: '萬子と字牌だけで作る混一色（萬子をほとんど抜く三麻では極端に難しいため役満扱い）',
