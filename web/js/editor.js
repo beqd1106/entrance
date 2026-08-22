@@ -124,6 +124,75 @@ const MAJOR_YAKU = [
 
 /** 基本パネルのスキーマ（advanced:true は「詳細設定」に隠す） */
 /**
+ * 足していける特殊ルール。
+ *
+ * 一般ルールに無いものを、必要なぶんだけ足していく形にする。
+ * 200項目を最初から全部並べると、店の人は「どれを触ればいいのか」で
+ * 止まってしまう。実際のハウスルールは「一般ルール＋いくつかの特殊」
+ * という形なので、画面もその形に合わせる。
+ *
+ * すでに使っているルール（プリセットを読み込んだときなど）は
+ * 追加済みとして最初から出る。
+ */
+const ADDABLE = [
+  {
+    id: 'wall', title: '牌山の構成', desc: '牌の枚数・2セット混ぜ・王牌の枚数',
+    isOn: (R) => Object.keys(R.wall.tileCounts || {}).length > 0
+      || (R.wall.backColors && R.wall.backColors.enabled)
+      || (R.wall.deadWallSize ?? 14) !== 14 || R.local.chiitoiMultiPair || R.flowers.manualDraw,
+    turnOn: (R) => { R.wall.deadWallSize = R.wall.deadWallSize ?? 14; R.wall.tileCounts = R.wall.tileCounts || {}; },
+    turnOff: (R) => {
+      R.wall.tileCounts = {};
+      if (R.wall.backColors) R.wall.backColors.enabled = false;
+      R.wall.deadWallSize = 14; R.local.chiitoiMultiPair = false; R.flowers.manualDraw = false;
+    },
+  },
+  {
+    id: 'localRules', title: 'ローカルルール', desc: '白ポッチ・アリス・割れ目・オープンリーチなど',
+    isOn: (R) => R.local.shiroPocchi.enabled || R.local.alice.enabled || R.local.tulip.enabled
+      || R.local.wareme.enabled || R.local.openRiichi.enabled || R.local.dice.enabled
+      || R.local.yakitori.enabled || R.local.binta.enabled || R.local.tobiBonus.enabled
+      || R.local.shouhaiMighty.enabled,
+    turnOn: () => {},
+    turnOff: (R) => {
+      for (const k of ['shiroPocchi', 'alice', 'tulip', 'wareme', 'openRiichi', 'dice', 'yakitori', 'binta', 'tobiBonus', 'shouhaiMighty']) {
+        if (R.local[k]) R.local[k].enabled = false;
+      }
+    },
+  },
+  {
+    id: 'flowers', title: '華牌（春夏秋冬）', desc: '抜くと効果が出る4枚の牌',
+    isOn: (R) => R.flowers.enabled,
+    turnOn: (R) => { R.flowers.enabled = true; },
+    turnOff: (R) => { R.flowers.enabled = false; },
+  },
+  {
+    id: 'specialTiles', title: '特殊牌', desc: '金8索・虹3筒のような、店ならではの牌',
+    isOn: (R) => (R.specialTiles || []).length > 0,
+    turnOn: (R) => { R.specialTiles = R.specialTiles || []; },
+    turnOff: (R) => { R.specialTiles = []; },
+  },
+  {
+    id: 'localYaku', title: 'ローカル役', desc: '大車輪・三連刻・背一色など24種',
+    isOn: (R) => (R.localYaku || []).length > 0,
+    turnOn: (R) => { R.localYaku = R.localYaku || []; },
+    turnOff: (R) => { R.localYaku = []; },
+  },
+  {
+    id: 'yakuOverrides', title: '標準役の翻数', desc: '「清一色は役満」のような取り決め',
+    isOn: (R) => Object.keys(R.yakuOverrides || {}).length > 0,
+    turnOn: (R) => { R.yakuOverrides = R.yakuOverrides || {}; },
+    turnOff: (R) => { R.yakuOverrides = {}; },
+  },
+  {
+    id: 'events', title: 'イベント卓', desc: '日替わりで一部のルールを上書きする卓',
+    isOn: (R) => (R.events || []).length > 0,
+    turnOn: (R) => { R.events = R.events || []; },
+    turnOff: (R) => { R.events = []; },
+  },
+];
+
+/**
  * 最初に触るところ。
  *
  * 設定は全部で200項目近くあり、分野に分けても「どこから手を付けるか」が
@@ -461,6 +530,13 @@ function renderLeft(left, state, onChange) {
   }
   left.appendChild(quick);
 
+  // 足していける特殊ルール。使っていないものは画面に出さない
+  left.appendChild(addPanel(R, onChange));
+  const using = (id) => {
+    const a = ADDABLE.find((x) => x.id === id);
+    return a ? a.isOn(R) : true;
+  };
+
   // 設定は項目が多い。探せること・変えたところが分かることを優先する
   left.appendChild(filterBar(left, state));
 
@@ -557,7 +633,7 @@ function renderLeft(left, state, onChange) {
     '同じ牌4枚を2つの対子として七対子に数えます（同じ牌が5枚以上あるルール向け）',
     !!R.local.chiitoiMultiPair,
     (v) => { R.local.chiitoiMultiPair = v; onChange(); }));
-  left.appendChild(wallBox);
+  if (using('wall')) left.appendChild(wallBox);
 
   // --- 三麻
   if (R.game.players === 3) {
@@ -668,7 +744,7 @@ function renderLeft(left, state, onChange) {
   toggleWithDetail('トビ賞', 'local.tobiBonus', 'トバした人にBP', () => h('div',
     control({ type: 'number', path: 'local.tobiBonus.value', label: 'BP', step: 1 }, R, onChange)));
   toggleWithDetail('順位ビンタ', 'local.binta', '順位に応じてBPが動きます', null);
-  left.appendChild(local);
+  if (using('localRules')) left.appendChild(local);
 
   // --- 華牌
   const fl = h('div.card.card-pad', { style: { marginBottom: '18px' } },
@@ -696,7 +772,7 @@ function renderLeft(left, state, onChange) {
     });
     fl.appendChild(switchRow('抜いた華牌をドラとして数える', '', R.flowers.isDora, (v) => { R.flowers.isDora = v; onChange(); }));
   }
-  left.appendChild(fl);
+  if (using('flowers')) left.appendChild(fl);
 
   // --- ローカル役
   const ly = h('div.card.card-pad', { style: { marginBottom: '18px' } },
@@ -742,7 +818,7 @@ function renderLeft(left, state, onChange) {
       h('div.grow', h('div.sw-label', { text: def.name }), h('div.sw-desc', { text: def.desc })),
       right, toggle));
   }
-  left.appendChild(ly);
+  if (using('localYaku')) left.appendChild(ly);
 
   // --- イベント卓
   const evBox = h('div.card.card-pad', { style: { marginBottom: '18px' } },
@@ -796,7 +872,7 @@ function renderLeft(left, state, onChange) {
     onChange();
   });
   evBox.appendChild(addEv);
-  left.appendChild(evBox);
+  if (using('events')) left.appendChild(evBox);
 
   // --- 標準役の翻数（店ごとの取り決め）
   const yo = h('div.card.card-pad', { style: { marginBottom: '18px' } },
@@ -844,7 +920,7 @@ function renderLeft(left, state, onChange) {
       h('div.grow', h('div.sw-label', { text: y.name }), h('div.sw-desc', { text: `既定：${y.base}` })),
       right, toggle));
   }
-  left.appendChild(yo);
+  if (using('yakuOverrides')) left.appendChild(yo);
 
   // --- 特殊牌
   const sp = h('div.card.card-pad', { style: { marginBottom: '18px' } },
@@ -877,7 +953,7 @@ function renderLeft(left, state, onChange) {
     onChange();
   });
   sp.appendChild(addSp);
-  left.appendChild(sp);
+  if (using('specialTiles')) left.appendChild(sp);
 
   // 設定項目が多いので、見出しへ飛べる目次を先頭に置く
   left.insertBefore(sectionJump(left), left.firstChild);
@@ -1251,6 +1327,55 @@ function specialTileCard(def, index, R, onChange) {
 //   項目数が多いので、言葉で探せることと、既定から変えた場所が
 //   ひと目で分かることを用意する。表示だけの操作で、設定値には触らない。
 // ---------------------------------------------------------------------------
+/**
+ * 特殊ルールの追加パネル。
+ *
+ * いま使っているものを並べ、使っていないものは「＋」から足す。
+ * 一般ルールのままで良い店は、ここが空のまま何も触らなくていい。
+ */
+function addPanel(R, onChange) {
+  const box = h('div.card.card-pad.add-panel', { style: { marginBottom: '18px' } });
+  const on = ADDABLE.filter((a) => a.isOn(R));
+  const off = ADDABLE.filter((a) => !a.isOn(R));
+
+  box.appendChild(h('div.quick-head',
+    h('b', { text: '使っている特殊ルール' }),
+    h('span.tiny.muted', {
+      text: on.length ? `${on.length}件。下に設定が出ています` : 'まだありません。一般ルールのままです',
+    })));
+
+  if (on.length) {
+    const list = h('div.add-on-list');
+    for (const a of on) {
+      const item = h('div.add-on',
+        h('div.grow',
+          h('b', { text: a.title }),
+          h('div.tiny.muted', { text: a.desc })));
+      const off1 = h('button.btn.btn-ghost.btn-sm', { text: '使わない' });
+      off1.addEventListener('click', () => {
+        if (!confirm(`「${a.title}」の設定を消して、一般ルールに戻します。よろしいですか。`)) return;
+        a.turnOff(R);
+        onChange();
+      });
+      item.appendChild(off1);
+      list.appendChild(item);
+    }
+    box.appendChild(list);
+  }
+
+  if (off.length) {
+    box.appendChild(h('div.tiny.muted', { style: { margin: '12px 0 6px' }, text: '足せるもの' }));
+    const chips = h('div.add-chips');
+    for (const a of off) {
+      const b = h('button.chip.chip-btn.add-chip', { title: a.desc }, h('span', { text: `＋ ${a.title}` }));
+      b.addEventListener('click', () => { a.turnOn(R); onChange(); });
+      chips.appendChild(b);
+    }
+    box.appendChild(chips);
+  }
+  return box;
+}
+
 function filterBar(left, state) {
   const bar = h('div.card.card-pad.ed-filter');
   const input = h('input.ed-filter-input', {

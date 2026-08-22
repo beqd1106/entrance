@@ -1525,6 +1525,19 @@ textarea { resize: vertical; min-height: 56px; }
 .jump-chip.on {
   background: var(--brass); border-color: var(--brass); color: #fff; font-weight: 700;
 }
+/* 特殊ルールの追加パネル */
+.add-panel { border-color: var(--line-2); }
+.add-on-list { display: flex; flex-direction: column; gap: 8px; }
+.add-on {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-m);
+  background: var(--paper);
+}
+.add-on b { font-size: 13.5px; }
+.add-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.add-chip { font-weight: 600; }
+.add-chip:hover { background: var(--brass-3); border-color: var(--brass); color: var(--brass); }
+
 /* 最初に触るところ。ほかの分野より一段目立たせる */
 .quick-card { border-color: rgba(193, 55, 44, 0.28); box-shadow: var(--shadow-2); }
 .quick-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
