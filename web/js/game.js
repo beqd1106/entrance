@@ -48,6 +48,9 @@ export function renderGame(root, params) {
     // 卓を広く使うため、右の欄（ルールと履歴）は既定で畳んでおく
     sideOpen: loadPref('sideOpen', false),
     selectedTileId: null,
+    // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
+    // 画面はこの席を下辺に置いて描く（engine の席番号はどの端末でも同じ）。
+    mySeat: 0,
     debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
@@ -291,7 +294,7 @@ function loop() {
 
 function act(action) {
   const e = G.engine;
-  const seat = G.waiting ? G.waiting.seat : 0;
+  const seat = G.waiting ? G.waiting.seat : G.mySeat;
   G.waiting = null;
   G.mode = 'idle';
   G.riichiIds = null;
@@ -379,7 +382,7 @@ function draw() {
   e.debug.showCpuHands = G.debug.showCpuHands;
   e.debug.forceAlice = G.debug.forceAlice;
   e.debug.forceDice = G.debug.forceDice;
-  const s = e.snapshot(0);
+  const s = e.snapshot(G.mySeat);
   drawTop(s);
   drawBoard(s);
   drawMy(s);
@@ -536,9 +539,11 @@ function drawTop(s) {
   }
 }
 
+/** 自分の席を必ず下辺に置く。相対位置なので、席が変わっても見え方は変わらない */
 function seatPos(n, seat) {
-  if (n === 4) return ['bottom', 'right', 'top', 'left'][seat];
-  return ['bottom', 'right', 'left'][seat];
+  const rel = ((seat - (G ? G.mySeat : 0)) % n + n) % n;
+  if (n === 4) return ['bottom', 'right', 'top', 'left'][rel];
+  return ['bottom', 'right', 'left'][rel];
 }
 
 function drawBoard(s) {
@@ -558,7 +563,7 @@ function drawBoard(s) {
       s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
   board.appendChild(center);
   // 自分の捨て牌・副露はbottomエリアへ
-  const me = s.players[0];
+  const me = s.players[G.mySeat];
   board.appendChild(h('div.seat.seat-bottom', { class: me.riichi ? 'riichi' : '' },
     seatHead(me, s),
     meldsEl(me),
@@ -630,7 +635,7 @@ function seatEl(p, s, cls) {
 }
 
 function drawMy(s) {
-  const me = s.players[0];
+  const me = s.players[G.mySeat];
   clear(G.dom.myArea);
   const hand = clear(G.dom.hand);
   const choices = G.waiting ? G.waiting.choices : [];
@@ -657,7 +662,7 @@ function drawMy(s) {
     // 待ち牌と「まだ見えていない枚数」を出す（初心者が一番知りたい情報）
     // 牌を選んでいる最中は「その牌を切ったらどうなるか」を先に見せる
     const picked = G.selectedTileId != null
-      ? G.engine.waitsAfterDiscard(0, G.selectedTileId) : null;
+      ? G.engine.waitsAfterDiscard(G.mySeat, G.selectedTileId) : null;
     const waitList = picked || s.waits;
     if (waitList && waitList.length) {
       row.appendChild(h('div.waits',
@@ -723,7 +728,7 @@ function onTileClick(t) {
  */
 function maybeAutoDiscard() {
   if (!G || !G.autoTsumogiri || !G.waiting) return false;
-  const me = G.engine.players[0];
+  const me = G.engine.players[G.mySeat];
   if (!me || !me.riichi) return false;
   const choices = G.waiting.choices || [];
   const discard = choices.find((c) => c.type === 'discard');
@@ -768,7 +773,7 @@ function drawActions(s) {
     b.addEventListener('click', fn);
     box.appendChild(b);
   };
-  const me = s.players[0];
+  const me = s.players[G.mySeat];
   const byIds = (ids) => (ids || []).map((id) => me.hand.find((t) => t.id === id)).filter(Boolean);
   const claimed = G.engine.pending && G.engine.pending.tile ? [G.engine.pending.tile] : [];
   for (const c of choices) {
@@ -875,7 +880,7 @@ function flashResult(res, next) {
   let label = '流局';
   let tone = 'draw';
   if (res.kind === 'win') {
-    const mine = res.details.find((d) => d.seat === 0);
+    const mine = res.details.find((d) => d.seat === G.mySeat);
     const d = mine || res.details[0];
     label = d.tsumo ? 'ツモ' : 'ロン';
     tone = mine ? 'win' : 'lose';

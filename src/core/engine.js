@@ -1299,6 +1299,9 @@ export class GameEngine {
       }
       if (!p.isCpu) return { waiting: { seat, choices }, finished: false, kyokuEnd: null };
       const action = aiDecide(this, seat, choices);
+      // 決め手を返さないときは、その席で止めて外に委ねる。
+      // オンライン対戦で「AIの手も配信元がまとめて決める」ために使う。
+      if (!action) return { waiting: { seat, choices }, finished: false, kyokuEnd: null };
       const r = this.act(seat, action);
       if (r && r.error) {
         // フォールバック：適当に打牌
