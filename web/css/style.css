@@ -481,9 +481,9 @@ svg { display: block; }
 .diff-table th, .diff-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .diff-table th { color: var(--ink-4); font-weight: 500; font-size: 12px; width: 30%; }
 .diff-from { color: var(--ink-4); text-decoration: line-through; font-size: 12px; }
-.diff-to { color: #047857; font-weight: 700; }
+.diff-to { color: var(--brass); font-weight: 700; }
 .cta-band {
-  background: linear-gradient(135deg, #16706b, #10564a 55%, #0d3f52); color: #eefaf6;
+  background: linear-gradient(135deg, var(--felt-2), var(--felt) 55%, var(--felt-3)); color: #f2efe6;
   border-radius: var(--r-l); padding: clamp(22px, 3vw, 34px); display: flex; gap: 22px;
   align-items: center; justify-content: space-between; flex-wrap: wrap;
 }
@@ -581,7 +581,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   background: rgba(255, 255, 255, 0.08); border-color: rgba(240, 227, 200, 0.2); color: #eae4d6; padding: 5px 8px;
 }
 .notice {
-  border-left: 3px solid var(--brass); background: var(--brass-3); color: #0b5a41;
+  border-left: 3px solid var(--brass); background: var(--brass-3); color: var(--ink);
   padding: 12px 16px; border-radius: 0 var(--r-s) var(--r-s) 0; font-size: 12.5px;
 }
 .footer { border-top: 1px solid var(--line); padding: 34px 0 54px; color: var(--ink-4); font-size: 12px; }
@@ -871,7 +871,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   padding: 20px 24px; border-radius: var(--r-l); color: #fff;
   background: linear-gradient(135deg, #64748b, #475569);
 }
-.publish-band.ready { background: linear-gradient(135deg, var(--brass-2), #0b8c62); }
+.publish-band.ready { background: linear-gradient(135deg, var(--brass-2), #9a281f); }
 .publish-state { font-size: clamp(17px, 2.2vw, 22px); font-weight: 700; letter-spacing: -0.01em; }
 .publish-band p { color: rgba(255, 255, 255, 0.8); }
 
@@ -897,7 +897,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
   background: #fde3c4; color: #b45309;
 }
-.check-item.ok .check-mark { background: var(--brass-3); color: #047857; }
+.check-item.ok .check-mark { background: var(--brass-3); color: var(--brass); }
 .check-label { font-size: 13.5px; font-weight: 600; }
 .check-detail { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
 
@@ -1276,7 +1276,7 @@ textarea { resize: vertical; min-height: 56px; }
   letter-spacing: -0.02em;
 }
 .btn-publish {
-  background: #fff; color: #0b7a56; border: 1px solid transparent; font-weight: 700;
+  background: #fff; color: var(--brass); border: 1px solid transparent; font-weight: 700;
 }
 .btn-publish:hover:not(:disabled) { background: #f0fdf7; }
 .btn-publish:disabled { background: rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.72); cursor: not-allowed; }
@@ -1334,8 +1334,9 @@ textarea { resize: vertical; min-height: 56px; }
   display: inline-block; font-weight: 700; font-size: 12.5px;
   padding: 3px 10px; border-radius: 999px;
 }
-.cmp-side.a { background: #e8f2ff; color: #1d4ed8; }
-.cmp-side.b { background: #fdf0e6; color: #b45309; }
+/* 左右の店を区別する2色。色を増やさず、墨と朱で対にする */
+.cmp-side.a { background: var(--paper-3); color: var(--ink); }
+.cmp-side.b { background: var(--brass-3); color: var(--brass); }
 /* 違う行：左に色帯を出し、値を強調 */
 .cmp-diff th { position: relative; padding-left: 16px; color: var(--ink-2); }
 .cmp-diff th::before {
@@ -1362,7 +1363,7 @@ textarea { resize: vertical; min-height: 56px; }
   background: var(--paper-2); border: 1px solid var(--line);
   color: var(--ink-2); transition: 0.15s var(--ease); white-space: nowrap;
 }
-.jump-chip:hover { background: var(--brass-3); border-color: var(--brass); color: #056646; }
+.jump-chip:hover { background: var(--brass-3); border-color: var(--brass); color: var(--brass); }
 @media (max-width: 680px) {
   .editor-jump { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
 }
@@ -1385,7 +1386,7 @@ textarea { resize: vertical; min-height: 56px; }
   border-radius: 10px; border: 1px solid var(--line);
 }
 .tiny.err { color: #b3261e; }
-.tiny.ok { color: #0b7a56; }
+.tiny.ok { color: var(--brass); }
 input[type='file'] { font-size: 12.5px; max-width: 100%; }
 
 /* --- 文章からルールを下書きする --- */
@@ -1436,7 +1437,7 @@ input[type='file'] { font-size: 12.5px; max-width: 100%; }
   display: inline-block; margin: -6px 0 14px;
   font-size: 11px; letter-spacing: 0.04em; font-weight: 700;
   padding: 4px 11px; border-radius: 999px;
-  background: var(--brass-3); color: #056646;
+  background: var(--brass-3); color: var(--brass);
 }
 .manual-text {
   max-width: 64ch; margin: 0 0 12px;
@@ -2553,7 +2554,7 @@ body.op-mode::before { display: none; }
   overflow: hidden;
   background:
     radial-gradient(120% 100% at 85% 0%, hsl(var(--hue) 45% 26%), transparent 60%),
-    linear-gradient(140deg, #123a33, #0b2822 60%, #081d19);
+    linear-gradient(140deg, var(--felt), var(--felt-3) 60%, #12241f);
   box-shadow: var(--shadow-2);
   border: 1px solid rgba(227, 192, 122, 0.28);
 }
@@ -2618,7 +2619,7 @@ body.op-mode::before { display: none; }
 }
 .coupon-act { flex: 0 0 auto; }
 .coupon.is-ready { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-3); }
-.coupon.is-ready .coupon-state { background: var(--brass-3); color: #076a4b; }
+.coupon.is-ready .coupon-state { background: var(--brass-3); color: var(--brass); }
 .coupon.is-used, .coupon.is-expired { opacity: 0.6; }
 .coupon.is-used .coupon-title, .coupon.is-expired .coupon-title { text-decoration: line-through; }
 
