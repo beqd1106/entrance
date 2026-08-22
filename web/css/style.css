@@ -708,7 +708,14 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     padding-bottom: max(6px, env(safe-area-inset-bottom));
     overflow: hidden;
   }
-  .table-top { padding: 5px 10px; gap: 10px; font-size: 11px; border-radius: 10px; }
+  /* 上の帯は、折り返すと2段になって卓の高さを50px以上奪う。
+     1段に固定して、入りきらないぶんは横に送れるようにする */
+  .table-top {
+    padding: 4px 8px; gap: 9px; font-size: 11px; border-radius: 10px;
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  }
+  .table-top::-webkit-scrollbar { display: none; }
+  .table-top > * { flex: 0 0 auto; }
   .table-top .v { font-size: 12px; }
   .table-top .k { font-size: 8.5px; }
   /* 横持ちは縦が足りない。ゲージは畳んで数字だけ残す（帯が2段になるのを防ぐ） */
@@ -724,14 +731,43 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .board-scroll { justify-content: flex-start; }
   /* 低い画面では正方形にこだわらない。
      高さ基準の幅制限をそのまま効かせると、横に広いのに卓だけ極端に狭くなる */
-  .board { width: 100%; }
+  .board {
+    width: 100%; align-content: stretch;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    /* 横持ちは上下の河を1行に伸ばすので、左右の席に幅を回せる */
+    grid-template-columns: minmax(140px, 1fr) minmax(0, 2.1fr) minmax(140px, 1fr);
+  }
+  /* 席の見出しも縦を食う。横持ちでは1行に詰める */
+  /* 横持ちは縦がまったく足りない。他家の伏せ牌は「何を持っているか」が
+     分からない以上そこまでの情報量が無いので畳み、河と鳴きに高さを回す。
+     自分の手牌は下の帯に別で出しているので影響しない */
+  .seat-top > .hand-row,
+  .seat-left > .hand-row,
+  .seat-right > .hand-row { display: none; }
+  /* 上下は横に広い。河を1行に伸ばして高さを最小にし、
+     そのぶんを左右の席（縦がいちばん厳しい）へ回す */
+  .seat-top > .discards, .seat-bottom > .discards { grid-template-columns: repeat(18, auto); }
+  /* 左右は行数を減らすほうが効く。列を増やして縦を詰める */
+  .seat-left > .discards, .seat-right > .discards { grid-template-columns: repeat(9, auto); }
+  /* 河は最後まで（18〜20枚）出しきる必要がある。横持ちの高さで4人ぶん
+     収めるには、この大きさまで落とすしかない。角の数字は9pxを下限に
+     しているので、小さくても何の牌かは読める */
+  .seat .tile { --tw: 14px; }
+  .seat-left .tile, .seat-right .tile { --tw: 13px; }
+  .center-info { min-width: 0; aspect-ratio: auto; }
+  /* それでも溢れたときは、切らずに席の中で送れるようにしておく */
+  .seat { overflow-y: auto; scrollbar-width: none; }
+  .seat::-webkit-scrollbar { display: none; }
   .side-card .rule-item span:first-child { flex: 0 0 56px; }
   .logbox { font-size: 10px; padding: 6px 8px; min-height: 40px; line-height: 1.5; }
   .board { gap: 5px; }
-  .seat { padding: 4px 6px; border-radius: 9px; }
-  .seat-head { margin-bottom: 2px; font-size: 10px; gap: 4px; }
-  .seat-wind { width: 19px; height: 19px; font-size: 11px; }
-  .seat-pts { font-size: 12px; }
+  /* 横持ちは 390px の高さに4人ぶんの河を収める。終盤（河が18枚を超えて
+     3行になるところ）まで切れないよう、席まわりを最小限まで詰める */
+  .seat { padding: 2px 4px; border-radius: 8px; }
+  .seat-head { margin-bottom: 0; font-size: 9px; gap: 3px; }
+  .seat-wind { width: 13px; height: 13px; font-size: 8.5px; border-radius: 3px; }
+  .seat-pts { font-size: 10px; }
+  .badge-riichi, .badge-wareme { font-size: 8.5px; padding: 1px 4px; }
   .center-info { min-height: 0; padding: 6px; gap: 3px; }
   .center-kyoku { font-size: 17px; }
   .center-sub { font-size: 10px; }
