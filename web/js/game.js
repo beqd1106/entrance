@@ -12,6 +12,8 @@ import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
+import { currentTable, clearTable } from './online.js';
+import { sendAct, resync, leaveRoom, onMessage, disconnect } from './net.js';
 
 const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, { label: '速い', v: 120 }];
 
@@ -51,10 +53,40 @@ export function renderGame(root, params) {
     // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
     // 画面はこの席を下辺に置いて描く（engine の席番号はどの端末でも同じ）。
     mySeat: 0,
+    // オンライン対局のときだけ入る。null なら今までどおりひとりで打つ卓。
+    online: null,
     debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
   };
+  // オンライン卓（待合室で開始が決まっている）なら、その席と種を使う
+  const table = params.room ? currentTable() : null;
+  if (table && table.no === params.room) {
+    G.online = {
+      no: table.no, seats: table.seats,
+      applied: 0, inbox: new Map(), resyncTimer: null, off: null,
+    };
+    G.mySeat = table.seat || 0;
+    G.seed = table.seed;
+    clearTable();
+  }
+
+  // 部屋番号つきで来たのに卓の情報が無い（再読み込みなど）なら待合室へ戻す
+  if (params.room && !G.online) {
+    location.hash = '#/online';
+    return () => {};
+  }
+  if (G.online) {
+    G.online.off = onMessage((msg) => {
+      if (msg.type === 'acts') { receiveActs(msg.acts || []); return; }
+      if (msg.type === 'room' && G && G.online) {
+        // 誰かが落ちた・戻ったときの表示だけ更新する
+        G.online.seats = msg.room.seats;
+        if (G.engine) draw();
+      }
+    });
+  }
+
   // ホームの「前回の続き」から戻れるように、開いた卓を覚えておく
   rememberTable({ presetId, name: preset.name, event: params.event || null });
   // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
@@ -63,6 +95,12 @@ export function renderGame(root, params) {
   showPregame();
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
+    if (G && G.online) {
+      if (G.online.off) G.online.off();
+      if (G.online.resyncTimer) clearTimeout(G.online.resyncTimer);
+      leaveRoom(G.online.no);
+      disconnect();
+    }
     closeOverlay();
     closeTileInfo();
     document.body.classList.remove('playing');
@@ -259,18 +297,79 @@ function closeTileInfo() {
 }
 
 function startGame() {
-  const players = [{ name: 'あなた', isCpu: false }];
-  for (let i = 1; i < G.rules.game.players; i++) {
-    players.push({ name: `CPU${i}`, isCpu: true, level: ['normal', 'expert', 'normal'][i - 1] || 'normal' });
+  const players = G.online
+    ? G.online.seats.map((s, i) => ({
+      name: s.name || `CPU${i}`,
+      isCpu: !!s.cpu,
+      level: ['normal', 'expert', 'normal'][i - 1] || 'normal',
+    }))
+    : [{ name: 'あなた', isCpu: false }];
+  if (!G.online) {
+    for (let i = 1; i < G.rules.game.players; i++) {
+      players.push({ name: `CPU${i}`, isCpu: true, level: ['normal', 'expert', 'normal'][i - 1] || 'normal' });
+    }
   }
   G.engine = new GameEngine({ rules: G.rules, seed: G.seed, players, debug: { ...G.debug } });
   G.log = [];
   G.engine.startKyoku();
   recordPlay(G.presetId);
-  pushLog('sys', `${G.preset.name} で対局開始（シード ${G.seed}）`);
+  pushLog('sys', G.online
+    ? `${G.preset.name} で対局開始（部屋 ${G.online.no}）`
+    : `${G.preset.name} で対局開始（シード ${G.seed}）`);
   drainLog();
   draw();
   loop();
+  // 開始を押すのが遅れた間に届いていた手を、ここでまとめて入れる
+  if (G.online) pumpInbox();
+}
+
+/**
+ * サーバから届いた行動を貯める。
+ *
+ * 開始を押すのが人によって遅い・早いがあるので、engine がまだ無い間も
+ * 取りこぼさないよう、いったん受け皿に入れておく。
+ */
+function receiveActs(acts) {
+  if (!G || !G.online) return;
+  for (const a of acts) {
+    if (a.seq >= G.online.applied) G.online.inbox.set(a.seq, a);
+  }
+  pumpInbox();
+}
+
+/**
+ * 受け皿から、順番どおりに engine へ入れる。
+ * 抜けているところで止め、しばらく埋まらなければ配り直してもらう。
+ */
+function pumpInbox() {
+  if (!G || !G.online || !G.engine) return;
+  let moved = false;
+  while (G.online.inbox.has(G.online.applied)) {
+    const a = G.online.inbox.get(G.online.applied);
+    G.online.inbox.delete(G.online.applied);
+    if (a.action && a.action.type === 'nextKyoku') {
+      // 誰が押しても1回だけ効く（先に進んでいたら何もしない）
+      if (G.engine.phase === 'kyokuEnd') { closeOverlay(); G.engine.nextKyoku(); }
+    } else {
+      const r = G.engine.act(a.seat, a.action);
+      if (r && r.error) pushLog('sys', `※ ${r.error}`);
+    }
+    G.online.applied += 1;
+    moved = true;
+  }
+  if (moved) {
+    G.sending = false;
+    drainLog();
+    loop();
+    return;
+  }
+  // 抜けたまま届かないときだけ、取り直しをお願いする
+  if (G.online.inbox.size && !G.online.resyncTimer) {
+    G.online.resyncTimer = setTimeout(() => {
+      G.online.resyncTimer = null;
+      if (G && G.online && G.online.inbox.size) resync(G.online.no, G.online.applied);
+    }, 1500);
+  }
 }
 
 function loop() {
@@ -282,11 +381,21 @@ function loop() {
   const r = e.advance(decide, 1);
   drainLog();
   if (r.waiting) {
+    // オンラインでは、自分以外の人の番はサーバから届くまで待つ。
+    // AIの手は乱数を使わないので、どの端末で計算しても同じ手になる。
+    if (G.online && r.waiting.seat !== G.mySeat) {
+      G.waiting = null;
+      G.remoteWait = r.waiting.seat;
+      draw();
+      return;
+    }
+    G.remoteWait = null;
     G.waiting = r.waiting;
     draw();
     maybeAutoDiscard();
     return;
   }
+  G.remoteWait = null;
   G.waiting = null;
   draw();
   G.timer = setTimeout(loop, G.speed);
@@ -299,6 +408,14 @@ function act(action) {
   G.mode = 'idle';
   G.riichiIds = null;
   G.selectedTileId = null;
+  // オンラインでは、順番を決めるのはサーバ。自分の手も一度預けて、
+  // 戻ってきた順に適用する。そうしないと端末ごとに並びが変わる。
+  if (G.online) {
+    G.sending = true;
+    sendAct(G.online.no, seat, action);
+    draw();
+    return;
+  }
   const r = e.act(seat, action);
   if (r && r.error) { G.dom.hint.textContent = r.error; G.waiting = { seat, choices: e.getChoices(seat) }; draw(); return; }
   drainLog();
@@ -751,7 +868,13 @@ function drawActions(s) {
     clear(hint);
     if (!s.finished && s.phase !== 'kyokuEnd') {
       // 止まっているのか考えているのか分かるよう、点を打たせる
-      hint.appendChild(h('span', { text: 'CPUの手番です' }));
+      let who = 'CPUの手番です';
+      if (G.sending) who = '送信しています';
+      else if (G.online && G.remoteWait != null) {
+        const p = s.players[G.remoteWait];
+        who = `${(p && p.name) || 'ほかの方'}の手番です`;
+      }
+      hint.appendChild(h('span', { text: who }));
       hint.appendChild(h('span.thinking', h('i'), h('i'), h('i')));
     }
     return;
@@ -974,8 +1097,16 @@ function showKyokuResult() {
 
   const next = h('button.btn.btn-brass', { text: e.finished ? '結果を見る' : '次の局へ' });
   next.addEventListener('click', () => {
+    if (e.finished) { closeOverlay(); showFinal(); return; }
+    // オンラインでは、次の局へ進むのも全員で足並みをそろえる。
+    // 誰が押してもよく、先に届いた1回だけが効く。
+    if (G.online) {
+      next.disabled = true;
+      next.textContent = '進めています…';
+      sendAct(G.online.no, G.mySeat, { type: 'nextKyoku' });
+      return;
+    }
     closeOverlay();
-    if (e.finished) { showFinal(); return; }
     e.nextKyoku();
     drainLog();
     draw();

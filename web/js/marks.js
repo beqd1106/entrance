@@ -46,6 +46,10 @@ const MARKS = {
     <circle cx="8.4" cy="8.4" r="1.4" fill="currentColor" stroke="none"/>
     <circle cx="15.6" cy="15.6" r="1.4" fill="currentColor" stroke="none"/>
     <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>`,
+  // 卓を囲む二人＝オンラインで一緒に打つ
+  online: `<circle cx="8.4" cy="8.6" r="3"/><circle cx="16.4" cy="8.6" r="2.4"/>
+    <path d="M3 19.4c0-2.9 2.4-5 5.4-5s5.4 2.1 5.4 5"/>
+    <path d="M15.2 14.6c3 0 5.8 1.9 5.8 4.8" opacity=".6"/>`,
   // 雲＝装飾（見出しの区切りなど）
   cloud: `<path d="M2.6 15.4c1.4 1.2 3 1.2 4.4 0s3-1.2 4.4 0 3 1.2 4.4 0 3-1.2 4.4 0"/>
     <path d="M4.4 11.2c1.2 1 2.6 1 3.8 0s2.6-1 3.8 0 2.6 1 3.8 0" opacity=".6"/>`,

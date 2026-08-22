@@ -9,7 +9,7 @@
  * コードをキャッシュ優先にすると、更新してもキャッシュ名を変えるまで古い画面が出続ける。
  * 実際にそれで「直したはずの画面が変わらない」状態が起きたので、この形にしている。
  */
-const CACHE = 'houserule-v21';
+const CACHE = 'houserule-v22';
 const ASSETS = [
   './',
   './index.html',
@@ -32,6 +32,8 @@ const ASSETS = [
   './js/artwork.js',
   './js/storeedit.js',
   './js/api.js',
+  './js/net.js',
+  './js/online.js',
   './js/manual.js',
   './config.js',
   './manifest.webmanifest',

@@ -11,6 +11,7 @@ import {
   h, clear, fmt, icon, stars, chip, ruleChip, toneOf, sectionHead, toggleRow, notice, tileEl, photoImg,
 } from './ui.js';
 import { renderGame } from './game.js';
+import { renderOnline } from './online.js';
 import { renderEditor } from './editor.js';
 import { renderDashboard, recordCheckin } from './dashboard.js';
 import { showOnboarding } from './onboarding.js';
@@ -63,6 +64,7 @@ function route() {
     case 'compare': viewCompare(params); break;
     case 'table': cleanup = renderTable(app, params); break;
     case 'play': cleanup = renderGame(app, params); break;
+    case 'online': cleanup = renderOnline(app, params); break;
     case 'editor': cleanup = renderEditor(app, params); break;
     case 'dashboard': cleanup = renderDashboard(app, params); break;
     case 'store-edit': cleanup = renderStoreEdit(app, params); break;

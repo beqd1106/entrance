@@ -100,6 +100,7 @@ export function renderHub(root) {
           tone: 'primary',
         }),
         resumeTile(),
+        tile({ href: '#/online', mark: 'online', title: 'オンラインで打つ', sub: '部屋番号で友だちと同卓' }),
         tile({ href: '#/editor', mark: 'rule', title: 'ルール設定', sub: '自分のルールを作って保存' }),
         tile({ href: '#/stores', mark: 'store', title: '店舗をさがす', sub: 'ハウスルールから雀荘を探す' }),
         tile({ href: '#/compare', mark: 'compare', title: 'ルール比較', sub: '2つ並べて違いを見る' }),

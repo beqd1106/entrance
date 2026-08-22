@@ -105,10 +105,13 @@ export async function signedFetch({ service, region, method = 'POST', url, body 
     .map(([k, v]) => `${k}=${v}`)
     .join('&');
 
-  // S3 以外のサービスは、正規化したパスをもう一度URIエンコードする決まり。
-  // 例：モデルIDの「:」は %3A ではなく %253A で署名しないと一致しない。
+  // S3 以外のサービスは、パスをもう一度URIエンコードして署名する決まり。
+  // 「もう一度」なので、URLに入っている形をそのまま1回だけ包む。
+  //   Bedrock  … モデルIDの「%3A」→「%253A」
+  //   execute-api … 「@connections」→「%40connections」
+  // ここで decodeURIComponent してから2回包むと、素の「@」が %2540 になって合わない。
   const canonicalPath = u.pathname.split('/')
-    .map((p) => enc(enc(decodeURIComponent(p))))
+    .map((p) => enc(p))
     .join('/') || '/';
 
   const canonicalRequest = [
