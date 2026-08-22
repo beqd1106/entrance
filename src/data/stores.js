@@ -21,6 +21,15 @@ export const STORES = [
         id: 'yk_ev1', kind: 'event',
         title: '毎週水曜は初心者卓の日',
         body: 'ルール説明つきの卓を立てます。打ち方が分からなくても大丈夫です。',
+        // 画像1枚だけで配る告知の見本。縦向きのチラシがそのまま入る
+        image: 'img/notices/beginner-day.jpg',
+        startAt: '', endAt: '',
+      },
+      {
+        id: 'yk_ev3', kind: 'event',
+        title: '平日サービスDAY',
+        body: '',
+        image: 'img/notices/weekday-service.jpg',
         startAt: '', endAt: '',
       },
       {

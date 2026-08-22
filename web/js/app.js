@@ -577,44 +577,71 @@ function signatureTiles(r) {
   return out.slice(0, 5);
 }
 
+/**
+ * お知らせの画像の在りか。
+ * サーバから配られたものは期限付きURL、アプリに同梱のものは相対パス。
+ */
+function noticeImageSrc(n) {
+  return (n && (n.imageUrl || n.image)) || null;
+}
+
 /** 掲載期間の内側にあるお知らせだけを返す（日付が空なら常時掲載） */
 function activeNotices(list) {
   if (!Array.isArray(list)) return [];
   const today = new Date().toISOString().slice(0, 10);
   // 画像1枚だけの告知もあるので、見出しか画像のどちらかがあれば載せる
-  return list.filter((n) => n && (n.title || n.imageUrl)
+  return list.filter((n) => n && (n.title || noticeImageSrc(n))
     && (!n.startAt || n.startAt <= today)
     && (!n.endAt || n.endAt >= today));
 }
 
 /**
- * お知らせの画像。縦向きのチラシでも横向きのバナーでも全体が入るように収め、
- * 押すと画面いっぱいで見られるようにする（横持ちだと縮んで文字が読めないため）。
+ * お知らせの画像。
+ * 縦向きのチラシでも横向きのバナーでも、切らずに全体を見せる。
+ * ただし縦長のチラシは縮むと文字が読めないので、押すと拡大して見られる。
  */
 function noticeImage(n) {
-  const img = h('img', { src: n.imageUrl, alt: n.title || 'お知らせの画像', loading: 'lazy' });
+  const src = noticeImageSrc(n);
+  const img = h('img', { src, alt: n.title || 'お知らせの画像', loading: 'lazy' });
   const box = h('button.notice-image', { type: 'button', title: '押すと拡大します' }, img,
     h('span.notice-image-zoom', icon('search', 14), '拡大'));
-  box.addEventListener('click', () => openImageViewer(n.imageUrl, n.title));
+  box.addEventListener('click', () => openImageViewer(src, n.title));
   return box;
 }
 
-/** 画像を画面いっぱいで見る。どこを押しても閉じる。 */
+/**
+ * 画像を大きく見る。
+ *
+ * 最初は全体が入る大きさ。縦長のチラシは横持ちだと小さくなりすぎるので、
+ * 画像を押すと画面の幅いっぱいまで広げて、縦にスクロールして読めるようにする。
+ * 画像の外側を押すか、閉じるを押すか、Escで閉じる。
+ */
 function openImageViewer(src, alt) {
-  const view = h('div.image-viewer',
-    h('img', { src, alt: alt || 'お知らせの画像' }),
-    h('span.image-viewer-close', { text: '閉じる' }));
+  const img = h('img', { src, alt: alt || 'お知らせの画像' });
+  const scroller = h('div.image-viewer-scroll', img);
+  const toggle = h('span.image-viewer-hint', { text: '画像を押すと大きくなります' });
+  const closeBtn = h('button.image-viewer-close', { type: 'button', text: '閉じる' });
+  const view = h('div.image-viewer', scroller, toggle, closeBtn);
+
   const close = () => {
     view.remove();
     document.removeEventListener('keydown', onKey);
     document.body.classList.remove('no-scroll');
   };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
-  view.addEventListener('click', close);
+
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const wide = view.classList.toggle('is-wide');
+    toggle.textContent = wide ? '画像を押すと全体が見えます' : '画像を押すと大きくなります';
+    if (wide) scroller.scrollTop = 0;
+  });
+  closeBtn.addEventListener('click', close);
+  // 画像の外側（背景）を押したときだけ閉じる
+  view.addEventListener('click', (e) => { if (e.target !== img) close(); });
   document.addEventListener('keydown', onKey);
   document.body.classList.add('no-scroll');
   document.body.appendChild(view);
-  view.focus();
 }
 
 /** 2026-12-01 → 12/1 */
@@ -824,7 +851,7 @@ function viewStore(id) {
           n.endAt ? h('span.tiny.muted', { text: `${jpDate(n.startAt)}〜${jpDate(n.endAt)}` }) : null),
         n.body ? h('p', { text: n.body }) : null,
         // 画像1枚だけの告知もある。縦向きでも横向きでも全体が入るように収める
-        n.imageUrl ? noticeImage(n) : null))));
+        noticeImageSrc(n) ? noticeImage(n) : null))));
   }
   panelEvent.appendChild(h('div.store-grid',
     h('div.card.card-pad',

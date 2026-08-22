@@ -1570,43 +1570,39 @@ textarea { resize: vertical; min-height: 56px; }
 }
 .notice-image:hover img, .notice-image:focus-visible img { border-color: var(--vermilion); }
 
-/* 画像を画面いっぱいで見る。横持ちだと縮んで読めないので、一枚絵の告知はこちらで */
-.image-viewer {
-  position: fixed; inset: 0; z-index: 200; cursor: zoom-out;
+/* 画像を大きく見る。
+   既定は全体が入る大きさ。押すと画面の幅いっぱいに広げて縦に読める */
+.image-viewer { position: fixed; inset: 0; z-index: 200; background: rgba(23, 25, 28, .93); }
+/* 画像の max-height:100% が効くよう、入れ物の高さを確定させる（inset で四辺を止める） */
+.image-viewer-scroll {
+  position: absolute; inset: 16px 16px 44px;
   display: flex; align-items: center; justify-content: center;
-  padding: 16px; background: rgba(23, 25, 28, .92);
+  overflow: auto; -webkit-overflow-scrolling: touch;
 }
 .image-viewer img {
   max-width: 100%; max-height: 100%;
-  width: auto; height: auto; object-fit: contain; border-radius: var(--r-s);
+  width: auto; height: auto; object-fit: contain;
+  border-radius: var(--r-s); cursor: zoom-in;
+}
+.image-viewer.is-wide .image-viewer-scroll { inset: 0 0 44px; align-items: flex-start; }
+.image-viewer.is-wide img {
+  max-width: none; max-height: none;
+  width: 100%; height: auto; border-radius: 0; cursor: zoom-out;
+}
+.image-viewer-hint {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  color: rgba(255, 255, 255, .78); font-size: 11px; letter-spacing: .06em;
+  padding: 5px 12px; border-radius: 999px; background: rgba(0, 0, 0, .45);
+  pointer-events: none; white-space: nowrap;
 }
 .image-viewer-close {
   position: absolute; top: 12px; right: 16px;
   color: #fff; font-size: 12px; letter-spacing: .08em;
-  padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.4);
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .4); background: rgba(0, 0, 0, .35);
+  font-family: inherit; cursor: pointer;
 }
-/* --- オンライン対局の待合室 --- */
-.online-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
-@media (max-width: 640px) { .online-grid { grid-template-columns: 1fr; } }
-.room-no {
-  font-size: clamp(38px, 12vw, 54px); font-weight: 700;
-  letter-spacing: .18em; line-height: 1.1; color: var(--vermilion);
-  font-variant-numeric: tabular-nums; margin: 2px 0 6px;
-}
-.seat-list { border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
-.seat-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; background: var(--paper);
-  border-bottom: 1px solid var(--line); font-size: 14px;
-}
-.seat-row:last-child { border-bottom: 0; }
-.seat-row.is-me { background: var(--paper-3); }
-.seat-no {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--ink); color: var(--paper);
-  font-size: 12px; font-weight: 700;
-}
+.image-viewer-close:hover { background: rgba(0, 0, 0, .6); }
 
 .notice-image-preview { margin-bottom: 8px; }
 .notice-image-preview img {
