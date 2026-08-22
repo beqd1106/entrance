@@ -350,6 +350,15 @@ body.playing .nav { display: none; }
 }
 .table-top::-webkit-scrollbar { display: none; }
 .table-top > * { flex: 0 0 auto; }
+/* ルールを見るボタン。対局中の入口なので、ほかの設定ボタンより目立たせる */
+.act-rule {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; font-size: 11.5px; font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.act-rule.on { background: var(--brass); border-color: var(--brass); color: #fff; }
+
 .table-top .k { font-size: 10px; letter-spacing: 0.08em; color: rgba(255,255,255,.55); text-transform: uppercase; }
 .table-top .v { font-family: var(--mono); font-size: 15px; }
 .board {
@@ -762,6 +771,18 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     flex: 0 1 auto; max-height: 52%; overflow-y: auto;
   }
   .board-scroll { justify-content: flex-start; }
+  /* ルールの欄は、横持ちでは右からせり出させる。卓を押し縮めないので、
+     見ている間も場の様子が分かる */
+  .table-main:not(.side-closed) .side-panel {
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: min(320px, 62vw); z-index: 60;
+    background: rgba(23, 48, 42, 0.97);
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.3);
+    padding: 10px; overflow-y: auto;
+  }
+  .table-main:not(.side-closed) { grid-template-columns: minmax(0, 1fr); }
+
   /* 鳴き・スルーは、横持ちで両手に持ったときに右の親指がいちばん届く。
      画面の右下に縦に並べて、手牌を見ながら押せるようにする */
   .actions {
@@ -785,7 +806,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 低い画面では正方形にこだわらない。
      高さ基準の幅制限をそのまま効かせると、横に広いのに卓だけ極端に狭くなる */
   .board {
-    width: 100%; align-content: stretch;
+    /* 横持ちは高さが足りないので、正方形を保つ指定（aspect-ratio）を外して
+     　横幅をいっぱいに使う。残したままだと卓が290pxまで縮む */
+    width: 100%; max-width: none; aspect-ratio: auto; height: 100%;
+    align-content: stretch;
     grid-template-rows: auto minmax(0, 1fr) auto;
     /* 横持ちは上下の河を1行に伸ばすので、左右の席に幅を回せる */
     grid-template-columns: minmax(140px, 1fr) minmax(0, 2.1fr) minmax(140px, 1fr);

@@ -510,6 +510,21 @@ function drawTop(s) {
   });
   top.appendChild(auto);
 
+  // 打っている最中に「この店のルールは何だったか」を確かめるためのボタン。
+  // 卓を広く使うため右の欄は既定で畳んであるので、ここが入口になる。
+  // 何が出るかが一目で分かるよう、印と「ルール」の語を並べて出す。
+  const side = h('button.act.act-rule', { title: 'この卓のルールと、いまの局の履歴を見る' },
+    icon('rule', 14),
+    h('span', { text: G.sideOpen ? 'ルールを閉じる' : 'ルールを見る' }));
+  if (G.sideOpen) side.classList.add('on');
+  side.addEventListener('click', () => {
+    G.sideOpen = !G.sideOpen;
+    savePref('sideOpen', G.sideOpen);
+    G.dom.main.classList.toggle('side-closed', !G.sideOpen);
+    draw();
+  });
+  top.appendChild(side);
+
   // デバッグは検証用。ふだんは出さない（URLに debug=1 を付けたときだけ）
   if (G.debugAvailable) {
     const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
