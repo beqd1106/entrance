@@ -1111,8 +1111,10 @@ export class GameEngine {
     if (nagashi.length) {
       for (const p of nagashi) {
         const isDealer = p.seat === this.round.dealer;
+        // 流し満貫。役満として払う店もある
         const s = settleWin({
-          base: 2000, winner: p.seat, loser: null, tsumo: true,
+          base: R.ryuukyoku.nagashiYakuman ? 8000 : 2000,
+          winner: p.seat, loser: null, tsumo: true,
           dealerSeat: this.round.dealer, playerCount: this.n, rules: R,
           honba: this.round.honba, kyotaku: 0, wareme: this.wareme,
         });

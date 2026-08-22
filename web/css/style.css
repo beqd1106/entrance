@@ -1525,6 +1525,11 @@ textarea { resize: vertical; min-height: 56px; }
 .jump-chip.on {
   background: var(--brass); border-color: var(--brass); color: #fff; font-weight: 700;
 }
+/* 最初に触るところ。ほかの分野より一段目立たせる */
+.quick-card { border-color: rgba(193, 55, 44, 0.28); box-shadow: var(--shadow-2); }
+.quick-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.quick-head b { font-size: 16px; color: var(--brass); }
+
 /* 絞り込みで隠している分野 */
 .card.sec-off { display: none; }
 /* 分野へ飛んだとき、見出しが上の帯に隠れないようにする */

@@ -123,6 +123,25 @@ const MAJOR_YAKU = [
 ];
 
 /** 基本パネルのスキーマ（advanced:true は「詳細設定」に隠す） */
+/**
+ * 最初に触るところ。
+ *
+ * 設定は全部で200項目近くあり、分野に分けても「どこから手を付けるか」が
+ * 分からない。店の人がまず決めるのは人数・長さ・点数・赤・喰いタンの5つ
+ * なので、それだけを先頭にまとめて出す。ここを触れば形にはなる。
+ */
+const QUICK = {
+  title: 'まずここだけ',
+  items: [
+    { type: 'players' },
+    { type: 'select', path: 'game.length', label: '対局の長さ', options: LENGTHS },
+    { type: 'number', path: 'scoring.startingPoints', label: '持ち点', step: 1000 },
+    { type: 'number', path: 'scoring.returnPoints', label: '返し点', step: 1000 },
+    { type: 'switch', path: 'win.kuitan', label: '喰いタン', desc: '鳴いたタンヤオを認める' },
+    { type: 'switch', path: 'game.tobiEnd', label: 'トビ終了', desc: '誰かが0点未満になったら終了' },
+  ],
+};
+
 const GROUPS = [
   {
     title: '基本',
@@ -213,6 +232,7 @@ const GROUPS = [
       { type: 'switch', path: 'renchan.kyuushuKyuuhai', label: '九種九牌', advanced: true },
       { type: 'switch', path: 'renchan.suufonRenda', label: '四風連打', advanced: true },
       { type: 'switch', path: 'ryuukyoku.nagashiMangan', label: '流し満貫', advanced: true },
+      { type: 'switch', path: 'ryuukyoku.nagashiYakuman', label: '流し満貫を役満にする', desc: '流し満貫を役満として払う店があります', advanced: true },
     ],
   },
 ];
@@ -429,6 +449,18 @@ function renderLeft(left, state, onChange) {
     field('ルール名（お客様に表示されます）', nameInp),
     field('ベースにするルール', baseSel, '選び直すとその設定を読み込みます')));
 
+  // 最初に触るところ。分野で絞り込んでも残るよう、見出しを持たせない。
+  // 探す欄より前に置く（まずここを見てほしいので）
+  const quick = h('div.card.card-pad.quick-card', { style: { marginBottom: '18px' } },
+    h('div.quick-head',
+      h('b', { text: QUICK.title }),
+      h('span.tiny.muted', { text: '店の性格はだいたいこの5つで決まります' })));
+  for (const item of QUICK.items) {
+    const row = control(item, R, onChange);
+    if (row) quick.appendChild(row);
+  }
+  left.appendChild(quick);
+
   // 設定は項目が多い。探せること・変えたところが分かることを優先する
   left.appendChild(filterBar(left, state));
 
@@ -514,6 +546,9 @@ function renderLeft(left, state, onChange) {
       R.wall.backColors.enabled = v;
       onChange();
     }));
+  wallBox.appendChild(field('王牌の枚数',
+    stepper(R.wall.deadWallSize ?? 14, (v) => { R.wall.deadWallSize = v; onChange(); }, 6, 20),
+    '一般的なのは14枚。少なくすると「ドラ表示牌の隣まで引ききる」形に、多くすると17枚残しのような形になります'));
   wallBox.appendChild(switchRow('華牌は自分で抜く',
     '引いた瞬間に自動で抜かず、タップして抜きます（華牌を使うルールのとき）',
     !!R.flowers.manualDraw,

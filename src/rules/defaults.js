@@ -123,6 +123,8 @@ export const DEFAULT_RULES = {
   ryuukyoku: {
     notenPenalty: 3000,
     nagashiMangan: true,
+    // 流し満貫を役満として払う店がある
+    nagashiYakuman: false,
   },
 
   // 6-5. ドラ・特殊牌 -----------------------------------------------------
@@ -258,6 +260,12 @@ export const DEFAULT_RULES = {
   wall: {
     // { '5m': 8 } のように牌コード→枚数。指定がない牌種は既定の4枚。
     tileCounts: {},
+    /**
+     * 王牌の枚数。
+     * 一般的な14枚のほか、「ドラ表示牌の隣まで引ききる」ように少なくしたり、
+     * 17枚残す店もある。ここを変えると1局で打てる巡目が変わる。
+     */
+    deadWallSize: 14,
     // 2セットの牌を混ぜるルールでは、牌の裏の色が2色になる（背一色の判定に使う）
     backColors: { enabled: false, colors: ['blue', 'yellow'] },
   },

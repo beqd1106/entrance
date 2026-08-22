@@ -133,7 +133,10 @@ export class Wall {
       [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
     }
     this.all = tiles;
-    this.deadSize = 14;
+    // 王牌の枚数。ドラ表示牌の隣まで引ききる設定にも、17枚残す設定にもできる。
+    // 嶺上牌の4枚とドラ表示のぶんは要るので、下限は6枚とする
+    const want = (rules.wall && rules.wall.deadWallSize) || 14;
+    this.deadSize = Math.max(6, Math.min(Math.floor(want), tiles.length - 20));
     this.dead = tiles.slice(tiles.length - this.deadSize);
     this.live = tiles.slice(0, tiles.length - this.deadSize);
     this.drawIndex = 0;
