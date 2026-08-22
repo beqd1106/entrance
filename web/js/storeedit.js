@@ -241,6 +241,47 @@ function renderForm(left, state, onChange) {
   sw2.addEventListener('input', () => { d.sns = { ...(d.sns || {}), web: sw2.value }; onChange(); });
   look.appendChild(field('ウェブサイト', sw2));
   left.appendChild(look);
+
+  // --- クーポン（会員カードに並ぶ）
+  const cp = h('div.card.card-pad', { style: { marginBottom: '18px' } },
+    h('h3', { style: { fontSize: '16px', marginBottom: '6px' }, text: 'クーポン' }),
+    h('p.tiny.muted', { style: { marginTop: '0' },
+      text: '会員カードに並びます。条件に届いたお客様から順に使えるようになります。店頭で提示していただく案内なので、アプリの中で支払いは発生しません。' }));
+  d.coupons = d.coupons || [];
+  d.coupons.forEach((c, i) => {
+    const title = h('input', { type: 'text', value: c.title || '', placeholder: '例：フリー1半荘 100円引き' });
+    title.addEventListener('input', () => { c.title = title.value; onChange(); });
+    const body = h('input', { type: 'text', value: c.body || '', placeholder: '使い方や条件の説明（任意）' });
+    body.addEventListener('input', () => { c.body = body.value; onChange(); });
+    c.requires = c.requires || {};
+    const plays = h('input', { type: 'number', step: '1', value: String(c.requires.plays || 0), style: { width: '80px' } });
+    plays.addEventListener('change', () => { c.requires.plays = Number(plays.value); onChange(); });
+    const visits = h('input', { type: 'number', step: '1', value: String(c.requires.checkins || 0), style: { width: '80px' } });
+    visits.addEventListener('change', () => { c.requires.checkins = Number(visits.value); onChange(); });
+    const until = h('input', { type: 'date', value: c.until || '' });
+    until.addEventListener('change', () => { c.until = until.value; onChange(); });
+    const del = h('button.btn.btn-sm.btn-ghost', { text: '削除' });
+    del.addEventListener('click', () => { d.coupons.splice(i, 1); onChange(); });
+    cp.appendChild(h('div.coupon-edit',
+      h('div.row.gap-8', { style: { marginBottom: '8px' } },
+        h('span.tiny.muted', { text: `クーポン${i + 1}` }), h('div.grow'), del),
+      field('タイトル', title),
+      field('説明', body),
+      h('div.row.gap-12.wrapflex',
+        field('体験プレイ', plays, '何回でこのクーポンが開くか（0で最初から）'),
+        field('来店', visits, '来店の回数（0で条件にしない）'),
+        field('期限', until, '空欄なら期限なし'))));
+  });
+  const addCp = h('button.btn.btn-sm.btn-ghost', { text: '＋クーポンを追加' });
+  addCp.addEventListener('click', () => {
+    d.coupons.push({
+      id: `cp_${Date.now().toString(36)}`,
+      title: '新しいクーポン', body: '', requires: {},
+    });
+    onChange();
+  });
+  cp.appendChild(addCp);
+  left.appendChild(cp);
 }
 
 /**

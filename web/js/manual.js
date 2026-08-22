@@ -121,8 +121,26 @@ const SECTIONS = [
     ],
   },
   {
-    id: 'store',
+    id: 'member',
     num: '06',
+    title: '会員カードとクーポン',
+    lead: '店ごとに1枚。通うほど使えるものが増えます。',
+    audience: 'guest',
+    blocks: [
+      { type: 'steps', items: [
+        { t: 'カードを作る', b: '店舗ページの「会員カードを作る（無料）」から発行します。番号はその場で決まり、端末のなかにだけ保存されます。どこにも送信しません。' },
+        { t: '店頭で番号を伝える', b: 'カードに大きく出ている会員番号を、スタッフにお伝えください。アプリを見せるだけでも構いません。' },
+        { t: 'クーポンが開く', b: '体験プレイや来店の回数が条件に届くと、「もう少し」から「使えます」に変わります。' },
+        { t: '使うのは店員の前で', b: '「店頭で使う」を押すと使用済みになります。押す前に確認が出ます。' },
+      ] },
+      { type: 'callout', tone: 'brass', title: 'お金のやり取りはありません', body:
+        'クーポンは店頭で提示する案内です。アプリの中で支払いや換金は行いません。'
+        + 'ゲーム内ポイント（BP）と交換することもありません。' },
+    ],
+  },
+  {
+    id: 'store',
+    num: '07',
     title: '店舗の方へ',
     lead: 'プログラミングの知識は要りません。設定を変えると、説明文もCPUの挙動も同時に変わります。',
     audience: 'store',
@@ -146,7 +164,7 @@ const SECTIONS = [
   },
   {
     id: 'faq',
-    num: '07',
+    num: '08',
     title: 'よくある質問',
     lead: '',
     blocks: [
@@ -165,7 +183,7 @@ const SECTIONS = [
 // ---------------------------------------------------------------------------
 export function renderManual(root) {
   clear(root);
-  const sec = h('section.section', h('div.wrap'));
+  const sec = h('section.section', h('div.wrap-narrow'));
   const wrap = sec.firstChild;
 
   wrap.appendChild(h('div', { style: { marginBottom: '10px' } },

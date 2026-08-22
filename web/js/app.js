@@ -813,8 +813,12 @@ function viewCompare(params) {
       h('a.btn.btn-ghost', { href: `#/play?preset=${state.b}`, text: `${lookupPreset(state.b).name}で遊ぶ` })));
   };
   wrap.appendChild(h('div.row.gap-12.wrapflex', { style: { marginBottom: '18px' } },
-    h('div', { style: { minWidth: '240px' } }, h('div.label', { text: '左' }), sel('a')),
-    h('div', { style: { minWidth: '240px' } }, h('div.label', { text: '右' }), sel('b'))));
+    h('div', { style: { minWidth: '240px' } },
+      h('div.label', { text: '左' }), sel('a'),
+      h('a.btn.btn-sm.btn-ghost', { style: { marginTop: '8px' }, href: `#/play?preset=${encodeURIComponent(state.a)}`, text: '左のルールで打つ' })),
+    h('div', { style: { minWidth: '240px' } },
+      h('div.label', { text: '右' }), sel('b'),
+      h('a.btn.btn-sm.btn-ghost', { style: { marginTop: '8px' }, href: `#/play?preset=${encodeURIComponent(state.b)}`, text: '右のルールで打つ' }))));
   render();
   wrap.appendChild(holder);
   app.appendChild(sec);
