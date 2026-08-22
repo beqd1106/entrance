@@ -208,9 +208,13 @@ a.btn.btn-primary[href^="#/play"] {
   position: absolute; top: 3%; left: 7%;
   font-family: var(--sans); font-weight: 800; line-height: 1;
   /* 河の25px でも読める下限を持たせる。柄を数えなくても牌が分かることを優先する */
-  font-size: max(9px, calc(var(--tw) * 0.34));
-  color: rgba(28, 30, 33, 0.62);
-  text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
+  font-size: max(9px, calc(var(--tw) * 0.32));
+  color: rgba(28, 30, 33, 0.86);
+  /* 絵柄の上に乗るので、白い座布団で浮かせる */
+  background: rgba(255, 253, 248, 0.92);
+  border-radius: 3px;
+  padding: 0 2px;
+  z-index: 2;
   pointer-events: none;
 }
 .tile-xs .tile-idx, .tile.back .tile-idx { display: none; }
@@ -298,7 +302,7 @@ a.btn.btn-primary[href^="#/play"] {
 }
 .shanten-tag.tenpai { background: var(--brass-2); color: #fff; font-weight: 700; }
 .tile.tsumo-gap { margin-left: 12px; }
-.tile-xs { --tw: 20px; }
+.tile-xs { --tw: 23px; }
 .tile-sm { --tw: 25px; }
 .tile-md { --tw: 34px; }
 .tile-lg { --tw: 44px; }
@@ -330,10 +334,15 @@ a.btn.btn-primary[href^="#/play"] {
 .side-card .rule-item span:first-child { color: rgba(255,255,255,.55); flex: 0 0 88px; }
 .bottom-bar { display: flex; flex-direction: column; gap: 2px; }
 .table-top {
-  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 14px;
+  /* 折り返すと2段になって卓の高さを35px以上奪う。1段に固定して、
+     入りきらないぶんは横に送れるようにする */
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
   background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--r-m); padding: 9px 14px; backdrop-filter: blur(8px);
 }
+.table-top::-webkit-scrollbar { display: none; }
+.table-top > * { flex: 0 0 auto; }
 .table-top .k { font-size: 10px; letter-spacing: 0.08em; color: rgba(255,255,255,.55); text-transform: uppercase; }
 .table-top .v { font-family: var(--mono); font-size: 15px; }
 .board {
@@ -345,7 +354,7 @@ a.btn.btn-primary[href^="#/play"] {
      以前はビューポートの高さから幅を出していたため、実際の卓の高さと
      合わず 829×489 の横長になっていた */
   height: 100%;
-  aspect-ratio: 1.15 / 1;
+  aspect-ratio: 1.28 / 1;
   width: auto;
   max-width: 100%;
   justify-self: center;
@@ -415,6 +424,8 @@ a.btn.btn-primary[href^="#/play"] {
 }
 .seat.riichi { background: rgba(193, 55, 44, 0.16); border-color: rgba(193, 55, 44, 0.34); }
 .seat-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+/* 名前は、リーチや割れ目の札が入っても点数を押し出さないよう縮める */
+.seat-head .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seat-wind {
   width: 21px; height: 21px; border-radius: 4px; display: grid; place-items: center;
   background: rgba(255, 255, 255, 0.92); color: var(--ink); font-family: var(--tile-serif); font-size: 12px; font-weight: 700;
