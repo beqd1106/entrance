@@ -797,7 +797,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 横持ちは 390px の高さに4人ぶんの河を収める。終盤（河が18枚を超えて
      3行になるところ）まで切れないよう、席まわりを最小限まで詰める */
   .seat { padding: 2px 4px; border-radius: 8px; }
-  .seat-head { margin-bottom: 0; font-size: 9px; gap: 3px; }
+  .seat-head { margin-bottom: 0; font-size: 9px; gap: 3px; flex-wrap: nowrap; min-width: 0; overflow: hidden; }
   .seat-wind { width: 13px; height: 13px; font-size: 8.5px; border-radius: 3px; }
   .seat-pts { font-size: 10px; }
   .badge-riichi, .badge-wareme { font-size: 8.5px; padding: 1px 4px; }
@@ -1273,7 +1273,7 @@ textarea { resize: vertical; min-height: 56px; }
 }
 
 /* --- 卓の面：座席の背後に卓布のかたちを敷いて、余白を「卓」に見せる --- */
-.board { position: relative; align-content: center; }
+.board { position: relative; }
 .board::before {
   content: '';
   position: absolute; inset: -14px -10px;
