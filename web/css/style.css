@@ -682,6 +682,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     flex: 0 1 auto; max-height: 52%; overflow-y: auto;
   }
   .board-scroll { justify-content: flex-start; }
+  /* 低い画面では正方形にこだわらない。
+     高さ基準の幅制限をそのまま効かせると、横に広いのに卓だけ極端に狭くなる */
+  .board { width: 100%; }
   .side-card .rule-item span:first-child { flex: 0 0 56px; }
   .logbox { font-size: 10px; padding: 6px 8px; min-height: 40px; line-height: 1.5; }
   .board { gap: 5px; }
