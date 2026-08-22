@@ -2619,3 +2619,11 @@ body.op-mode::before { display: none; }
   .store-tabs { margin-bottom: 14px; }
   .store-tab { padding: 8px 14px; font-size: 12.5px; min-height: 34px; }
 }
+
+/* 鳴きボタンの中に、使う牌を並べる */
+.act { display: inline-flex; align-items: center; gap: 8px; }
+.act-tiles { display: inline-flex; gap: 2px; }
+.act-tiles .tile { --tw: 16px; box-shadow: none; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .act-tiles .tile { --tw: 14px; }
+}

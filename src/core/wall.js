@@ -34,9 +34,23 @@ export function buildTileSet(rules) {
     }
     usedTypes.push(t);
   }
+  // 牌種ごとの枚数。既定は4枚だが、清一色ゲームのように
+  // 「5萬だけ8枚」といった構成を取るルールがあるため設定で上書きできる。
+  const counts = (rules.wall && rules.wall.tileCounts) || {};
+  const backCfg = (rules.wall && rules.wall.backColors) || { enabled: false, colors: [] };
+  const backOf = (i, n) => {
+    if (!backCfg.enabled || !backCfg.colors.length) return null;
+    const per = n / backCfg.colors.length;
+    return backCfg.colors[Math.min(backCfg.colors.length - 1, Math.floor(i / per))];
+  };
   for (const t of usedTypes) {
-    for (let i = 0; i < 4; i++) {
-      tiles.push({ id: id++, t, red: false, gold: false, blue: false, star: false, rainbow: false, dot: false, sp: null });
+    const code = typeToCode(t);
+    const n = counts[code] != null ? Math.max(0, Math.floor(counts[code])) : 4;
+    for (let i = 0; i < n; i++) {
+      tiles.push({
+        id: id++, t, back: backOf(i, n),
+        red: false, gold: false, blue: false, star: false, rainbow: false, dot: false, sp: null,
+      });
     }
   }
 

@@ -43,6 +43,7 @@ export function renderGame(root, params) {
     engine: null, waiting: null, mode: 'idle', riichiIds: null, riichiOpen: false,
     speed: 330, timer: null, log: [], debugOpen: false,
     confirmDiscard: loadPref('confirmDiscard', true),
+    autoTsumogiri: loadPref('autoTsumogiri', true),
     selectedTileId: null,
     debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
@@ -271,6 +272,7 @@ function loop() {
   if (r.waiting) {
     G.waiting = r.waiting;
     draw();
+    maybeAutoDiscard();
     return;
   }
   G.waiting = null;
@@ -472,6 +474,20 @@ function drawTop(s) {
     draw();
   });
   top.appendChild(conf);
+  const auto = h('button.act', {
+    text: G.autoTsumogiri ? 'リーチ後は自動 : ON' : 'リーチ後は自動 : OFF',
+    title: 'リーチ後、ほかに選ぶものが無いときは自動でツモ切りします',
+    style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' },
+  });
+  if (G.autoTsumogiri) auto.style.background = 'rgba(16,185,129,.28)';
+  auto.addEventListener('click', () => {
+    G.autoTsumogiri = !G.autoTsumogiri;
+    savePref('autoTsumogiri', G.autoTsumogiri);
+    draw();
+    if (G.autoTsumogiri) maybeAutoDiscard();
+  });
+  top.appendChild(auto);
+
   // デバッグは検証用。ふだんは出さない（URLに debug=1 を付けたときだけ）
   if (G.debugAvailable) {
     const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
@@ -664,6 +680,26 @@ function onTileClick(t) {
   draw();
 }
 
+/**
+ * リーチ後の自動ツモ切り。
+ * リーチしたあとは選ぶ余地が無いので、毎回タップさせない。
+ * ツモ和了・カン・北抜きなど、選ぶものがあるときは自動にしない。
+ */
+function maybeAutoDiscard() {
+  if (!G || !G.autoTsumogiri || !G.waiting) return false;
+  const me = G.engine.players[0];
+  if (!me || !me.riichi) return false;
+  const choices = G.waiting.choices || [];
+  const discard = choices.find((c) => c.type === 'discard');
+  if (!discard) return false;
+  // 打牌以外の選択肢があるなら、本人に決めてもらう
+  if (choices.some((c) => c.type !== 'discard')) return false;
+  const drawn = me.drawn;
+  if (!drawn || !discard.tileIds.includes(drawn.id)) return false;
+  G.timer = setTimeout(() => act({ type: 'discard', tileId: drawn.id }), Math.max(160, G.speed * 0.6));
+  return true;
+}
+
 function drawActions(s) {
   const box = clear(G.dom.actions);
   const hint = G.dom.hint;
@@ -686,11 +722,19 @@ function drawActions(s) {
     box.appendChild(cancel);
     return;
   }
-  const add = (label, cls, fn) => {
-    const b = h(`button.act${cls ? `.${cls}` : ''}`, { text: label });
+  const add = (label, cls, fn, tiles) => {
+    const b = h(`button.act${cls ? `.${cls}` : ''}`);
+    b.appendChild(h('span', { text: label }));
+    // どの牌で鳴くのかが、文字だけだと分からない。使う牌を並べて見せる
+    if (tiles && tiles.length) {
+      b.appendChild(h('span.act-tiles', tiles.map((t) => tileEl(t, { size: 'xs' }))));
+    }
     b.addEventListener('click', fn);
     box.appendChild(b);
   };
+  const me = s.players[0];
+  const byIds = (ids) => (ids || []).map((id) => me.hand.find((t) => t.id === id)).filter(Boolean);
+  const claimed = G.engine.pending && G.engine.pending.tile ? [G.engine.pending.tile] : [];
   for (const c of choices) {
     switch (c.type) {
       case 'tsumo': add('ツモ', 'act-win', () => act({ type: 'tsumo' })); break;
@@ -700,9 +744,15 @@ function drawActions(s) {
           G.mode = 'riichiSelect'; G.riichiIds = c.tileIds; G.riichiOpen = !!c.open; draw();
         });
         break;
-      case 'pon': add(c.label, 'act-call', () => act({ type: 'pon', tileIds: c.tileIds })); break;
-      case 'chi': add(c.label, 'act-call', () => act({ type: 'chi', tileIds: c.tileIds })); break;
-      case 'kan': add(c.label, 'act-call', () => act({ type: 'kan', kind: c.kind, t: c.t })); break;
+      case 'pon':
+        add(c.label, 'act-call', () => act({ type: 'pon', tileIds: c.tileIds }), [...claimed, ...byIds(c.tileIds)]);
+        break;
+      case 'chi':
+        add(c.label, 'act-call', () => act({ type: 'chi', tileIds: c.tileIds }), [...claimed, ...byIds(c.tileIds)]);
+        break;
+      case 'kan':
+        add(c.label, 'act-call', () => act({ type: 'kan', kind: c.kind, t: c.t }), [{ t: c.t }]);
+        break;
       case 'kita': add(c.label || '北抜き', 'act-nuki', () => act({ type: 'kita', t: c.t })); break;
       case 'kyuushu': add('九種九牌', '', () => act({ type: 'kyuushu' })); break;
       case 'pass': add('スルー', 'act-pass', () => act({ type: 'pass' })); break;
