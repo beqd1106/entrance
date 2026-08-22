@@ -18,6 +18,25 @@ const CATS = ['すべて', '標準', '地域', '特殊', '五等サンマ', '店
 const BUILTIN_CATS = ['標準', '地域', '特殊', '五等サンマ', '店舗'];
 const TMP_ID = 'table_custom';
 
+/**
+ * 条件で絞るためのチップ。
+ * カテゴリ（標準・特殊…）は出自での分類なので、
+ * 「何が入っている卓か」で選べる入口を別に用意する。
+ */
+const COND_CHIPS = [
+  { key: 'aka', label: '赤あり', test: (r) => Object.values(r.dora.red || {}).some((n) => n > 0) },
+  { key: 'noaka', label: '赤なし', test: (r) => !Object.values(r.dora.red || {}).some((n) => n > 0) },
+  { key: 'pocchi', label: '白ポッチ', test: (r) => r.local.shiroPocchi.enabled },
+  { key: 'alice', label: 'アリス', test: (r) => r.local.alice.enabled },
+  { key: 'flower', label: '華牌', test: (r) => r.flowers.enabled },
+  { key: 'wareme', label: '割れ目', test: (r) => r.local.wareme.enabled },
+  { key: 'open', label: 'オープンリーチ', test: (r) => r.local.openRiichi.enabled },
+  { key: 'sp', label: '特殊牌', test: (r) => (r.specialTiles || []).length > 0 },
+  { key: 'mighty', label: '少牌マイティ', test: (r) => !!(r.local.shouhaiMighty && r.local.shouhaiMighty.enabled) },
+  { key: 'flat', label: '東天紅系', test: (r) => r.scoring.mode === 'flat' },
+  { key: 'east', label: '東風戦', test: (r) => r.game.length === 'east' },
+];
+
 /** この画面で触れる「よく変える設定」だけを定義する */
 const TWEAKS = [
   {
@@ -70,6 +89,7 @@ export function renderTable(root, params) {
   const S = {
     players: params.players === '3' ? 3 : 4,
     cat: 'すべて',
+    conds: new Set(),
     q: '',
     presetId: params.preset || null,
     tweak: {},
@@ -80,6 +100,7 @@ export function renderTable(root, params) {
   const countLabel = h('span.tbl-count');
   const seats = h('div.seg.seg-lg');
   const cats = h('div.tbl-cats');
+  const conds = h('div.tbl-conds');
   const input = h('input.tbl-search-input', {
     type: 'search',
     id: 'tableSearch',
@@ -100,6 +121,10 @@ export function renderTable(root, params) {
       const cat = p.category || '自作';
       const ok = S.cat === '自作' ? !BUILTIN_CATS.includes(cat) : cat === S.cat;
       if (!ok) return false;
+    }
+    for (const key of S.conds) {
+      const c = COND_CHIPS.find((x) => x.key === key);
+      if (c && !c.test(r)) return false;
     }
     return matchText(presetHaystack(p), S.q);
   });
@@ -132,6 +157,7 @@ export function renderTable(root, params) {
       btn.addEventListener('click', () => {
         S.q = '';
         S.cat = 'すべて';
+        S.conds.clear();
         input.value = '';
         renderChrome();
         renderList();
@@ -273,6 +299,21 @@ export function renderTable(root, params) {
       });
       seats.appendChild(b);
     }
+    clear(conds);
+    for (const c of COND_CHIPS) {
+      const on = S.conds.has(c.key);
+      const b = h(`button.chip.chip-btn${on ? '.on' : ''}`, { type: 'button', text: c.label });
+      b.addEventListener('click', () => {
+        if (on) S.conds.delete(c.key); else S.conds.add(c.key);
+        // 赤あり・赤なしは同時に選べない
+        if (c.key === 'aka') S.conds.delete('noaka');
+        if (c.key === 'noaka') S.conds.delete('aka');
+        renderChrome();
+        renderList();
+        renderDetail();
+      });
+      conds.appendChild(b);
+    }
     clear(cats);
     for (const c of CATS) {
       const b = h(`button.chip.chip-btn${c === S.cat ? '.on' : ''}`, { type: 'button', text: c });
@@ -299,7 +340,8 @@ export function renderTable(root, params) {
         h('h1.tbl-title', { text: '卓を立てる' }),
         seats,
         h('div.tbl-search', h('span.tbl-search-icon', icon('search', 15)), input),
-        cats),
+        cats,
+        conds),
       list),
     h('aside.tbl-right', detail)));
 

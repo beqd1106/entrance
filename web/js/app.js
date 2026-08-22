@@ -563,8 +563,38 @@ function viewStore(id) {
       h('a.btn.btn-brass.btn-lg', { href: `#/play?preset=${s.presetId}` }, icon('play', 15), 'このルールで遊んでみる'),
       h('a.btn.btn-ghost.btn-lg', { href: `#/editor?preset=${s.presetId}`, style: { color: '#f1ebde', borderColor: 'rgba(240,227,200,.4)' }, text: 'ルール設定を見る' }))));
 
+  // 縦に長くなりすぎて、料金や来店の情報まで辿り着けなかった。
+  // 「ルール／お店のこと／イベント・来店」の3枚に分ける。
+  const panelRules = h('div.store-panel');
+  const panelInfo = h('div.store-panel.hide');
+  const panelEvent = h('div.store-panel.hide');
+  const TABS = [
+    { key: 'rules', label: 'ハウスルール', el: panelRules },
+    { key: 'info', label: 'お店のこと', el: panelInfo },
+    { key: 'event', label: 'イベント・来店', el: panelEvent },
+  ];
+  const tabbar = h('div.store-tabs', { role: 'tablist' });
+  const showTab = (key) => {
+    for (const t of TABS) t.el.classList.toggle('hide', t.key !== key);
+    tabbar.querySelectorAll('button').forEach((b) => {
+      const on = b.dataset.key === key;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+  };
+  for (const t of TABS) {
+    const b = h('button.store-tab', { type: 'button', role: 'tab', text: t.label, data: { key: t.key } });
+    b.addEventListener('click', () => showTab(t.key));
+    tabbar.appendChild(b);
+  }
+  wrap.appendChild(tabbar);
+  wrap.appendChild(panelRules);
+  wrap.appendChild(panelInfo);
+  wrap.appendChild(panelEvent);
+  showTab('rules');
+
   // ルール説明（全文／差分）
-  wrap.appendChild(sectionHead('01', 'ハウスルール', '設定データから自動生成しています。編集すれば説明文も対局挙動も同時に変わります。'));
+  panelRules.appendChild(sectionHead('01', 'ハウスルール', '設定データから自動生成しています。編集すれば説明文も対局挙動も同時に変わります。'));
   const mode = { v: 'easy' };
   const holder = h('div');
   const renderExplain = () => {
@@ -616,9 +646,9 @@ function viewStore(id) {
     }
   };
   renderExplain();
-  wrap.appendChild(holder);
+  panelRules.appendChild(holder);
   if (v.issues.some((i) => i.severity !== 'info')) {
-    wrap.appendChild(h('div', { style: { marginTop: '14px' } },
+    panelRules.appendChild(h('div', { style: { marginTop: '14px' } },
       v.issues.filter((i) => i.severity !== 'info').map((i) => h(`div.issue.issue-${i.severity}`,
         h('div', h('b', { text: i.severity === 'error' ? '設定エラー' : '注意' }), h('span', { text: i.message }))))));
   }
@@ -626,8 +656,8 @@ function viewStore(id) {
   // 特殊牌のビジュアル
   const sp = r.specialTiles || [];
   if (sp.length || r.local.shiroPocchi.enabled || r.flowers.enabled) {
-    wrap.appendChild(h('div.rule-line'));
-    wrap.appendChild(sectionHead('02', 'この店の特別な牌', '実際の対局でも同じ見た目で登場します。'));
+    panelRules.appendChild(h('div.rule-line'));
+    panelRules.appendChild(sectionHead('02', 'この店の特別な牌', '実際の対局でも同じ見た目で登場します。'));
     const row = h('div.row.gap-24.wrapflex');
     const cell = (info, name, desc, color) => h('div', { style: { width: '150px' } },
       h('div.row.center', { style: { marginBottom: '8px' } }, tileEl(info, { size: 'lg', spColor: color })),
@@ -653,13 +683,13 @@ function viewStore(id) {
         row.appendChild(cell({ t: 34 + i, flower: key, name: label }, `華牌「${label}」`, effs));
       }
     }
-    wrap.appendChild(row);
+    panelRules.appendChild(row);
   }
 
   // 店舗情報
-  wrap.appendChild(h('div.rule-line'));
-  wrap.appendChild(sectionHead('03', '店舗情報', ''));
-  wrap.appendChild(h('div.store-grid',
+  panelRules.appendChild(h('div.rule-line'));
+  panelInfo.appendChild(sectionHead('01', '店舗情報', ''));
+  panelInfo.appendChild(h('div.store-grid',
     h('div.card.card-pad',
       h('h4', { style: { marginBottom: '10px' } }, '基本情報'),
       h('dl.kv',
@@ -684,9 +714,8 @@ function viewStore(id) {
           h('div.tiny.muted', { text: st.word }))))))));
 
   // イベント・来店
-  wrap.appendChild(h('div.rule-line'));
-  wrap.appendChild(sectionHead('04', 'イベントと来店', 'QRチェックインは非換金の記録のみ。景品・金銭とは結び付けません。'));
-  wrap.appendChild(h('div.store-grid',
+  panelEvent.appendChild(sectionHead('01', 'イベントと来店', 'QRチェックインは非換金の記録のみ。景品・金銭とは結び付けません。'));
+  panelEvent.appendChild(h('div.store-grid',
     h('div.card.card-pad',
       h('h4', { style: { marginBottom: '10px' } }, 'イベント'),
       h('div.mini-list', s.events.map((e) => h('div.mini-item',

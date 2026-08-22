@@ -2579,3 +2579,43 @@ body.op-mode::before { display: none; }
   transform: translateY(-50%) ;
   background: var(--vermilion);
 }
+
+/* 卓を立てる：条件で絞るチップ（カテゴリ帯の下） */
+.tbl-conds {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding-top: 2px;
+}
+.tbl-conds .chip { font-size: 11.5px; }
+@media (orientation: landscape) and (max-height: 560px) {
+  /* 横持ちは縦が足りないので、1行に流して横スクロールさせる */
+  .tbl-conds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tbl-conds::-webkit-scrollbar { display: none; }
+  .tbl-conds .chip { flex: 0 0 auto; }
+}
+
+/* 店舗ページのタブ */
+.store-tabs {
+  display: flex; gap: 4px;
+  margin-bottom: 22px;
+  padding: 4px;
+  background: var(--paper-3);
+  border-radius: 999px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.store-tabs::-webkit-scrollbar { display: none; }
+.store-tab {
+  flex: 1 1 auto; white-space: nowrap;
+  border: 0; background: none; border-radius: 999px;
+  padding: 9px 18px; font-size: 13.5px; color: var(--ink-3);
+  transition: 0.15s var(--ease);
+}
+.store-tab:hover { color: var(--ink); }
+.store-tab.on {
+  background: var(--paper-2); color: var(--ink); font-weight: 600;
+  box-shadow: var(--shadow-1);
+}
+.store-tab:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .store-tabs { margin-bottom: 14px; }
+  .store-tab { padding: 8px 14px; font-size: 12.5px; min-height: 34px; }
+}
