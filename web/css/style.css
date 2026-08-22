@@ -169,19 +169,25 @@ a.btn.btn-primary[href^="#/play"] {
 .tile {
   --tw: 34px;
   position: relative; width: var(--tw); height: calc(var(--tw) * 1.38);
-  border-radius: calc(var(--tw) * 0.18); background: linear-gradient(#ffffff, #f2f4f7);
-  border: 1px solid rgba(20, 22, 26, 0.1);
-  box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(16, 24, 40, 0.14), 0 6px 10px rgba(16, 24, 40, 0.06);
+  border-radius: calc(var(--tw) * 0.16);
+  /* 牌の面は象牙色。上に光、下に沈みを入れて厚みを出す */
+  background: linear-gradient(180deg, #fffefa 0%, #fbf8f0 58%, #f0ebdd 100%);
+  border: 1px solid rgba(70, 58, 34, 0.20);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 -2px 0 rgba(120, 104, 72, 0.10) inset,
+    0 2px 3px rgba(32, 26, 14, 0.22),
+    0 6px 10px rgba(32, 26, 14, 0.10);
   display: grid; place-items: center; flex: 0 0 auto;
   font-family: var(--serif); line-height: 1; user-select: none;
 }
 /* --- 牌面（インラインSVG） --- */
 .tile-face { width: 92%; height: 92%; display: block; }
 .tile-face svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.tile-face .ink { fill: #1c1e21; }
-.tile-face .red { fill: #b4362f; }
-.tile-face .green { fill: #1d7a4e; }
-.tile-face .blue { fill: #2b5b8c; }
+.tile-face .ink { fill: #16181b; }
+.tile-face .red { fill: #ad2a20; }
+.tile-face .green { fill: #14653d; }
+.tile-face .blue { fill: #1e4d7d; }
 .tile-face .gold-ink { fill: #a5813c; }
 .tile-face .face { fill: #fffdf8; }
 .tile-face .face-stroke { fill: #fffdf8; opacity: 0.85; }

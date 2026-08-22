@@ -26,9 +26,11 @@ const VB = 'viewBox="0 0 100 140"';
  */
 function pin(x, y, r, cls = 'blue') {
   const core = cls === 'blue' ? 'red' : cls;
-  return `<circle cx="${x}" cy="${y}" r="${r}" class="${cls}"/>`
-    + `<circle cx="${x}" cy="${y}" r="${r * 0.58}" class="face"/>`
-    + `<circle cx="${x}" cy="${y}" r="${r * 0.34}" class="${core}"/>`;
+  const f = (v) => Number(v).toFixed(2);
+  // 内側の白をわずかに上へずらすと、平らな輪ではなく丸みのある牌に見える
+  return `<circle cx="${x}" cy="${y}" r="${f(r)}" class="${cls}"/>`
+    + `<circle cx="${x}" cy="${f(y - r * 0.05)}" r="${f(r * 0.58)}" class="face"/>`
+    + `<circle cx="${x}" cy="${y}" r="${f(r * 0.34)}" class="${core}"/>`;
 }
 
 // 実物の牌に合わせた配色（1筒＝赤芯・8筒＝青・9筒＝赤緑青の三段など）
@@ -76,6 +78,8 @@ function bamboo(x, y, h, cls = 'green') {
     + ` height="${f(nodeH)}" class="face"/>`;
   // 節の抜きは、竹そのものが細くなる小さい牌では省く
   const nodes = h >= 26 ? node(top + h * 0.3) + node(top + h * 0.7) : '';
+  // 竹に縦の光を入れると、竹が縦に割れて2本に見えてしまう。
+  // 塊のまま置き、節の抜きだけで竹らしさを出す。
   return `<g class="${cls}">${body}</g>${nodes}`;
 }
 
