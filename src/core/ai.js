@@ -32,7 +32,7 @@ export function decide(engine, seat, choices) {
   // --- 手番フェーズ
   if (choices.some((c) => c.type === 'tsumo')) return { type: 'tsumo' };
   const kyuushu = choices.find((c) => c.type === 'kyuushu');
-  if (kyuushu && shantenWithWild(countsFromTiles(p.hand), 0, engine.wild) >= 4) return { type: 'kyuushu' };
+  if (kyuushu && shantenWithWild(countsFromTiles(p.hand), 0, engine.wild, engine.handOpts) >= 4) return { type: 'kyuushu' };
 
   // 北抜き（三麻）：役満狙いでなければ即抜き
   const kita = choices.find((c) => c.type === 'kita');
@@ -47,9 +47,9 @@ export function decide(engine, seat, choices) {
   // 暗槓：手が進むなら
   const kan = choices.find((c) => c.type === 'kan');
   if (kan && danger === 0) {
-    const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
+    const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild, engine.handOpts);
     const rest = p.hand.filter((t) => t.t !== kan.t);
-    const after = shantenWithWild(countsFromTiles(rest), p.melds.length + 1, engine.wild);
+    const after = shantenWithWild(countsFromTiles(rest), p.melds.length + 1, engine.wild, engine.handOpts);
     if (after <= before) return { type: 'kan', kind: kan.kind, t: kan.t };
   }
 
@@ -66,7 +66,7 @@ export function decide(engine, seat, choices) {
   if (!discard) return choices[0] && choices[0].type === 'pass' ? { type: 'pass' } : (choices[0] || { type: 'pass' });
 
   const ids = discard.tileIds;
-  const sh = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
+  const sh = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild, engine.handOpts);
 
   // ベタオリ判定
   if (danger > 0 && sh >= cfg.foldThreshold && !p.riichi) {
@@ -89,7 +89,7 @@ function pickEfficient(engine, p, ids, cfg, danger) {
     const tile = handTilesById(p, id);
     if (!tile) continue;
     const counts = countsFromTiles(p.hand.filter((t) => t.id !== id));
-    const sh = shantenWithWild(counts, p.melds.length, engine.wild);
+    const sh = shantenWithWild(counts, p.melds.length, engine.wild, engine.handOpts);
     first.push({ id, tile, counts, sh });
     if (sh < minSh) minSh = sh;
   }
@@ -97,7 +97,7 @@ function pickEfficient(engine, p, ids, cfg, danger) {
   let best = null;
   for (const f of narrowed) {
     const { id, tile, counts, sh } = f;
-    const uk = ukeire(counts, p.melds.length, vis, engine.wild);
+    const uk = ukeire(counts, p.melds.length, vis, engine.wild, engine.handOpts);
     // 牌の価値（ドラ・赤は残す）
     let value = 0;
     if (doraTypes.includes(tile.t)) value += 2.5;
@@ -129,7 +129,7 @@ function bestRiichiTile(engine, p, tileIds) {
   for (const id of tileIds) {
     const rest = p.hand.filter((t) => t.id !== id);
     const counts = countsFromTiles(rest);
-    const w = waits(counts, p.melds.length);
+    const w = waits(counts, p.melds.length, engine.handOpts);
     let left = 0;
     const vis = visibleCounts(engine, p);
     for (const t of w) left += Math.max(0, 4 - vis[t]);
@@ -203,7 +203,7 @@ function decideCall(engine, seat, choices, cfg) {
   const p = engine.players[seat];
   const R = engine.rules;
   const tile = engine.pending.tile;
-  const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild);
+  const before = shantenWithWild(countsFromTiles(p.hand), p.melds.length, engine.wild, engine.handOpts);
   const danger = dangerLevel(engine, seat);
   const doraTypes = engine.doraTypes();
 
@@ -216,7 +216,7 @@ function decideCall(engine, seat, choices, cfg) {
 
   const evalAfter = (removeIds, addTiles, meldDelta) => {
     const rest = p.hand.filter((t) => !removeIds.includes(t.id));
-    return shantenWithWild(countsFromTiles(rest), p.melds.length + meldDelta, engine.wild);
+    return shantenWithWild(countsFromTiles(rest), p.melds.length + meldDelta, engine.wild, engine.handOpts);
   };
 
   // カン（大明槓）：テンパイ維持かつ役有り見込み

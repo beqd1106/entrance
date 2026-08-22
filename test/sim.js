@@ -40,8 +40,13 @@ function checkTiles(engine, label, errors) {
   if (total !== w.all.length) {
     errors.push(`${label}: 牌総数不一致 ${total} != ${w.all.length}`);
   }
+  // 同一牌の上限は既定4枚だが、清一色ゲームのように牌種ごとの枚数を
+  // 変えるルールがあるため、山を作ったときの実枚数を上限とする。
+  const maxOf = [];
+  for (const tile of w.all) maxOf[tile.t] = (maxOf[tile.t] || 0) + 1;
   for (let t = 0; t < 34; t++) {
-    if (typeCount[t] > 4) errors.push(`${label}: 牌タイプ${t}が${typeCount[t]}枚`);
+    const limit = maxOf[t] || 4;
+    if (typeCount[t] > limit) errors.push(`${label}: 牌タイプ${t}が${typeCount[t]}枚（上限${limit}）`);
   }
   // 手牌枚数の妥当性（少牌マイティは常にその枚数だけ少ない）
   const wild = engine.wild || 0;

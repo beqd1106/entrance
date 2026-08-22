@@ -13,6 +13,34 @@ const KOKUSHI_TYPES = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
 const shantenCache = new Map();
 const CACHE_LIMIT = 300000;
 
+/**
+ * 手牌計算のオプション。
+ *
+ * 既定の麻雀は「同じ牌は4枚まで」「七対子に同じ牌の2組は使えない」だが、
+ * 清一色ゲームのように2セットの牌を混ぜるルールでは、どちらも変わる。
+ * ルールごとに1度だけ作って、計算の入口すべてに渡す。
+ *
+ * @param {number[]|null} limits 牌種ごとの最大枚数（null で一律4枚）
+ * @param {boolean} chiitoiMultiPair 七対子の8枚使いを認めるか
+ */
+export function makeHandOpts(limits = null, chiitoiMultiPair = false) {
+  const plain = !limits || limits.every((v) => v === 4);
+  return {
+    limits: plain ? null : limits,
+    chiitoiMultiPair: !!chiitoiMultiPair,
+    // キャッシュを混ぜないための識別子。既定のルールでは空文字＝従来と同じキー。
+    sig: (plain ? '' : 'L' + limits.join('.')) + (chiitoiMultiPair ? 'M' : ''),
+  };
+}
+
+const PLAIN_OPTS = makeHandOpts();
+
+/** 牌種 t を最大何枚まで使えるか */
+function limitOf(opts, t) {
+  const l = opts && opts.limits;
+  return l ? l[t] : 4;
+}
+
 // --- スーツ単位のプロファイル（面子数・部分形数・対子有無）をメモ化して合成する ---
 const suitProfileCache = new Map();
 
@@ -107,15 +135,20 @@ export function shantenStandard(counts, meldCount = 0) {
   return best;
 }
 
-export function shantenChiitoi(counts, meldCount = 0) {
+export function shantenChiitoi(counts, meldCount = 0, opts = PLAIN_OPTS) {
   if (meldCount > 0) return 99;
+  const multi = opts && opts.chiitoiMultiPair;
   let pairs = 0, kinds = 0;
   for (let i = 0; i < NUM_TYPES; i++) {
-    if (counts[i] >= 2) pairs++;
+    // 8枚使いを認める場合、同じ牌4枚は2つの対子として数える
+    if (multi) pairs += Math.floor(counts[i] / 2);
+    else if (counts[i] >= 2) pairs++;
     if (counts[i] >= 1) kinds++;
   }
+  if (pairs > 7) pairs = 7;
   let s = 6 - pairs;
-  if (kinds < 7) s += 7 - kinds;
+  // 8枚使いなら同じ牌を重ねられるので、7種類そろえる必要はない
+  if (!multi && kinds < 7) s += 7 - kinds;
   return s;
 }
 
@@ -130,23 +163,23 @@ export function shantenKokushi(counts, meldCount = 0) {
 }
 
 const fromCharCode = String.fromCharCode;
-function cacheKey(counts, meldCount) {
+function cacheKey(counts, meldCount, opts) {
   // 34要素（各0〜4）+ 副露数 を35文字の文字列に圧縮（join より高速）
   return fromCharCode(
     counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], counts[7], counts[8],
     counts[9], counts[10], counts[11], counts[12], counts[13], counts[14], counts[15], counts[16], counts[17],
     counts[18], counts[19], counts[20], counts[21], counts[22], counts[23], counts[24], counts[25], counts[26],
     counts[27], counts[28], counts[29], counts[30], counts[31], counts[32], counts[33], meldCount,
-  );
+  ) + (opts && opts.sig ? opts.sig : '');
 }
 
 /** 総合向聴数（-1 = 和了形） */
-export function shanten(counts, meldCount = 0) {
-  const key = cacheKey(counts, meldCount);
+export function shanten(counts, meldCount = 0, opts = PLAIN_OPTS) {
+  const key = cacheKey(counts, meldCount, opts);
   const hit = shantenCache.get(key);
   if (hit !== undefined) return hit;
   let v = shantenStandard(counts, meldCount);
-  const a = shantenChiitoi(counts, meldCount);
+  const a = shantenChiitoi(counts, meldCount, opts);
   if (a < v) v = a;
   const b = shantenKokushi(counts, meldCount);
   if (b < v) v = b;
@@ -162,63 +195,63 @@ export function shanten(counts, meldCount = 0) {
  * 34種すべてを当てはめて、いちばん良い数字を返す。
  * counts は実際に持っている牌だけを数えたもの（ワイルドは含めない）。
  */
-export function shantenWithWild(counts, meldCount = 0, wild = 0) {
-  if (wild <= 0) return shanten(counts, meldCount);
+export function shantenWithWild(counts, meldCount = 0, wild = 0, opts = PLAIN_OPTS) {
+  if (wild <= 0) return shanten(counts, meldCount, opts);
   let best = 99;
   const c = counts.slice();
   for (let t = 0; t < NUM_TYPES; t++) {
-    if (c[t] >= 4) continue;
+    if (c[t] >= limitOf(opts, t)) continue;
     c[t]++;
-    const v = shantenWithWild(c, meldCount, wild - 1);
+    const v = shantenWithWild(c, meldCount, wild - 1, opts);
     c[t]--;
     if (v < best) best = v;
     if (best === -1) break;
   }
-  return best === 99 ? shanten(counts, meldCount) : best;
+  return best === 99 ? shanten(counts, meldCount, opts) : best;
 }
 
 /**
  * ワイルドを wild 枚持っている前提の待ち牌。
  * 「これを引けば（またはロンできれば）和了」になる牌を返す。
  */
-export function waitsWithWild(counts, meldCount = 0, wild = 0) {
-  if (wild <= 0) return waits(counts, meldCount);
+export function waitsWithWild(counts, meldCount = 0, wild = 0, opts = PLAIN_OPTS) {
+  if (wild <= 0) return waits(counts, meldCount, opts);
   const out = [];
   const c = counts.slice();
   for (let t = 0; t < NUM_TYPES; t++) {
-    if (c[t] >= 4) continue;
+    if (c[t] >= limitOf(opts, t)) continue;
     c[t]++;
-    if (shantenWithWild(c, meldCount, wild) === -1) out.push(t);
+    if (shantenWithWild(c, meldCount, wild, opts) === -1) out.push(t);
     c[t]--;
   }
   return out;
 }
 
 /** 和了形か（14枚 or 副露込みで枚数が揃っている状態） */
-export function isAgariCounts(counts, meldCount = 0) {
-  return shanten(counts, meldCount) === -1;
+export function isAgariCounts(counts, meldCount = 0, opts = PLAIN_OPTS) {
+  return shanten(counts, meldCount, opts) === -1;
 }
 
 const waitsCache = new Map();
 
 /** 待ち牌（13枚形に何を足せば和了か）。counts は 13枚相当。 */
-export function waits(counts, meldCount = 0) {
-  const key = cacheKey(counts, meldCount);
+export function waits(counts, meldCount = 0, opts = PLAIN_OPTS) {
+  const key = cacheKey(counts, meldCount, opts);
   const hit = waitsCache.get(key);
   if (hit !== undefined) return hit;
-  const v = waitsUncached(counts, meldCount);
+  const v = waitsUncached(counts, meldCount, opts);
   if (waitsCache.size > CACHE_LIMIT) waitsCache.clear();
   waitsCache.set(key, v);
   return v;
 }
 
-function waitsUncached(counts, meldCount) {
+function waitsUncached(counts, meldCount, opts = PLAIN_OPTS) {
   const out = [];
   const c = counts.slice();
   for (let t = 0; t < NUM_TYPES; t++) {
-    if (c[t] >= 4) continue;
+    if (c[t] >= limitOf(opts, t)) continue;
     c[t]++;
-    if (shanten(c, meldCount) === -1) out.push(t);
+    if (shanten(c, meldCount, opts) === -1) out.push(t);
     c[t]--;
   }
   return out;
@@ -229,8 +262,8 @@ function waitsUncached(counts, meldCount) {
  * CPU の打牌選択専用のため、手牌から完全に孤立した牌（幺九牌以外）は
  * 候補から外して高速化している（実戦上の受け入れ評価としては十分な近似）。
  */
-export function ukeire(counts, meldCount = 0, visibleCounts = null, wild = 0) {
-  const base = shantenWithWild(counts, meldCount, wild);
+export function ukeire(counts, meldCount = 0, visibleCounts = null, wild = 0, opts = PLAIN_OPTS) {
+  const base = shantenWithWild(counts, meldCount, wild, opts);
   const c = counts.slice();
   const tiles = [];
   let total = 0;
@@ -245,14 +278,14 @@ export function ukeire(counts, meldCount = 0, visibleCounts = null, wild = 0) {
     return false;
   };
   for (let t = 0; t < NUM_TYPES; t++) {
-    if (c[t] >= 4) continue;
+    if (c[t] >= limitOf(opts, t)) continue;
     if (!relevant(t)) continue;
     c[t]++;
-    const s = shantenWithWild(c, meldCount, wild);
+    const s = shantenWithWild(c, meldCount, wild, opts);
     c[t]--;
     if (s < base) {
       const seen = visibleCounts ? visibleCounts[t] : counts[t];
-      const left = Math.max(0, 4 - seen);
+      const left = Math.max(0, limitOf(opts, t) - seen);
       tiles.push(t);
       total += left;
     }
@@ -317,12 +350,17 @@ export function decomposeStandard(counts, needSets) {
   });
 }
 
-export function isChiitoi(counts) {
+export function isChiitoi(counts, opts = PLAIN_OPTS) {
+  const multi = opts && opts.chiitoiMultiPair;
   let pairs = 0, total = 0;
   for (let i = 0; i < NUM_TYPES; i++) {
-    total += counts[i];
-    if (counts[i] === 2) pairs++;
-    else if (counts[i] !== 0) return false;
+    const c = counts[i];
+    total += c;
+    if (c === 0) continue;
+    if (c === 2) pairs++;
+    // 8枚使い：同じ牌が偶数枚あれば、その半分の数だけ対子として数える
+    else if (multi && c % 2 === 0) pairs += c / 2;
+    else return false;
   }
   return pairs === 7 && total === 14;
 }

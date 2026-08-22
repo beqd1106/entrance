@@ -15,10 +15,10 @@
 import {
   T, NUM_TYPES, typeToCode, codeToType, tileName, typeName, isYaochu, numOf, isFlower, doraNext, sortTiles,
 } from './tiles.js';
-import { shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild } from './hand.js';
+import { shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild, makeHandOpts } from './hand.js';
 import { evaluate } from './yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from './score.js';
-import { Wall, makeRng, FLOWER_ID, FLOWER_LABEL } from './wall.js';
+import { Wall, makeRng, tileLimits, FLOWER_ID, FLOWER_LABEL } from './wall.js';
 import {
   applySpecialTiles, almightyTiles, runFlipBonus, rollDiceBonus,
   applyFlowerEffects, runCustomRules, collectWinBonus, mergeInto, emptyEffect,
@@ -72,6 +72,9 @@ export class GameEngine {
   startKyoku() {
     const R = this.rules;
     this.wall = new Wall(R, this.rng, this.debug);
+    // 手牌計算の前提（同じ牌の上限枚数・七対子の8枚使い）は牌山の作り方で変わる。
+    // 局ごとに1度だけ作って、向聴数・待ち・受け入れの計算すべてに渡す。
+    this.handOpts = makeHandOpts(tileLimits(this.wall.all), R.local.chiitoiMultiPair);
     this.kyokuCount++;
     this.wareme = null;
     if (R.local.wareme.enabled) {
@@ -273,7 +276,7 @@ export class GameEngine {
       const options = [];
       for (const tile of this.uniqueTiles(p.hand)) {
         const rest = p.hand.filter((t) => t.id !== tile.id);
-        if (shantenWithWild(countsFromTiles(rest), p.melds.length, this.wild) === 0) options.push(tile.id);
+        if (shantenWithWild(countsFromTiles(rest), p.melds.length, this.wild, this.handOpts) === 0) options.push(tile.id);
       }
       if (options.length) {
         out.push({ type: 'riichi', label: 'リーチ', tileIds: options });
@@ -319,9 +322,9 @@ export class GameEngine {
   }
 
   ankanKeepsWait(p, t) {
-    const before = waits(countsFromTiles(p.hand.filter((x) => x.id !== p.drawn.id)), p.melds.length).join(',');
+    const before = waits(countsFromTiles(p.hand.filter((x) => x.id !== p.drawn.id)), p.melds.length, this.handOpts).join(',');
     const rest = p.hand.filter((x) => x.t !== t);
-    const after = waits(countsFromTiles(rest), p.melds.length + 1).join(',');
+    const after = waits(countsFromTiles(rest), p.melds.length + 1, this.handOpts).join(',');
     return before === after;
   }
 
@@ -348,7 +351,7 @@ export class GameEngine {
     const R = this.rules;
     const hand = tsumo ? p.hand : [...p.hand, winTile];
     let counts = countsFromTiles(hand);
-    if (shanten(counts, p.melds.length) !== -1) {
+    if (shanten(counts, p.melds.length, this.handOpts) !== -1) {
       // 少牌マイティ：足りない1枚を、いちばん高くなる牌として当てはめる
       if (this.wild > 0) {
         const best = this.tryMighty(seat, p, hand, winTile, tsumo, opts);
@@ -376,7 +379,7 @@ export class GameEngine {
     for (let t = 0; t < NUM_TYPES; t++) {
       if (counts[t] >= 4) continue;
       counts[t]++;
-      const ok = shanten(counts, p.melds.length) === -1;
+      const ok = shanten(counts, p.melds.length, this.handOpts) === -1;
       counts[t]--;
       if (!ok) continue;
       const virt = { id: `mighty-${p.seat}-${t}`, t, red: false, gold: false, dot: false, sp: null, wild: true, mighty: true };
@@ -392,7 +395,7 @@ export class GameEngine {
     for (const wild of almighty) {
       for (let t = 0; t < NUM_TYPES; t++) {
         const alt = hand.map((x) => (x.id === wild.id ? { ...x, t, wild: true } : x));
-        if (shanten(countsFromTiles(alt), p.melds.length) === -1) {
+        if (shanten(countsFromTiles(alt), p.melds.length, this.handOpts) === -1) {
           return { hand: alt, substituted: { from: wild, to: t } };
         }
       }
@@ -438,6 +441,7 @@ export class GameEngine {
       roundWind: this.round.wind,
       flags,
       rules: R,
+      handOpts: this.handOpts,
       doraTypes: this.doraTypes(),
       kitaCount: p.kita.length,
       flowerDoraCount: R.flowers.isDora ? p.flowers.length : 0,
@@ -459,7 +463,7 @@ export class GameEngine {
   /** 完全先付け判定（近似：全ての待ちで役が成立するか） */
   yakuConfirmed(p, ctx) {
     const base = p.hand.filter((t) => !ctx.tsumo || t.id !== ctx.winTile.id);
-    const w = waits(countsFromTiles(base), p.melds.length);
+    const w = waits(countsFromTiles(base), p.melds.length, this.handOpts);
     if (w.length <= 1) return true;
     for (const t of w) {
       const fake = [...base, { id: -1, t, red: false, gold: false, dot: false, sp: null }];
@@ -610,7 +614,7 @@ export class GameEngine {
   }
 
   updateFuriten(p) {
-    const w = waits(countsFromTiles(p.hand), p.melds.length);
+    const w = waits(countsFromTiles(p.hand), p.melds.length, this.handOpts);
     p.waits = w;
     p.furiten = p.discards.some((d) => w.includes(d.t));
   }
@@ -1041,8 +1045,8 @@ export class GameEngine {
     const R = this.rules;
     const tenpai = [];
     for (const p of this.players) {
-      const s = shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild);
-      const w = waitsWithWild(countsFromTiles(p.hand), p.melds.length, this.wild);
+      const s = shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild, this.handOpts);
+      const w = waitsWithWild(countsFromTiles(p.hand), p.melds.length, this.wild, this.handOpts);
       let isTenpai = s === 0;
       if (isTenpai && !R.win.formalTenpai) {
         const hasYaku = true; // 形式テンパイ非採用の厳密判定は将来対応（要検討）
@@ -1339,8 +1343,8 @@ export class GameEngine {
     // 13枚形（ツモ前）のときだけ出す
     if (p.hand.length % 3 !== 1) return null;
     const counts = countsFromTiles(p.hand);
-    if (shantenWithWild(counts, p.melds.length, this.wild) !== 0) return null;
-    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild), counts);
+    if (shantenWithWild(counts, p.melds.length, this.wild, this.handOpts) !== 0) return null;
+    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild, this.handOpts), counts);
   }
 
   /** 表示用：指定の牌を切ったらどんな待ちになるか（切る前に確認できるようにする） */
@@ -1350,8 +1354,8 @@ export class GameEngine {
     const rest = p.hand.filter((t) => t.id !== tileId);
     if (rest.length === p.hand.length) return null;
     const counts = countsFromTiles(rest);
-    if (shantenWithWild(counts, p.melds.length, this.wild) !== 0) return null;
-    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild), counts);
+    if (shantenWithWild(counts, p.melds.length, this.wild, this.handOpts) !== 0) return null;
+    return this.waitDetail(waitsWithWild(counts, p.melds.length, this.wild, this.handOpts), counts);
   }
 
   /** 待ち牌に「まだ見えていない枚数」を添える */
@@ -1429,7 +1433,7 @@ export class GameEngine {
     }
     p.hand = sortTiles(p.hand);
     // 14枚形で向聴0＝どれかを切ればテンパイ
-    return shantenWithWild(countsFromTiles(p.hand), 0, this.wild) === 0;
+    return shantenWithWild(countsFromTiles(p.hand), 0, this.wild, this.handOpts) === 0;
   }
 
   snapshot(viewerSeat = 0) {
@@ -1474,7 +1478,7 @@ export class GameEngine {
         kita: p.kita.map((t) => this.tileInfo(t)),
         kitaCount: p.kita.length,
         flowers: p.flowers.map((t) => this.tileInfo(t)),
-        shanten: (p.seat === viewerSeat || reveal) ? shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild) : null,
+        shanten: (p.seat === viewerSeat || reveal) ? shantenWithWild(countsFromTiles(p.hand), p.melds.length, this.wild, this.handOpts) : null,
       })),
     };
   }

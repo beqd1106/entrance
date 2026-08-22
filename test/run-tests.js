@@ -3,7 +3,7 @@
  * 使い方: node test/run-tests.js
  */
 import { codeToType, typeToCode, T } from '../src/core/tiles.js';
-import { shanten, waits, countsFromTiles, isChiitoi, isKokushi } from '../src/core/hand.js';
+import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, makeHandOpts } from '../src/core/hand.js';
 import { evaluate } from '../src/core/yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from '../src/core/score.js';
 import { GameEngine } from '../src/core/engine.js';
@@ -13,7 +13,7 @@ import { getPreset, ALL_PRESETS } from '../src/rules/presets.js';
 import { validateRules } from '../src/rules/validator.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../src/rules/explain.js';
 import { runFlipBonus, rollDiceBonus, applySpecialTiles, applyFlowerEffects } from '../src/core/effects.js';
-import { makeRng } from '../src/core/wall.js';
+import { makeRng, buildTileSet } from '../src/core/wall.js';
 
 // ---------------------------------------------------------------------------
 let pass = 0, fail = 0;
@@ -950,6 +950,77 @@ it('手牌のドラを判別できる情報が渡る', () => {
   const e = mkEngine();
   const s = e.snapshot(0);
   ok(Array.isArray(s.doraTypes) && s.doraTypes.length >= 1, 'ドラの牌タイプが取れる');
+});
+
+describe('清一色ゲーム（2セット混ぜ）');
+
+/** 牌に裏の色を付ける */
+const withBack = (tiles, color) => tiles.map((t) => ({ ...t, back: color }));
+
+it('牌構成は108枚で、5萬だけ8枚入る', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const tiles = buildTileSet(r);
+  eq(tiles.length, 108, '総枚数');
+  eq(tiles.filter((t) => t.t === codeToType('5m')).length, 8, '5萬の枚数');
+  eq(tiles.filter((t) => t.t === codeToType('1m')).length, 0, '1萬は入らない');
+});
+
+it('牌の裏は青と黄が半分ずつになる', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const tiles = buildTileSet(r);
+  eq(tiles.filter((t) => t.back === 'blue').length, 54, '青');
+  eq(tiles.filter((t) => t.back === 'yellow').length, 54, '黄');
+});
+
+it('5筒・5索はすべてドラになる', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  ok(r.dora.permanentDora.includes('5p'), '5筒が常時ドラ');
+  ok(r.dora.permanentDora.includes('5s'), '5索が常時ドラ');
+});
+
+it('七対子の8枚使い：同じ牌4枚を2つの対子として認める', () => {
+  const counts = new Array(34).fill(0);
+  counts[codeToType('1p')] = 4;
+  counts[codeToType('2p')] = 4;
+  counts[codeToType('3p')] = 4;
+  counts[codeToType('4p')] = 2;
+  ok(isChiitoi(counts, makeHandOpts(null, true)), '8枚使いありなら七対子');
+  no(isChiitoi(counts), '8枚使いなしなら七対子ではない');
+});
+
+it('同じ牌が8枚あるルールでは5枚目以降も待ちとして数える', () => {
+  const limits = new Array(34).fill(4);
+  limits[codeToType('5m')] = 8;
+  const counts = new Array(34).fill(0);
+  counts[codeToType('5m')] = 4;
+  counts[codeToType('1p')] = 3;
+  counts[codeToType('2p')] = 3;
+  counts[codeToType('3p')] = 3;
+  ok(waits(counts, 0, makeHandOpts(limits, false)).includes(codeToType('5m')), '5枚目の5萬が待ちに入る');
+  no(waits(counts, 0).includes(codeToType('5m')), '通常ルールでは待ちに入らない');
+});
+
+it('背一色：牌の裏の色がそろえばダブル役満', () => {
+  const rules = resolveRules(getPreset('chinitsu3').rules);
+  const hand = withBack(mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p'), 'blue');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  ok(res.isYakuman, '役満として成立する');
+  ok(res.yaku.some((y) => y.name === '背一色' && y.yakuman === 2), 'ダブル役満');
+});
+
+it('背一色：裏の色が混ざっていれば成立しない', () => {
+  const rules = resolveRules(getPreset('chinitsu3').rules);
+  const hand = withBack(mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p'), 'blue');
+  hand[5].back = 'yellow';
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
+});
+
+it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
+  const rules = resolveRules({ localYaku: [{ id: 'seiiisou', enabled: true }] });
+  const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
 });
 
 // ===========================================================================

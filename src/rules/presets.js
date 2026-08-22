@@ -367,16 +367,40 @@ export const PRESETS = [
     id: 'chinitsu3',
     name: '清一色ゲーム風',
     category: '特殊',
-    tags: ['三麻', '清一色', '萬子なし'],
-    description: '萬子をすべて抜いた三人麻雀。使うのは筒子・索子・字牌だけなので、手はいつも混一色以上になります。',
+    tags: ['三麻', '清一色ゲーム', '2セット混ぜ', '5萬8枚'],
+    description: '全自動卓の2セットを混ぜて打つ三人麻雀。筒子・索子・字牌に5萬8枚を足した108枚で、萬子は5萬しかないため手はいつも混一色以上になります。5筒・5索はすべてドラ。',
     rules: {
       meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
       game: { players: 3, length: 'east' },
-      // 萬子を1枚も残さない（manzuKeep を空にする）のが清一色ゲームの肝
-      sanma: { removeManzu: true, manzuKeep: [], northMode: 'normal', tsumoLoss: false },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
-      dora: { indicators: 1, red: { '5p': 2, '5s': 2 } },
-      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
+      // 萬子は5萬だけを残し、その5萬を8枚入れる（2セット混ぜで108枚）。
+      // 関西サンマがベースなので北は抜かずに役牌として使う。
+      sanma: {
+        removeManzu: true, manzuKeep: ['5m'],
+        northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false, tsumoLoss: false,
+      },
+      wall: {
+        tileCounts: { '5m': 8 },
+        // 2セット混ぜなので牌の裏が青と黄の2色になる（背一色の判定に使う）
+        backColors: { enabled: true, colors: ['blue', 'yellow'] },
+      },
+      scoring: {
+        startingPoints: 35000, returnPoints: 40000,
+        uma: [0, 1, -3], umaZeroSum: true, roundUpMangan: true,
+      },
+      // 5筒・5索はすべてドラ。赤2枚・金2枚は祝儀牌として残す。
+      dora: {
+        indicators: 1,
+        permanentDora: ['5p', '5s'],
+        red: { '5p': 1, '5s': 1 }, gold: { '5p': 1, '5s': 1 },
+      },
+      ryuukyoku: { notenPenalty: 6000 },
+      // 同じ牌が8枚あるためカンは5回以上できる。四開槓では流さない
+      renchan: { suukaikan: false },
+      // 同じ牌が5枚以上あるので、七対子の8枚使いを認める
+      local: { chiitoiMultiPair: true },
+      // 牌の裏の色がそろえばダブル役満
+      localYaku: [{ id: 'seiiisou', enabled: true }],
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },
     },
   },
   {

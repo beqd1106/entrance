@@ -359,7 +359,7 @@ export function evaluate(ctx) {
   const candidates = [];
 
   // 特殊形
-  if (meldCount === 0 && isChiitoi(counts)) {
+  if (meldCount === 0 && isChiitoi(counts, ctx.handOpts)) {
     const yaku = [...checkYaku(ctx, counts, null, null), ...checkLocalYaku(ctx, counts, null, null)];
     const ym = checkYakuman(ctx, counts, null, null);
     candidates.push(buildResult(ctx, yaku, ym, null, null, counts));
@@ -517,6 +517,19 @@ export const LOCAL_YAKU_DEFS = {
         if (kou === 2 && pair === 1) return true;
       }
       return false;
+    },
+  },
+  seiiisou: {
+    name: '背一色', defaultYakuman: 2,
+    desc: '牌の裏の色がすべて同じ（2セットの牌を混ぜて打つ清一色ゲームの役）',
+    test: (ctx) => {
+      const tiles = [...ctx.hand];
+      for (const m of ctx.melds || []) for (const t of m.tiles) tiles.push(t);
+      if (!tiles.length) return false;
+      const first = tiles[0].back;
+      // 牌の裏に色が無いルール（1セットで打つ通常の麻雀）では成立しない
+      if (!first) return false;
+      return tiles.every((t) => t.back === first);
     },
   },
   daichisei: {

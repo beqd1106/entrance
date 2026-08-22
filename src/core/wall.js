@@ -107,6 +107,17 @@ export function buildTileSet(rules) {
   return tiles;
 }
 
+/**
+ * 牌山に実際に入っている牌種ごとの枚数。
+ * 向聴数・待ちの計算で「同じ牌を何枚まで使えるか」の上限として使う。
+ * （既定は4枚だが、清一色ゲームの5萬のように8枚入るルールがある）
+ */
+export function tileLimits(tiles) {
+  const limits = new Array(NUM_TYPES).fill(0);
+  for (const tile of tiles) if (tile.t < NUM_TYPES) limits[tile.t]++;
+  return limits;
+}
+
 export class Wall {
   /**
    * @param {Object} rules
