@@ -19,6 +19,23 @@ function tileLabel(code) {
 }
 
 /** カテゴリ別の説明ブロックを生成 */
+/**
+ * ローカル役の強さの表示（「役満」か「N翻」か）。
+ * 設定で翻数を省いたときは、役の定義が持つ既定値を使う。
+ * これを見ていなかったため「背一色（undefined翻）」のように出ていた。
+ */
+function localYakuStrength(y) {
+  const def = LOCAL_YAKU_DEFS[y.id] || {};
+  const yakuman = y.yakuman ?? (y.han ? 0 : def.defaultYakuman ?? 0);
+  if (yakuman) return `役満${yakuman > 1 ? `×${yakuman}` : ''}`;
+  return `${y.han ?? def.defaultHan ?? 1}翻`;
+}
+
+/** ローカル役の表示名 */
+function localYakuName(y) {
+  return y.name || (LOCAL_YAKU_DEFS[y.id] || {}).name || y.id;
+}
+
 export function explainRules(r) {
   const sections = [];
   const isSanma = r.game.players === 3;
@@ -151,7 +168,7 @@ export function explainRules(r) {
   }
   const ly = (r.localYaku || []).filter((y) => y.enabled !== false);
   if (ly.length) {
-    local.push(`ローカル役を採用しています：${ly.map((y) => `${y.name || (LOCAL_YAKU_DEFS[y.id] || {}).name || y.id}（${y.yakuman ? `役満${y.yakuman > 1 ? `×${y.yakuman}` : ''}` : `${y.han}翻`}）`).join('・')}`);
+    local.push(`ローカル役を採用しています：${ly.map((y) => `${localYakuName(y)}（${localYakuStrength(y)}）`).join('・')}`);
   }
   for (const ev of (r.events || []).filter((e) => e.enabled !== false)) {
     local.push(`イベント卓「${ev.name}」：${ev.note || '特別ルールが適用されます'}`);
@@ -379,7 +396,7 @@ export function diffFromBaseline(r) {
     out.push({
       label: 'ローカル役',
       from: 'なし',
-      to: activeLocalYaku.map((y) => `${y.name || (LOCAL_YAKU_DEFS[y.id] || {}).name || y.id}（${y.yakuman ? '役満' : `${y.han}翻`}）`).join(' / '),
+      to: activeLocalYaku.map((y) => `${localYakuName(y)}（${localYakuStrength(y)}）`).join(' / '),
       path: 'localYaku',
     });
   }

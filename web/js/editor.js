@@ -481,6 +481,45 @@ function renderLeft(left, state, onChange) {
       })))));
   left.appendChild(doraBox);
 
+  // --- 牌山の構成
+  // 清一色ゲームのように、牌の枚数そのものが変わるルールがある。
+  // 設定は効いているのに画面に無いと「壊れている」ように見えるので、
+  // ここで見て触れるようにしておく。
+  const wallBox = h('div.card.card-pad', { style: { marginBottom: '18px' } },
+    h('h3', { style: { fontSize: '16px', marginBottom: '12px' }, text: '牌山の構成' }));
+  wallBox.appendChild(h('p.tiny.muted', { style: { margin: '0 0 12px' },
+    text: '同じ牌を何枚入れるか、全自動卓の2セットを混ぜるか。清一色ゲームのように、牌の構成そのものが変わるルールで使います。' }));
+  const wallCount = (label, code, desc) => {
+    const cur = (R.wall.tileCounts || {})[code] ?? 4;
+    return h('div.row.gap-12', { style: { padding: '6px 0', borderBottom: '1px solid var(--line)' } },
+      tileEl({ t: typeOfCode(code) }, { size: 'sm' }),
+      h('div.grow',
+        h('div', { style: { fontSize: '13.5px' }, text: label }),
+        desc ? h('div.tiny.muted', { text: desc }) : null),
+      stepper(cur, (v) => {
+        R.wall.tileCounts = R.wall.tileCounts || {};
+        if (v === 4) delete R.wall.tileCounts[code];
+        else R.wall.tileCounts[code] = v;
+        onChange();
+      }, 0, 8));
+  };
+  wallBox.appendChild(wallCount('五萬の枚数', '5m', '清一色ゲームは8枚（2セット分）'));
+  wallBox.appendChild(wallCount('五筒の枚数', '5p', ''));
+  wallBox.appendChild(wallCount('五索の枚数', '5s', ''));
+  wallBox.appendChild(switchRow('2セットの牌を混ぜる',
+    '牌の裏が青と黄の2色になります。「背一色」を採用するときはこれが要ります',
+    !!(R.wall.backColors && R.wall.backColors.enabled),
+    (v) => {
+      R.wall.backColors = R.wall.backColors || { colors: ['blue', 'yellow'] };
+      R.wall.backColors.enabled = v;
+      onChange();
+    }));
+  wallBox.appendChild(switchRow('七対子の8枚使い',
+    '同じ牌4枚を2つの対子として七対子に数えます（同じ牌が5枚以上あるルール向け）',
+    !!R.local.chiitoiMultiPair,
+    (v) => { R.local.chiitoiMultiPair = v; onChange(); }));
+  left.appendChild(wallBox);
+
   // --- 三麻
   if (R.game.players === 3) {
     left.appendChild(h('div.card.card-pad', { style: { marginBottom: '18px' } },

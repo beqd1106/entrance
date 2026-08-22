@@ -762,6 +762,26 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     flex: 0 1 auto; max-height: 52%; overflow-y: auto;
   }
   .board-scroll { justify-content: flex-start; }
+  /* 鳴き・スルーは、横持ちで両手に持ったときに右の親指がいちばん届く。
+     画面の右下に縦に並べて、手牌を見ながら押せるようにする */
+  .actions {
+    position: fixed;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 84px));
+    z-index: 40;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0;
+    min-height: 0;
+    width: auto;
+  }
+  .actions .act {
+    padding: 9px 16px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+  }
   /* 低い画面では正方形にこだわらない。
      高さ基準の幅制限をそのまま効かせると、横に広いのに卓だけ極端に狭くなる */
   .board {
