@@ -10,6 +10,7 @@ import { recordPlay } from './dashboard.js';
 import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
+import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 
 const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, { label: '速い', v: 120 }];
@@ -410,6 +411,19 @@ function drawRuleCard(s) {
     specials.push(extra.length ? `抜きドラ（北・${extra.join('・')}）` : '北抜き');
   }
   for (const d of R.specialTiles || []) specials.push(d.name);
+  // 牌の構成そのものが変わるルール（清一色ゲームの2セット混ぜなど）も、
+  // 打っている本人がいちばん知りたいことなのでここに出す
+  const counts = (R.wall && R.wall.tileCounts) || {};
+  const many = Object.keys(counts).filter((c) => counts[c] > 4);
+  if (many.length) {
+    specials.push(many.map((c) => `${typeName(codeToType(c))}${counts[c]}枚`).join('・'));
+  }
+  if (R.wall && R.wall.backColors && R.wall.backColors.enabled) specials.push('2セット混ぜ');
+  if (R.local.chiitoiMultiPair) specials.push('七対子8枚使い');
+  if (R.local.shouhaiMighty && R.local.shouhaiMighty.enabled) specials.push('少牌マイティ');
+  for (const y of R.localYaku || []) {
+    if (y && y.enabled !== false && LOCAL_YAKU_DEFS[y.id]) specials.push(LOCAL_YAKU_DEFS[y.id].name);
+  }
   box.appendChild(item('特殊', specials.length ? specials.join('・') : 'なし'));
   box.appendChild(item('喰いタン', R.win.kuitan ? 'あり' : 'なし'));
   if (G.store) {

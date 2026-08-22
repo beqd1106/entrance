@@ -120,6 +120,15 @@ svg { display: block; }
 .btn-primary { background: var(--ink); color: #fff; }
 .btn-brass { background: linear-gradient(140deg, var(--brass-2), var(--brass)); color: #fff; box-shadow: 0 6px 16px rgba(193, 55, 44, .25); }
 .btn-ghost { background: transparent; border-color: var(--line-2); color: var(--ink-2); }
+/* 「打つ・遊ぶ」へ進む導線だけは朱で塗る。
+   保存や決定（墨の btn-primary）と役割を分け、アプリの中で
+   いちばん押してほしいものが一目で分かるようにする。 */
+.btn-primary.tbl-start,
+.btn-primary.store-cta-btn,
+a.btn.btn-primary[href^="#/play"] {
+  background: linear-gradient(140deg, var(--brass-2), var(--brass));
+  box-shadow: 0 6px 16px rgba(193, 55, 44, 0.25);
+}
 .btn-ghost:hover { background: var(--paper-3); box-shadow: none; }
 .btn-danger { background: var(--red); }
 .btn-lg { padding: 15px 28px; font-size: 15.5px; border-radius: 999px; }
