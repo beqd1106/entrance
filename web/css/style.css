@@ -162,7 +162,7 @@ svg { display: block; }
   font-family: var(--serif); line-height: 1; user-select: none;
 }
 /* --- 牌面（インラインSVG） --- */
-.tile-face { width: 86%; height: 86%; display: block; }
+.tile-face { width: 92%; height: 92%; display: block; }
 .tile-face svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .tile-face .ink { fill: #1c1e21; }
 .tile-face .red { fill: #b4362f; }
@@ -182,9 +182,10 @@ svg { display: block; }
 .tile-idx {
   position: absolute; top: 3%; left: 7%;
   font-family: var(--sans); font-weight: 800; line-height: 1;
-  font-size: calc(var(--tw) * 0.30);
-  color: rgba(28, 30, 33, 0.46);
-  text-shadow: 0 0 2px #fff, 0 0 3px #fff;
+  /* 河の25px でも読める下限を持たせる。柄を数えなくても牌が分かることを優先する */
+  font-size: max(9px, calc(var(--tw) * 0.34));
+  color: rgba(28, 30, 33, 0.62);
+  text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
   pointer-events: none;
 }
 .tile-xs .tile-idx, .tile.back .tile-idx { display: none; }

@@ -17,6 +17,21 @@ const add = (title, list) => {
   out.appendChild(row);
 };
 const range = (a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+// 実機で使う小さいサイズと、絵柄を確かめる大きいサイズを並べる
+const addSized = (title, list, tw) => {
+  const h3 = document.createElement('h3'); h3.textContent = title; out.appendChild(h3);
+  const row = document.createElement('div'); row.className = 'row';
+  list.forEach(info => {
+    const el = tileEl(info, { size: 'lg' });
+    el.style.setProperty('--tw', tw + 'px');
+    row.appendChild(el);
+  });
+  out.appendChild(row);
+};
+addSized('拡大（絵柄の確認用）', [{t:18},{t:19},{t:22},{t:26},{t:9},{t:13},{t:17},{t:0},{t:4}], 96);
+addSized('実機の手牌サイズ 34px', range(18,26).map(t=>({t})), 34);
+addSized('実機の河サイズ 25px', range(18,26).map(t=>({t})), 25);
+addSized('実機の河サイズ 25px（筒子）', range(9,17).map(t=>({t})), 25);
 add('萬子', range(0,8).map(t=>({t})));
 add('筒子', range(9,17).map(t=>({t})));
 add('索子', range(18,26).map(t=>({t})));
