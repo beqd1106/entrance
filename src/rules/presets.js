@@ -379,8 +379,15 @@ export const PRESETS = [
       dora: { indicators: 1, ura: false, red: {} },
       // オープンリーチあり（全開け）
       win: { openRiichi: { enabled: true, revealMode: 'all' } },
-      // 大車輪（清一色の七対子）は役満
-      localYaku: [{ id: 'daisharin', enabled: true, yakuman: 1 }],
+      // 公式ルールで採用されている役
+      localYaku: [
+        // 大車輪（清一色の七対子）
+        { id: 'daisharin', enabled: true, yakuman: 1 },
+        // 萬子の混一色
+        { id: 'manzuhonitsu', enabled: true, yakuman: 1 },
+        // お多福（5面待ち以上で、待ちの種類ぶん翻が増える）
+        { id: 'otafuku', enabled: true },
+      ],
       bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）' },
     },
   },

@@ -571,6 +571,25 @@ export const LOCAL_YAKU_DEFS = {
       return numTiles === 7;
     },
   },
+  manzuhonitsu: {
+    name: '萬子の混一色', defaultYakuman: 1,
+    desc: '萬子と字牌だけで作る混一色（萬子をほとんど抜く三麻では極端に難しいため役満扱い）',
+    test: (ctx, counts) => {
+      const suits = new Set();
+      let honor = false;
+      counts.forEach((c, i) => { if (c > 0) { if (isHonor(i)) honor = true; else suits.add(suitOf(i)); } });
+      for (const m of ctx.melds) {
+        for (const t of m.tiles) { if (isHonor(t.t)) honor = true; else suits.add(suitOf(t.t)); }
+      }
+      return suits.size === 1 && suits.has(0) && honor;
+    },
+  },
+  otafuku: {
+    name: 'お多福', defaultHan: 5,
+    desc: '5面待ち以上で和了る。待ちの種類ひとつにつき1翻',
+    test: (ctx) => !ctx.flags.furiten && (ctx.flags.waitKinds || 0) >= 5,
+    dynamicHan: (ctx) => ctx.flags.waitKinds || 5,
+  },
   daichisei: {
     name: '大七星', defaultYakuman: 1,
     desc: '字牌のみの七対子',
@@ -709,7 +728,11 @@ export function checkLocalYaku(ctx, counts, sets, decomp) {
     const name = conf.name || def.name;
     const yakuman = conf.yakuman ?? (conf.han ? 0 : def.defaultYakuman ?? 0);
     if (yakuman) out.push({ name, yakuman });
-    else out.push({ name, han: conf.han ?? def.defaultHan ?? 1 });
+    else {
+      // 待ちの広さのように、状況で翻が変わる役に対応する
+      const dyn = def.dynamicHan ? def.dynamicHan(ctx, counts, sets, decomp) : null;
+      out.push({ name, han: conf.han ?? dyn ?? def.defaultHan ?? 1 });
+    }
   }
   return out;
 }

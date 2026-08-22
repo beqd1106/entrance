@@ -423,6 +423,9 @@ export class GameEngine {
         && p.discards.length === 0 && !this.anyCall,
       // 燕返し：放銃者のリーチ宣言牌をそのままロンした形
       tsubame: !tsumo && this.isRiichiDeclarationTile(this.lastDiscard),
+      // 待ちの種類数（「お多福」のように待ちの広さで翻が変わる役で使う）
+      waitKinds: opts.waitKinds ?? 0,
+      furiten: !!(p.furiten || p.tempFuriten),
     };
   }
 
@@ -443,6 +446,11 @@ export class GameEngine {
 
   evaluateWin(seat, winTile, tsumo, hand, opts = {}, substituted = null) {
     const p = this.players[seat];
+    // 和了牌を除いた形から待ちを数える。待ちの広さで翻が変わる役があるため
+    if (opts.waitKinds === undefined) {
+      const before = hand.filter((t) => t !== winTile);
+      opts = { ...opts, waitKinds: waits(countsFromTiles(before), p.melds.length, this.handOpts).length };
+    }
     const R = this.rules;
     const flags = this.flagsFor(p, tsumo, opts);
     const ctx = {

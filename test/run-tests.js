@@ -1106,6 +1106,61 @@ it('七星無靠：採用していないルールでは和了形にならない'
   ok(shanten(counts, 0) > -1, '既定のルールでは和了ではない');
 });
 
+describe('少牌マイティの公式役（萬子の混一色・お多福）');
+
+const mightyRules = () => resolveRules({
+  localYaku: [
+    { id: 'manzuhonitsu', enabled: true, yakuman: 1 },
+    { id: 'otafuku', enabled: true },
+  ],
+});
+
+it('萬子の混一色は役満になる', () => {
+  const hand = mk('1m 1m 1m 9m 9m 9m 1z 1z 1z 2z 2z 3z 3z 3z');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules: mightyRules(), tsumo: true }));
+  ok(res.isYakuman, '役満として成立する');
+  ok(res.yaku.some((y) => y.name === '萬子の混一色'), '萬子の混一色が付く');
+});
+
+it('筒子の混一色では成立しない（萬子限定の役）', () => {
+  const hand = mk('1p 1p 1p 9p 9p 9p 1z 1z 1z 2z 2z 3z 3z 3z');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules: mightyRules(), tsumo: true }));
+  no(res.yaku.some((y) => y.name === '萬子の混一色'), '萬子でなければ付かない');
+});
+
+it('字牌が無ければ萬子の混一色にはならない', () => {
+  const rules = mightyRules();
+  const hand = mk('1m 1m 1m 2m 3m 4m 5m 6m 7m 8m 8m 8m 9m 9m');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
+  no(res.yaku.some((y) => y.name === '萬子の混一色'), '混一色ではなく清一色の形');
+});
+
+it('お多福：5面待ち以上で、待ちの種類ぶん翻が増える', () => {
+  const rules = mightyRules();
+  const hand = mk('2p 3p 4p 6p 7p 8p 5p 5p 1s 1s 1s 1z 1z 1z');
+  const flags = { ...baseCtx().flags, waitKinds: 5, furiten: false };
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true, flags }));
+  const y = res.yaku.find((v) => v.name === 'お多福');
+  ok(y, 'お多福が付く');
+  eq(y.han, 5, '5面待ちなら5翻');
+});
+
+it('お多福：4面待ちでは成立しない', () => {
+  const rules = mightyRules();
+  const hand = mk('2p 3p 4p 6p 7p 8p 5p 5p 1s 1s 1s 1z 1z 1z');
+  const flags = { ...baseCtx().flags, waitKinds: 4, furiten: false };
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true, flags }));
+  no(res.yaku.some((v) => v.name === 'お多福'), '5面待ちに満たない');
+});
+
+it('お多福：フリテンでは成立しない', () => {
+  const rules = mightyRules();
+  const hand = mk('2p 3p 4p 6p 7p 8p 5p 5p 1s 1s 1s 1z 1z 1z');
+  const flags = { ...baseCtx().flags, waitKinds: 6, furiten: true };
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true, flags }));
+  no(res.yaku.some((v) => v.name === 'お多福'), 'フリテンなら付かない');
+});
+
 // ===========================================================================
 console.log(`\n=== 結果: ${pass} 件成功 / ${fail} 件失敗 ===`);
 if (fail) {
