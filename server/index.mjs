@@ -120,12 +120,18 @@ async function getStore(id) {
  * ここを通らずに画像を取り出すことはできない。
  */
 async function withPhotoUrl(store) {
-  if (!store.photoKey || !BUCKET) return store;
+  if (!BUCKET) return store;
+  const notices = Array.isArray(store.notices) ? store.notices : null;
+  const needsNoticeUrl = notices && notices.some((n) => n && n.imageKey);
+  if (!store.photoKey && !needsNoticeUrl) return store;
   if (!(await underGlobalDailyLimit('photo', DAILY.photo))) return store;
-  return {
-    ...store,
-    photoUrl: presignS3Get({ bucket: BUCKET, key: store.photoKey, region: REGION, expires: PHOTO_URL_TTL }),
-  };
+  const sign = (key) => presignS3Get({ bucket: BUCKET, key, region: REGION, expires: PHOTO_URL_TTL });
+  const out = { ...store };
+  if (store.photoKey) out.photoUrl = sign(store.photoKey);
+  if (needsNoticeUrl) {
+    out.notices = notices.map((n) => (n && n.imageKey ? { ...n, imageUrl: sign(n.imageKey) } : n));
+  }
+  return out;
 }
 
 async function getStats(id) {
@@ -285,6 +291,8 @@ function pickNotices(list) {
     body: str(n && n.body, 400),
     startAt: day(n && n.startAt),
     endAt: day(n && n.endAt),
+    // 画像1枚で配る告知もあるので、置き場所だけ持たせる（表示用URLは読み出し時に作る）
+    imageKey: str(n && n.imageKey, 300),
   })).filter((n) => n.title);
 }
 

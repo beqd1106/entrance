@@ -270,6 +270,7 @@ function renderForm(left, state, onChange) {
       field('種類', kind, 'イベントにすると朱色で目立ちます'),
       field('見出し', title),
       field('内容', body),
+      noticeImageField(d, n, onChange),
       h('div.row.gap-12.wrapflex',
         field('掲載開始', from, '空欄なら今すぐから'),
         field('掲載終了', to, '空欄なら期限なし'))));
@@ -329,6 +330,57 @@ function renderForm(left, state, onChange) {
  * 画像はサーバを通さず署名付きURLでS3へ直接送るので、大きな画像でも詰まらない。
  * サーバに繋がっていないときは、色とマークで代用していることを説明する。
  */
+/**
+ * お知らせ1件ぶんの画像。
+ * 告知は画像1枚で配ることも多いので、縦向き・横向きのどちらでも
+ * そのまま出せるようにしてある（表示側で全体が入るように収める）。
+ */
+function noticeImageField(d, n, onChange) {
+  if (!hasServer()) {
+    return field('画像', h('p.tiny.muted', { style: { margin: 0 },
+      text: 'いまはサーバに接続していないため、画像は付けられません。' }));
+  }
+  const box = h('div');
+  const status = h('div.tiny.muted', { style: { marginTop: '6px' } });
+  const preview = h('div.notice-image-preview');
+  const draw = () => {
+    clear(preview);
+    if (n.imageUrl) {
+      preview.appendChild(h('img', { src: n.imageUrl, alt: '' }));
+      const del = h('button.btn.btn-ghost.btn-sm', { text: '画像を外す' });
+      del.addEventListener('click', () => { n.imageUrl = ''; n.imageKey = ''; onChange(); });
+      preview.appendChild(del);
+    }
+  };
+  draw();
+  const input = h('input', {
+    type: 'file', name: `noticeImg-${n.id}`, id: `noticeImg-${d.id}-${n.id}`,
+    accept: 'image/jpeg,image/png,image/webp',
+  });
+  input.addEventListener('change', async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    status.textContent = 'アップロード中…';
+    status.className = 'tiny muted';
+    const r = await uploadPhoto(d.id, file);
+    input.value = '';
+    if (!r.ok) {
+      status.textContent = r.error === 'offline' ? 'サーバに接続していません' : r.error;
+      status.className = 'tiny err';
+      return;
+    }
+    n.imageKey = r.data.key;
+    n.imageUrl = r.data.url;
+    status.textContent = 'アップロードしました';
+    status.className = 'tiny ok';
+    onChange();
+  });
+  box.appendChild(preview);
+  box.appendChild(input);
+  box.appendChild(status);
+  return field('画像（任意）', box, '縦向き・横向きのどちらでも、全体が入るように出ます');
+}
+
 function photoField(d, onChange) {
   if (!hasServer()) {
     return field('店舗写真', h('p.tiny.muted', { style: { margin: 0 },

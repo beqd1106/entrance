@@ -535,9 +535,40 @@ function signatureTiles(r) {
 function activeNotices(list) {
   if (!Array.isArray(list)) return [];
   const today = new Date().toISOString().slice(0, 10);
-  return list.filter((n) => n && n.title
+  // 画像1枚だけの告知もあるので、見出しか画像のどちらかがあれば載せる
+  return list.filter((n) => n && (n.title || n.imageUrl)
     && (!n.startAt || n.startAt <= today)
     && (!n.endAt || n.endAt >= today));
+}
+
+/**
+ * お知らせの画像。縦向きのチラシでも横向きのバナーでも全体が入るように収め、
+ * 押すと画面いっぱいで見られるようにする（横持ちだと縮んで文字が読めないため）。
+ */
+function noticeImage(n) {
+  const img = h('img', { src: n.imageUrl, alt: n.title || 'お知らせの画像', loading: 'lazy' });
+  const box = h('button.notice-image', { type: 'button', title: '押すと拡大します' }, img,
+    h('span.notice-image-zoom', icon('search', 14), '拡大'));
+  box.addEventListener('click', () => openImageViewer(n.imageUrl, n.title));
+  return box;
+}
+
+/** 画像を画面いっぱいで見る。どこを押しても閉じる。 */
+function openImageViewer(src, alt) {
+  const view = h('div.image-viewer',
+    h('img', { src, alt: alt || 'お知らせの画像' }),
+    h('span.image-viewer-close', { text: '閉じる' }));
+  const close = () => {
+    view.remove();
+    document.removeEventListener('keydown', onKey);
+    document.body.classList.remove('no-scroll');
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  view.addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  document.body.classList.add('no-scroll');
+  document.body.appendChild(view);
+  view.focus();
 }
 
 /** 2026-12-01 → 12/1 */
@@ -743,9 +774,11 @@ function viewStore(id) {
       notices.map((n) => h('div.notice-item', { class: n.kind === 'event' ? 'is-event' : '' },
         h('div.notice-head',
           h('span.notice-kind', { text: n.kind === 'event' ? 'イベント' : 'お知らせ' }),
-          h('b', { text: n.title }),
+          n.title ? h('b', { text: n.title }) : null,
           n.endAt ? h('span.tiny.muted', { text: `${jpDate(n.startAt)}〜${jpDate(n.endAt)}` }) : null),
-        n.body ? h('p', { text: n.body }) : null))));
+        n.body ? h('p', { text: n.body }) : null,
+        // 画像1枚だけの告知もある。縦向きでも横向きでも全体が入るように収める
+        n.imageUrl ? noticeImage(n) : null))));
   }
   panelEvent.appendChild(h('div.store-grid',
     h('div.card.card-pad',
