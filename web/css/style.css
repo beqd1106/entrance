@@ -498,18 +498,18 @@ a.btn.btn-primary[href^="#/play"] {
 .store-photo {
   height: 128px; position: relative; overflow: hidden;
   background:
-    radial-gradient(80% 120% at 78% 10%, hsl(var(--hue) 88% 93%), transparent 60%),
-    linear-gradient(150deg, hsl(var(--hue) 72% 96%), hsl(var(--hue) 56% 88%));
+    radial-gradient(80% 120% at 78% 10%, hsl(var(--hue) 26% 95%), transparent 60%),
+    linear-gradient(150deg, hsl(var(--hue) 20% 97%), hsl(var(--hue) 16% 91%));
   display: grid; place-items: center;
 }
 .store-photo::after {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(hsl(var(--hue) 45% 72% / 0.45) 1px, transparent 1px);
+  background-image: radial-gradient(hsl(var(--hue) 18% 70% / 0.35) 1px, transparent 1px);
   background-size: 16px 16px;
   -webkit-mask-image: linear-gradient(200deg, #000, transparent 78%);
   mask-image: linear-gradient(200deg, #000, transparent 78%);
 }
-.store-photo svg { width: 46px; height: 46px; color: hsl(var(--hue) 52% 32%); position: relative; opacity: .9; }
+.store-photo svg { width: 46px; height: 46px; color: hsl(var(--hue) 18% 40%); position: relative; opacity: .9; }
 .store-name { font-size: 18px; }
 .stars { display: flex; gap: 2px; color: var(--brass); }
 .stars svg { width: 13px; height: 13px; }
@@ -1087,7 +1087,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
 .hue-swatch {
   width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
   border: 2px solid transparent;
-  background: linear-gradient(150deg, hsl(var(--hue) 72% 92%), hsl(var(--hue) 56% 80%));
+  background: linear-gradient(150deg, hsl(var(--hue) 20% 94%), hsl(var(--hue) 16% 87%));
   transition: 0.15s var(--ease);
 }
 .hue-swatch.on { border-color: var(--ink); transform: scale(1.06); }
@@ -1157,13 +1157,13 @@ textarea { resize: vertical; min-height: 56px; }
 .store-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 22px rgba(16, 24, 40, 0.1), 0 22px 48px rgba(16, 24, 40, 0.09);
-  border-color: hsl(var(--hue) 50% 78%);
+  border-color: hsl(var(--hue) 20% 80%);
 }
 .store-photo-badges {
   position: absolute; top: 12px; left: 12px; display: flex; gap: 6px;
 }
 .store-photo-badges .chip {
-  background: rgba(255, 255, 255, 0.92); color: hsl(var(--hue) 50% 28%);
+  background: rgba(255, 255, 255, 0.92); color: hsl(var(--hue) 18% 34%);
   font-weight: 600; backdrop-filter: blur(4px);
 }
 .store-area { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ink-4); }
@@ -1288,13 +1288,13 @@ textarea { resize: vertical; min-height: 56px; }
 .store-hero-photo {
   position: relative; height: 240px; overflow: hidden;
   display: grid; place-items: center;
-  color: hsl(var(--hue) 55% 42%);
+  color: hsl(var(--hue) 18% 44%);
   background:
-    radial-gradient(120% 130% at 20% 0%, hsl(var(--hue) 82% 95%) 0%, hsl(var(--hue) 60% 90%) 55%, hsl(var(--hue) 40% 93%) 100%);
+    radial-gradient(120% 130% at 20% 0%, hsl(var(--hue) 24% 96%) 0%, hsl(var(--hue) 18% 92%) 55%, hsl(var(--hue) 14% 94%) 100%);
 }
 .store-hero-photo::after {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(hsl(var(--hue) 45% 70% / 0.28) 1px, transparent 1px);
+  background-image: radial-gradient(hsl(var(--hue) 18% 68% / 0.22) 1px, transparent 1px);
   background-size: 13px 13px;
   mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
 }
@@ -2549,12 +2549,12 @@ body.op-mode::before { display: none; }
   padding: 8px 22px; border-radius: 999px;
   font-size: clamp(15px, 2.4vw, 20px); font-weight: 700; letter-spacing: 0.14em;
   color: #fbf8f1;
-  background: rgba(4, 16, 14, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(23, 48, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(6px);
   animation: callIn 0.9s var(--ease) both;
 }
-.callban-riichi { border-color: rgba(229, 72, 77, 0.6); color: #fecaca; }
+.callban-riichi { border-color: rgba(216, 72, 58, 0.7); color: #ffd7d1; }
 .callban-call { border-color: rgba(227, 192, 122, 0.6); color: #f5e3bd; }
 @keyframes callIn {
   0% { opacity: 0; transform: translate(-50%, 8px) scale(0.9); }

@@ -360,7 +360,15 @@ function editKeyCard(storeId) {
       text: has
         ? 'この端末は、この店舗を編集できます。'
         : '運営から受け取ったキーを貼ると、この店舗を編集・公開できるようになります。' }));
-  const inp = h('input', { type: 'password', placeholder: has ? '••••••••（設定済み）' : 'キーを貼り付け' });
+  // ブラウザにパスワード管理として扱わせないため、form で囲んで自動補完も切る
+  const inp = h('input', {
+    type: 'password',
+    placeholder: has ? '••••••••（設定済み）' : 'キーを貼り付け',
+    autocomplete: 'off',
+    name: `edit-key-${storeId}`,
+  });
+  const form = h('form', { style: { margin: '0' } });
+  form.addEventListener('submit', (e) => e.preventDefault());
   const btn = h('button.btn.btn-ghost.btn-sm', { style: { marginTop: '8px' }, text: has ? 'キーを入れ直す' : 'キーを保存' });
   const note = h('div.tiny.muted', { style: { marginTop: '6px' } });
   btn.addEventListener('click', () => {
@@ -371,9 +379,10 @@ function editKeyCard(storeId) {
     note.textContent = 'この端末に保存しました。もう一度保存を押してください。';
     note.className = 'tiny ok';
   });
-  box.appendChild(inp);
-  box.appendChild(btn);
-  box.appendChild(note);
+  form.appendChild(inp);
+  form.appendChild(btn);
+  form.appendChild(note);
+  box.appendChild(form);
   return box;
 }
 
