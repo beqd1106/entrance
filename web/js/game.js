@@ -87,14 +87,16 @@ function buildDom(root) {
   // 右の欄（ルールと履歴）は、開いている間ずっと卓の横幅を300px奪う。
   // 卓を広く使うほうが打ちやすいので、既定では畳んでおき、
   // 見たいときだけ上の帯のボタンで開く。
+  // 向聴の表示は卓の外に浮いていて、卓と手牌のあいだに空きを作っていた。
+  // 手元の情報なので、手牌の側へ寄せる
   G.dom.main = h('div.table-main.side-closed',
-    h('div.board-scroll', G.dom.board, G.dom.myArea),
+    h('div.board-scroll', G.dom.board),
     h('div.side-panel', G.dom.ruleCard, G.dom.logbox));
   const shell = h('div.table-shell',
     G.dom.top,
     G.dom.rotate,
     G.dom.main,
-    h('div.bottom-bar', G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug),
+    h('div.bottom-bar', G.dom.myArea, G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug),
     G.dom.toasts);
   root.appendChild(shell);
   G.dom.overlay = null;

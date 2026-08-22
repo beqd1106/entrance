@@ -167,6 +167,11 @@ a.btn.btn-primary[href^="#/play"] {
 .sec-sub { color: var(--ink-3); font-size: 13.5px; margin-top: 6px; }
 .rule-line { height: 1px; background: var(--line); margin: 26px 0; }
 
+/* 対局中は上のナビを隠して、その60pxを卓に回す。
+   卓の上の帯に「もどる」があるので、戻る導線は失われない。 */
+body.playing { --nav-h: 0px; }
+body.playing .nav { display: none; }
+
 /* ---------------- 牌 ---------------- */
 .tile {
   --tw: 34px;
@@ -325,7 +330,7 @@ a.btn.btn-primary[href^="#/play"] {
 .table-main.side-closed .side-panel { display: none; }
 /* 卓はスクロールさせない。天鳳・雀魂と同じく、四方の席と中央が
    つねに1画面に収まっていることを優先する */
-.board-scroll { min-height: 0; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
+.board-scroll { min-height: 0; overflow: hidden; display: grid; }
 .side-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 .side-card {
   background: rgba(255, 255, 255, 0.055); border: 1px solid rgba(255, 255, 255, 0.1);
@@ -463,7 +468,7 @@ a.btn.btn-primary[href^="#/play"] {
 .dora-box { display: flex; align-items: center; gap: 8px; }
 .center-kyoku { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
 .center-sub { font-size: 11.5px; color: rgba(255,255,255,.6); letter-spacing: 0.02em; }
-.my-area { margin-top: 12px; }
+.my-area { margin-top: 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 10px 0 6px; min-height: 44px; }
 .act {
   padding: 11px 22px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18);
