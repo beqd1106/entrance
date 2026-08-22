@@ -532,8 +532,7 @@ function drawBoard(s) {
       h('div.center-kyoku', { text: `${s.round.windName}${s.round.kyoku}局` }),
       h('div.center-sub', { text: `${s.round.honba}本場 ／ 残り ${s.wallRemaining}枚` }),
       h('div.dora-box', s.dora.map((d) => tileEl(d, { size: 'sm' }))),
-      s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null,
-      G.rules.bonus.enabled ? h('div.center-sub', { text: G.rules.bonus.label }) : null));
+      s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
   board.appendChild(center);
   // 自分の捨て牌・副露はbottomエリアへ
   const me = s.players[0];
@@ -945,7 +944,7 @@ function showKyokuResult() {
   });
   body.appendChild(table);
 
-  const next = h('button.btn.btn-primary', { text: e.finished ? '結果を見る' : '次の局へ' });
+  const next = h('button.btn.btn-brass', { text: e.finished ? '結果を見る' : '次の局へ' });
   next.addEventListener('click', () => {
     closeOverlay();
     if (e.finished) { showFinal(); return; }
@@ -984,7 +983,7 @@ function showFinal() {
     body.appendChild(h('div.notice', { style: { marginTop: '14px' }, text: 'BPはゲーム内専用の非換金ポイントです。現金・景品との交換はありません。' }));
   }
 
-  const again = h('button.btn.btn-primary', { text: 'もう一度遊ぶ' });
+  const again = h('button.btn.btn-brass', { text: 'もう一度遊ぶ' });
   again.addEventListener('click', () => { closeOverlay(); G.seed = (G.seed + 7919) % 100000; startGame(); });
   const back = h('a.btn.btn-ghost', { href: G.store ? `#/store/${G.store.id}` : '#/stores', text: G.store ? '店舗ページへ戻る' : '店舗一覧へ' });
   back.addEventListener('click', () => closeOverlay());
