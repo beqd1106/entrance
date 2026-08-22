@@ -14,6 +14,7 @@ import { validateRules } from '../src/rules/validator.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../src/rules/explain.js';
 import { runFlipBonus, rollDiceBonus, applySpecialTiles, applyFlowerEffects } from '../src/core/effects.js';
 import { makeRng, buildTileSet } from '../src/core/wall.js';
+import { normalize, matchText, storeHaystack, presetHaystack } from '../web/js/search.js';
 
 // ---------------------------------------------------------------------------
 let pass = 0, fail = 0;
@@ -1159,6 +1160,35 @@ it('お多福：フリテンでは成立しない', () => {
   const flags = { ...baseCtx().flags, waitKinds: 6, furiten: true };
   const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true, flags }));
   no(res.yaku.some((v) => v.name === 'お多福'), 'フリテンなら付かない');
+});
+
+describe('検索の表記ゆれ');
+
+it('ひらがな・カタカナ・全角半角を揃えて比べる', () => {
+  eq(normalize('しろぽっち'), normalize('シロポッチ'), 'かなの種類を揃える');
+  eq(normalize('ｱﾘｽ'), normalize('アリス'), '半角カナと全角カナ');
+  eq(normalize('ＧＯＴＯ'), normalize('goto'), '全角英字と大文字小文字');
+  eq(normalize('白 ポッチ'), normalize('白・ポッチ'), '空白と中黒は落とす');
+});
+
+it('漢字の言葉を、かなで打っても引ける', () => {
+  const hay = storeHaystack({ name: 'DEMO雀荘 四麻館', area: '東京都・新宿' }, null);
+  ok(matchText(hay, 'しろぽっち') === false, 'ない言葉は引っかからない');
+  ok(matchText(hay, 'しんじゅく'), '新宿 を しんじゅく で引ける');
+  ok(matchText(hay, 'よんまかん'), '四麻館 を よんまかん で引ける');
+  ok(matchText(hay, 'じゃんそう'), '雀荘 を じゃんそう で引ける');
+});
+
+it('プリセットも、かなで引ける', () => {
+  const hay = presetHaystack(getPreset('toutenkou3'));
+  ok(matchText(hay, 'とうてんこう'), '東天紅 を かなで引ける');
+  ok(matchText(hay, '東天紅'), '漢字でも引ける');
+});
+
+it('空白区切りはAND検索になる', () => {
+  const hay = storeHaystack({ name: 'DEMO雀荘 四麻館', area: '東京都・新宿' }, null);
+  ok(matchText(hay, 'しんじゅく よんま'), '両方あればヒット');
+  no(matchText(hay, 'しんじゅく ごとう'), '片方が無ければヒットしない');
 });
 
 // ===========================================================================
