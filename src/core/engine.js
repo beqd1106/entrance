@@ -905,6 +905,7 @@ export class GameEngine {
       const handForScore = {
         han: totalHan, fu: win.fu,
         yakuman: win.yakuman + (eff.forceYakuman || 0),
+        nukiCount: p.kita.length,
       };
       const bp = basePoints(handForScore, R, eff.rankUp);
       if (eff.scoreMultiply && eff.scoreMultiply !== 1) {

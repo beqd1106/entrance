@@ -1023,6 +1023,49 @@ it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
   no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
 });
 
+describe('実ルールとの照合（東天紅・少牌マイティ）');
+
+it('東天紅：筒子・索子の5が常時ドラになる', () => {
+  const r = resolveRules(getPreset('toutenkou3').rules);
+  ok(r.dora.permanentDora.includes('5p'), '5筒');
+  ok(r.dora.permanentDora.includes('5s'), '5索');
+});
+
+it('東天紅：ガリは1枚4点として和了者の点に乗る', () => {
+  const r = resolveRules(getPreset('toutenkou3').rules);
+  const hand = { han: 3, fu: 30, yakuman: 0 };
+  const none = basePoints({ ...hand, nukiCount: 0 }, r);
+  const three = basePoints({ ...hand, nukiCount: 3 }, r);
+  eq(three.pointsPerPayer - none.pointsPerPayer, 12, 'ガリ3枚ぶん');
+});
+
+it('東天紅：役満にもガリの点が乗る', () => {
+  const r = resolveRules(getPreset('toutenkou3').rules);
+  const none = basePoints({ han: 0, fu: 30, yakuman: 1, nukiCount: 0 }, r);
+  const two = basePoints({ han: 0, fu: 30, yakuman: 1, nukiCount: 2 }, r);
+  eq(none.pointsPerPayer, 50, '役満は50点');
+  eq(two.pointsPerPayer, 58, '役満50点＋ガリ2枚');
+});
+
+it('抜き牌の点は、既定のルールでは加算されない', () => {
+  const r = resolveRules({});
+  eq(r.scoring.flat.nukiPoints, 0, '既定は0');
+});
+
+it('少牌マイティ：公式ルールどおりの設定になっている', () => {
+  const r = resolveRules(getPreset('mighty3').rules);
+  eq(r.game.length, 'east_south', '東南戦');
+  eq(r.renchan.dealerRepeat, 'tenpai', 'テンパイ連荘');
+  eq(r.scoring.startingPoints, 30000, '30,000点持ち');
+  eq(r.scoring.returnPoints, 30000, '30,000点返し');
+  eq(Object.keys(r.dora.red).length, 0, '赤牌なし');
+  eq(r.dora.ura, false, '裏ドラなし');
+  eq(r.sanma.northMode, 'yakuhai', '北は共通役牌');
+  ok(r.win.openRiichi.enabled, 'オープンリーチあり');
+  ok(r.local.chiitoiMultiPair, '4枚使い七対子あり');
+  ok(r.localYaku.some((y) => y.id === 'daisharin' && y.yakuman === 1), '大車輪は役満');
+});
+
 // ===========================================================================
 console.log(`\n=== 結果: ${pass} 件成功 / ${fail} 件失敗 ===`);
 if (fail) {

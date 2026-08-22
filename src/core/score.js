@@ -29,7 +29,8 @@ export function basePoints(hand, rules, rankUp = 0) {
     if (hand.yakuman > 0) {
       return {
         base: 0, limitName: '役満', level: 4, flat: true,
-        pointsPerPayer: F.yakumanPoints * hand.yakuman,
+        pointsPerPayer: F.yakumanPoints * hand.yakuman
+          + (hand.nukiCount || 0) * (F.nukiPoints || 0),
       };
     }
     let lv = -1;
@@ -51,9 +52,11 @@ export function basePoints(hand, rules, rankUp = 0) {
       lv = Math.min(lv + 1, LADDER.length - 1);
       raw = LADDER[lv].base;
     }
+    // 抜き牌（東天紅のガリ）は、和了者の点にそのまま加算される
+    const nuki = (hand.nukiCount || 0) * (F.nukiPoints || 0);
     return {
       base: raw, limitName: lv >= 0 ? LADDER[lv].name : '', level: lv, flat: true,
-      pointsPerPayer: Math.max(1, Math.round(raw * 4 * F.scale)),
+      pointsPerPayer: Math.max(1, Math.round(raw * 4 * F.scale)) + nuki,
     };
   }
 

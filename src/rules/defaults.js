@@ -61,6 +61,8 @@ export const DEFAULT_RULES = {
       promoteTo: 'baiman',      // 'mangan'|'haneman'|'baiman'|'sanbaiman'
       honbaPoints: 5,           // 1本場あたり
       tsumoIsDouble: true,      // ツモはロンの2倍（＝各支払者が1人分ずつ払う）
+      // 抜き牌1枚あたりの点。東天紅のガリは1枚4点として和了者の点に加わる
+      nukiPoints: 0,
     },
     rankOnly: false,            // 完全順位制（素点を使わない）
     umaZeroSum: false,          // トップのウマを他家合計の裏返しで確定

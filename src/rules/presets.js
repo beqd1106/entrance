@@ -249,7 +249,12 @@ export const PRESETS = [
       scoring: {
         startingPoints: 0, returnPoints: 0, uma: [0, 0, 0], okaToTop: false,
         useFu: false, mode: 'flat', riichiStick: 1,
-        flat: { fuFixed: 30, scale: 0.001, yakumanPoints: 50, promoteMinHan: 0, honbaPoints: 5, tsumoIsDouble: true },
+        flat: {
+          fuFixed: 30, scale: 0.001, yakumanPoints: 50,
+          promoteMinHan: 0, honbaPoints: 5, tsumoIsDouble: true,
+          // ガリ（一萬・五萬・九萬・北の抜き）は1枚4点
+          nukiPoints: 4,
+        },
       },
       ryuukyoku: { notenPenalty: 10, nagashiMangan: false },
       renchan: { dealerRepeat: 'none' },
@@ -258,7 +263,8 @@ export const PRESETS = [
         northMode: 'nuki', kitaIsDora: true, tsumoLoss: false,
         extraNukiTiles: ['1m', '5m', '9m'], kitaBonus: 0,
       },
-      dora: { indicators: 1, red: {}, gold: {} },
+      // 東天紅では筒子・索子の5が常時ドラ（赤牌を入れる店もある）
+      dora: { indicators: 1, permanentDora: ['5p', '5s'], red: {}, gold: {} },
       local: { yakitori: { enabled: true, penalty: 5 } },
       bonus: {
         enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
@@ -352,15 +358,30 @@ export const PRESETS = [
     name: '少牌マイティ風',
     category: '特殊',
     tags: ['三麻', '少牌マイティ', '高速'],
-    description: '手牌が常に1枚少なく、足りない1枚は何にでもなる牌として扱います。テンパイ形がそのまま和了になるので、驚くほど速く決着します。',
+    description: '手牌が常に1枚少なく、足りない1枚は何にでもなる牌として扱います。テンパイ形がそのまま和了になるので、驚くほど速く決着します。東南戦・テンパイ連荘、30,000点持ち30,000点返し、赤なし・裏なし、北は共通役牌。',
     rules: {
       meta: { id: 'mighty3', name: '少牌マイティ風' },
-      game: { players: 3, length: 'east' },
-      local: { shouhaiMighty: { enabled: true, count: 1 } },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
-      sanma: { tsumoLoss: false },
-      dora: { indicators: 1, red: { '5p': 2, '5s': 2 } },
-      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
+      // 公式ルールは東南戦・テンパイ連荘
+      game: { players: 3, length: 'east_south' },
+      renchan: { dealerRepeat: 'tenpai' },
+      local: {
+        shouhaiMighty: { enabled: true, count: 1 },
+        // 4枚使い七対子あり
+        chiitoiMultiPair: true,
+      },
+      scoring: { startingPoints: 30000, returnPoints: 30000, uma: [15, -5, -10], roundUpMangan: true },
+      // 北は抜かずに共通の役牌として使う
+      sanma: {
+        tsumoLoss: false,
+        northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false,
+      },
+      // 赤5筒・赤5索なし、裏ドラなし
+      dora: { indicators: 1, ura: false, red: {} },
+      // オープンリーチあり（全開け）
+      win: { openRiichi: { enabled: true, revealMode: 'all' } },
+      // 大車輪（清一色の七対子）は役満
+      localYaku: [{ id: 'daisharin', enabled: true, yakuman: 1 }],
+      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）' },
     },
   },
   {
