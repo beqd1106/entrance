@@ -182,8 +182,13 @@ a.btn.btn-primary[href^="#/play"] {
   font-family: var(--serif); line-height: 1; user-select: none;
 }
 /* --- 牌面（インラインSVG） --- */
-.tile-face { width: 92%; height: 92%; display: block; }
+.tile-face { width: 100%; height: 100%; display: block; padding: 4%; }
 .tile-face svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* 素材の絵柄。牌の面いっぱいに、縦横比を保って収める */
+.tile-face .tile-img {
+  width: 100%; height: 100%; display: block;
+  object-fit: contain; user-select: none; -webkit-user-drag: none;
+}
 .tile-face .ink { fill: #16181b; }
 .tile-face .red { fill: #ad2a20; }
 .tile-face .green { fill: #14653d; }
@@ -309,6 +314,9 @@ a.btn.btn-primary[href^="#/play"] {
   color: #f2efe6; padding: 10px 12px 12px; overflow: hidden;
 }
 .table-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; min-height: 0; }
+/* 右の欄（ルールと履歴）を畳んだ状態。卓が画面の横幅をすべて使える */
+.table-main.side-closed { grid-template-columns: minmax(0, 1fr); }
+.table-main.side-closed .side-panel { display: none; }
 /* 卓はスクロールさせない。天鳳・雀魂と同じく、四方の席と中央が
    つねに1画面に収まっていることを優先する */
 .board-scroll { min-height: 0; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
@@ -332,8 +340,15 @@ a.btn.btn-primary[href^="#/play"] {
   display: grid;
   gap: clamp(3px, 0.5vh, 7px);
   min-height: 0;
-  /* 卓は正方形に近い形を保つ。横に広い画面でも間延びさせない */
-  width: min(100%, calc((100dvh - var(--nav-h)) * 1.12));
+  /* 卓は正方形に近い形を保つ。画面の高さを基準に幅を決めるので、
+     横に広い画面でも卓だけが間延びしない（天鳳・雀魂と同じ考え方）。
+     以前はビューポートの高さから幅を出していたため、実際の卓の高さと
+     合わず 829×489 の横長になっていた */
+  height: 100%;
+  aspect-ratio: 1.15 / 1;
+  width: auto;
+  max-width: 100%;
+  justify-self: center;
   margin-inline: auto;
   grid-template-columns: minmax(118px, 1.05fr) minmax(0, 2fr) minmax(118px, 1.05fr);
   grid-template-rows: minmax(0, auto) minmax(0, auto) minmax(0, auto);

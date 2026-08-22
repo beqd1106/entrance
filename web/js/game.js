@@ -45,6 +45,8 @@ export function renderGame(root, params) {
     speed: 330, timer: null, log: [], debugOpen: false,
     confirmDiscard: loadPref('confirmDiscard', true),
     autoTsumogiri: loadPref('autoTsumogiri', true),
+    // 卓を広く使うため、右の欄（ルールと履歴）は既定で畳んでおく
+    sideOpen: loadPref('sideOpen', false),
     selectedTileId: null,
     debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
@@ -82,12 +84,16 @@ function buildDom(root) {
   G.dom.rotate = h('div.rotate-hint',
     h('span', { html: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 19h6"/></svg>' }),
     h('span', { text: '横向きにすると卓が広く使えます' }));
+  // 右の欄（ルールと履歴）は、開いている間ずっと卓の横幅を300px奪う。
+  // 卓を広く使うほうが打ちやすいので、既定では畳んでおき、
+  // 見たいときだけ上の帯のボタンで開く。
+  G.dom.main = h('div.table-main.side-closed',
+    h('div.board-scroll', G.dom.board, G.dom.myArea),
+    h('div.side-panel', G.dom.ruleCard, G.dom.logbox));
   const shell = h('div.table-shell',
     G.dom.top,
     G.dom.rotate,
-    h('div.table-main',
-      h('div.board-scroll', G.dom.board, G.dom.myArea),
-      h('div.side-panel', G.dom.ruleCard, G.dom.logbox)),
+    G.dom.main,
     h('div.bottom-bar', G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug),
     G.dom.toasts);
   root.appendChild(shell);

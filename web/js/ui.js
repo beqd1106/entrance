@@ -2,7 +2,7 @@
  * ui.js - DOM構築と牌描画の共通部品
  */
 import { typeName, isFlower } from '../../src/core/tiles.js';
-import { tileFaceSVG, tileBackSVG } from './tileart.js';
+import { tileFaceSVG, tileFaceSrc, tileBackSVG } from './tileart.js';
 
 /** 軽量な要素ビルダー h('div.card', {text:'x'}, child...) */
 export function h(spec, attrs, ...children) {
@@ -80,7 +80,11 @@ export function tileEl(info, opts = {}) {
   if (opts.dora) cls.push('is-dora');
   if (opts.cls) cls.push(opts.cls);
 
-  const inner = h('div.tile-face', { html: tileFaceSVG(info.t) });
+  // 数牌と字牌は素材の画像、花牌だけ自前のSVG
+  const src = tileFaceSrc(info.t, !!info.red);
+  const inner = src
+    ? h('div.tile-face', h('img.tile-img', { src, alt: '', draggable: 'false', loading: 'eager' }))
+    : h('div.tile-face', { html: tileFaceSVG(info.t) });
   const el = h(`div.${cls.join('.')}`, Object.assign({ title: info.name || '' }, opts.attrs), inner);
   // 筒子・索子は柄を数えないと分からない。角に小さく数字を出す（萬子は漢数字があるので不要）
   const t = info.t;
