@@ -13,7 +13,7 @@ import { codeToType, typeName } from '../../src/core/tiles.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 import { currentTable, clearTable } from './online.js';
-import { sendAct, resync, leaveRoom, onMessage, disconnect } from './net.js';
+import { sendAct, resync, leaveRoom, onMessage, disconnect, connect, status as netStatus } from './net.js';
 
 const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, { label: '速い', v: 120 }];
 
@@ -80,6 +80,7 @@ export function renderGame(root, params) {
   }
   if (G.online) {
     G.online.off = onMessage((msg) => {
+      if (msg.type === '_state') { drawNetState(); return; }
       if (msg.type === 'acts') { receiveActs(msg.acts || []); return; }
       if (msg.type === 'room' && G && G.online) {
         // 誰かが落ちた・戻ったときの表示だけ更新する
@@ -574,9 +575,14 @@ function drainLog() {
   const nameOf = (s) => G.engine.players[s].name;
   for (const ev of events) {
     switch (ev.type) {
-      case 'kyokuStart':
-        pushLog('sys', `── ${['東', '南', '西', '北'][ev.wind]}${ev.kyoku}局 ${ev.honba}本場（親：${nameOf(ev.dealer)}）`);
+      case 'kyokuStart': {
+        const label = `${['東', '南', '西', '北'][ev.wind]}${ev.kyoku}局`;
+        pushLog('sys', `── ${label} ${ev.honba}本場（親：${nameOf(ev.dealer)}）`);
+        // 何局が始まったのかを一度だけ大きく出す。
+        // ログだけだと、局が変わったことに気づかないまま打ち始めてしまう。
+        kyokuBanner(label, ev.honba ? `${ev.honba}本場` : `親：${nameOf(ev.dealer)}`);
         break;
+      }
       case 'discard': pushLog('', `${nameOf(ev.seat)}：${ev.tile.name} 切り${ev.riichi ? '（リーチ宣言牌）' : ''}`); break;
       case 'riichi':
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
@@ -637,6 +643,7 @@ function renderLog() {
 // ---------------------------------------------------------------------------
 function draw() {
   const e = G.engine;
+  if (G.online) drawNetState();
   e.debug.showCpuHands = G.debug.showCpuHands;
   e.debug.forceAlice = G.debug.forceAlice;
   e.debug.forceDice = G.debug.forceDice;
@@ -853,6 +860,36 @@ function drawBoard(s) {
     discardsEl(me)));
 }
 
+/**
+ * 通信の状態を卓の上に出す。
+ *
+ * 黙って止まると「自分の操作が効かない」のか「相手を待っている」のか
+ * 分からない。つながっていないときだけ、その旨と入り直す手立てを出す。
+ */
+function drawNetState() {
+  if (!G || !G.online || !G.dom || !G.dom.top) return;
+  const st = netStatus();
+  const existing = G.dom.netBar;
+  if (st === 'open') {
+    if (existing) { existing.remove(); G.dom.netBar = null; }
+    return;
+  }
+  const text = st === 'connecting' ? 'つなぎ直しています…' : '通信が切れました';
+  if (existing) {
+    existing.querySelector('.net-bar-text').textContent = text;
+    existing.classList.toggle('is-down', st !== 'connecting');
+    return;
+  }
+  const retry = h('button.act', { text: '入り直す' });
+  retry.addEventListener('click', () => { connect(); resync(G.online.no, G.online.applied); drawNetState(); });
+  const bar = h('div.net-bar', { class: st === 'connecting' ? '' : 'is-down' },
+    h('span.net-bar-text', { text }), retry);
+  G.dom.netBar = bar;
+  // 卓の枠は3段の格子でできている。あいだに差し込むと段がずれるので、
+  // 浮かせて重ねる（CSSで position:absolute にしてある）。
+  G.dom.top.parentElement.appendChild(bar);
+}
+
 /** その席の人が接続を切っているか（AIの席は対象外） */
 function awaySeat(seat) {
   if (!G || !G.online) return false;
@@ -861,7 +898,9 @@ function awaySeat(seat) {
 }
 
 function seatHead(p, s) {
-  const isTurn = s.turn === p.seat && !s.finished && s.phase !== 'kyokuEnd';
+  const waited = actingSeat();
+  const isTurn = (waited != null ? waited === p.seat : s.turn === p.seat)
+    && !s.finished && s.phase !== 'kyokuEnd';
   return h('div.seat-head',
     h('div.seat-wind', { class: p.isDealer ? 'dealer' : '', text: p.wind }),
     isTurn ? h('div.turn-dot') : null,
@@ -919,7 +958,10 @@ function discardsEl(p) {
 }
 
 function seatEl(p, s, cls) {
-  const active = s.turn === p.seat && !s.finished;
+  // 鳴きの受け答え中は、engine の turn（牌を切った席）と
+  // 実際に待たれている席が違う。待たれている席を光らせる。
+  const waited = actingSeat();
+  const active = (waited != null ? waited === p.seat : s.turn === p.seat) && !s.finished;
   const el = h(`div.seat.${cls}`, { class: `${active ? 'active' : ''} ${p.riichi ? 'riichi' : ''}` },
     seatHead(p, s),
     h('div.hand-row', p.hand.map((t) => tileEl(t, { size: 'xs' }))),
@@ -1146,6 +1188,18 @@ function winHandView(d) {
  * 鳴き・リーチを、卓の上に一瞬だけ出す。
  * ログを目で追わなくても、何が起きたかが分かるようにする。
  */
+/** 局のはじまりを卓の中央に出す。副露の表示より長めに、静かに消す */
+function kyokuBanner(title, sub) {
+  if (!G || !G.dom || !G.dom.toasts) return;
+  const host = G.dom.toasts.parentElement;
+  if (!host) return;
+  const el = h('div.kyokuban',
+    h('span.kyokuban-title', { text: title }),
+    sub ? h('span.kyokuban-sub', { text: sub }) : null);
+  host.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 1100);
+}
+
 function callBanner(text, tone) {
   if (!G || !G.dom || !G.dom.toasts) return;
   const host = G.dom.toasts.parentElement;
