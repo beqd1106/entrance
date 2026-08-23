@@ -958,19 +958,42 @@ describe('清一色ゲーム（2セット混ぜ）');
 /** 牌に裏の色を付ける */
 const withBack = (tiles, color) => tiles.map((t) => ({ ...t, back: color }));
 
-it('牌構成は108枚で、5萬だけ8枚入る', () => {
+it('萬子は1枚も入らない', () => {
   const r = resolveRules(getPreset('chinitsu3').rules);
-  const tiles = buildTileSet(r);
-  eq(tiles.length, 108, '総枚数');
-  eq(tiles.filter((t) => t.t === codeToType('5m')).length, 8, '5萬の枚数');
-  eq(tiles.filter((t) => t.t === codeToType('1m')).length, 0, '1萬は入らない');
+  for (const round of [0, 1]) {
+    const tiles = buildTileSet(r, round);
+    eq(tiles.filter((t) => t.t < 9).length, 0, `${round}局目の萬子`);
+  }
+});
+
+it('筒子の回と索子の回が交互になる', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const suits = [0, 1, 2, 3].map((round) => {
+    const tiles = buildTileSet(r, round);
+    const p = tiles.filter((t) => t.t >= 9 && t.t < 18).length;
+    const so = tiles.filter((t) => t.t >= 18 && t.t < 27).length;
+    return p > 0 ? 'p' : so > 0 ? 's' : '?';
+  });
+  eq(suits.join(''), 'psps', '東1局から順に使う色');
+  // 片方の色を使う回は、もう片方は1枚も入らない
+  const first = buildTileSet(r, 0);
+  eq(first.filter((t) => t.t >= 18 && t.t < 27).length, 0, '筒子の回に索子は入らない');
+});
+
+it('数牌は1種8枚、字牌は1種4枚で100枚になる', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const tiles = buildTileSet(r, 0);
+  eq(tiles.length, 100, '総枚数');
+  eq(tiles.filter((t) => t.t === codeToType('1p')).length, 8, '1筒の枚数');
+  eq(tiles.filter((t) => t.t === codeToType('5p')).length, 8, '5筒の枚数');
+  eq(tiles.filter((t) => t.t === codeToType('1z')).length, 4, '東の枚数');
 });
 
 it('牌の裏は青と黄が半分ずつになる', () => {
   const r = resolveRules(getPreset('chinitsu3').rules);
-  const tiles = buildTileSet(r);
-  eq(tiles.filter((t) => t.back === 'blue').length, 54, '青');
-  eq(tiles.filter((t) => t.back === 'yellow').length, 54, '黄');
+  const tiles = buildTileSet(r, 0);
+  eq(tiles.filter((t) => t.back === 'blue').length, 50, '青');
+  eq(tiles.filter((t) => t.back === 'yellow').length, 50, '黄');
 });
 
 it('5筒・5索はすべてドラになる', () => {

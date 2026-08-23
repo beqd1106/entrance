@@ -395,19 +395,23 @@ export const PRESETS = [
     id: 'chinitsu3',
     name: '清一色ゲーム風',
     category: '特殊',
-    tags: ['三麻', '清一色ゲーム', '2セット混ぜ', '5萬8枚'],
-    description: '全自動卓の2セットを混ぜて打つ三人麻雀。筒子・索子・字牌に5萬8枚を足した108枚で、萬子は5萬しかないため手はいつも混一色以上になります。5筒・5索はすべてドラ。',
+    tags: ['三麻', '清一色ゲーム', '2セット混ぜ', '1種8枚', '色が交互'],
+    description: '全自動卓の2セットを混ぜて打つ三人麻雀。萬子は使わず、筒子だけの回と索子だけの回を交互に打ちます。'
+      + 'その色を1種8枚入れるので、手はいつも清一色。牌の裏が青と黄の2色になり、裏がそろうと背一色（役満）。',
     rules: {
       meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
       game: { players: 3, length: 'east' },
-      // 萬子は5萬だけを残し、その5萬を8枚入れる（2セット混ぜで108枚）。
-      // 関西サンマがベースなので北は抜かずに役牌として使う。
+      // 萬子は1枚も使わない。関西サンマがベースなので北は抜かずに役牌として使う。
       sanma: {
-        removeManzu: true, manzuKeep: ['5m'],
+        removeManzu: true, manzuKeep: [],
         northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false, tsumoLoss: false,
       },
       wall: {
-        tileCounts: { '5m': 8 },
+        // 筒子だけの回と索子だけの回を交互に打つ（卓の牌そのものを入れ替える）
+        suitRotation: ['p', 's'],
+        // 2セット分なので数牌は1種8枚。字牌は色で分からないよう各色2枚ずつ＝1種4枚。
+        // 数牌9種×8＋字牌7種×4＝100枚。
+        tileCounts: { p: 8, s: 8 },
         // 2セット混ぜなので牌の裏が青と黄の2色になる（背一色の判定に使う）
         backColors: { enabled: true, colors: ['blue', 'yellow'] },
       },
@@ -422,9 +426,12 @@ export const PRESETS = [
         red: { '5p': 1, '5s': 1 }, gold: { '5p': 1, '5s': 1 },
       },
       ryuukyoku: { notenPenalty: 6000 },
-      // 同じ牌が8枚あるためカンは5回以上できる。四開槓では流さない
-      renchan: { suukaikan: false },
-      // 同じ牌が5枚以上あるので、七対子の8枚使いを認める
+      // 牌の構成のせいで途中流局が起きすぎるので、両方とも流さない。
+      //   ・同じ牌が8枚あるのでカンは5回以上できる（四開槓で流さない）
+      //   ・1色だけなので全員がすぐテンパイする。全員立直でも流さない
+      //     （これを残すと16%の局が三人立直で流れて対局にならなかった）
+      renchan: { suukaikan: false, suuchaRiichi: false },
+      // 同じ牌が8枚あるので、七対子の8枚使いを認める
       local: { chiitoiMultiPair: true },
       // 牌の裏の色がそろえばダブル役満
       localYaku: [{ id: 'seiiisou', enabled: true }],

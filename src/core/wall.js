@@ -19,16 +19,39 @@ const FLOWER_KEY = { spring: T.SPRING, summer: T.SUMMER, autumn: T.AUTUMN, winte
 export const FLOWER_LABEL = { [T.SPRING]: '春', [T.SUMMER]: '夏', [T.AUTUMN]: '秋', [T.WINTER]: '冬' };
 export const FLOWER_ID = { [T.SPRING]: 'spring', [T.SUMMER]: 'summer', [T.AUTUMN]: 'autumn', [T.WINTER]: 'winter' };
 
-/** ルールから使用牌の一覧（属性付き）を作る */
-export function buildTileSet(rules) {
+const SUIT_OF = (t) => (t < 9 ? 'm' : t < 18 ? 'p' : t < 27 ? 's' : 'z');
+
+/**
+ * その局で使う数牌の色。
+ *
+ * 清一色ゲームは、筒子だけの回と索子だけの回を交互に打つ。
+ * 卓に入れる牌そのものを回ごとに入れ替えるので、
+ * 「どの色を使うか」は局ごとに決まる。
+ * @returns {string|null} 使う色（'p'/'s'など）。決まりが無ければ null
+ */
+export function suitOfRound(rules, roundIndex = 0) {
+  const rot = rules.wall && rules.wall.suitRotation;
+  if (!Array.isArray(rot) || !rot.length) return null;
+  return rot[((roundIndex % rot.length) + rot.length) % rot.length];
+}
+
+/**
+ * ルールから使用牌の一覧（属性付き）を作る
+ * @param {Object} rules
+ * @param {number} [roundIndex] 何局目か（0から）。色を入れ替える設定で使う
+ */
+export function buildTileSet(rules, roundIndex = 0) {
   const tiles = [];
   let id = 0;
   const usedTypes = [];
   const keepManzu = new Set((rules.sanma.manzuKeep || ['1m', '9m']).map((c) => {
     try { return codeToType(c); } catch { return -1; }
   }));
+  const onlySuit = suitOfRound(rules, roundIndex);
   for (let t = 0; t < NUM_TYPES; t++) {
     if (rules.game.players === 3 && rules.sanma.removeManzu && t < 9 && !keepManzu.has(t)) continue;
+    // 色を入れ替える設定では、その回の色と字牌だけを使う
+    if (onlySuit && t < 27 && SUIT_OF(t) !== onlySuit) continue;
     if (rules.game.players === 3 && rules.sanma.northMode === 'nuki' && t === T.NORTH) {
       // 北は抜きドラだが牌自体は使用する
     }
@@ -45,7 +68,10 @@ export function buildTileSet(rules) {
   };
   for (const t of usedTypes) {
     const code = typeToCode(t);
-    const n = counts[code] != null ? Math.max(0, Math.floor(counts[code])) : 4;
+    // 枚数は「1p」のような1種ずつの指定が優先。
+    // 「p」のように色でまとめても書ける（清一色ゲームの1種8枚など）。
+    const raw = counts[code] != null ? counts[code] : counts[SUIT_OF(t)];
+    const n = raw != null ? Math.max(0, Math.floor(raw)) : 4;
     for (let i = 0; i < n; i++) {
       tiles.push({
         id: id++, t, back: backOf(i, n),
@@ -124,9 +150,10 @@ export class Wall {
    * @param {Function} rng
    * @param {Object} [debug] {forcedWall:[codes], stack:[Tile]}
    */
-  constructor(rules, rng, debug = null) {
+  constructor(rules, rng, debug = null, roundIndex = 0) {
     this.rules = rules;
-    const tiles = buildTileSet(rules);
+    this.suit = suitOfRound(rules, roundIndex);
+    const tiles = buildTileSet(rules, roundIndex);
     // シャッフル
     for (let i = tiles.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));

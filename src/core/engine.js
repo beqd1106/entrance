@@ -71,7 +71,8 @@ export class GameEngine {
 
   startKyoku() {
     const R = this.rules;
-    this.wall = new Wall(R, this.rng, this.debug);
+    // 色を入れ替えるルール（清一色ゲーム）のため、何局目かを渡す
+    this.wall = new Wall(R, this.rng, this.debug, this.kyokuCount);
     // 手牌計算の前提（同じ牌の上限枚数・七対子の8枚使い）は牌山の作り方で変わる。
     // 局ごとに1度だけ作って、向聴数・待ち・受け入れの計算すべてに渡す。
     const localOn = new Set((R.localYaku || [])

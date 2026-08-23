@@ -690,9 +690,18 @@ function drawRuleCard(s) {
   // 牌の構成そのものが変わるルール（清一色ゲームの2セット混ぜなど）も、
   // 打っている本人がいちばん知りたいことなのでここに出す
   const counts = (R.wall && R.wall.tileCounts) || {};
+  const SUIT_LABEL = { m: '萬子', p: '筒子', s: '索子', z: '字牌' };
   const many = Object.keys(counts).filter((c) => counts[c] > 4);
   if (many.length) {
-    specials.push(many.map((c) => `${typeName(codeToType(c))}${counts[c]}枚`).join('・'));
+    specials.push(many.map((c) => {
+      // 「1p」のような1種ずつの指定と、「p」のような色でまとめた指定がある
+      const label = SUIT_LABEL[c] || typeName(codeToType(c));
+      return `${label}${counts[c]}枚`;
+    }).join('・'));
+  }
+  const rot = (R.wall && R.wall.suitRotation) || [];
+  if (rot.length > 1) {
+    specials.push(`${rot.map((c) => SUIT_LABEL[c] || c).join('と')}が局ごとに交互`);
   }
   if (R.wall && R.wall.backColors && R.wall.backColors.enabled) specials.push('2セット混ぜ');
   if (R.local.chiitoiMultiPair) specials.push('七対子8枚使い');
