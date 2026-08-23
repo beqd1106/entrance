@@ -271,7 +271,10 @@ export const PRESETS = [
     name: '東天紅風',
     category: '地域',
     tags: ['三麻', '東天紅', '常に東場', 'ガリ'],
-    description: '関東発の三人麻雀。点数の単位が「翻」ではなく「点」で、ロンは1人分・ツモは2人分。一萬五萬九萬と北がガリ（抜きドラ）。常に東場で、前局の和了者が次局の親になります。',
+    description: '関東発の三人麻雀。点数の単位が「翻」ではなく「点」で、ロンは1人分・ツモは2人分。'
+      + '一萬五萬九萬と北がガリ（抜きドラ）で1枚1点。役満は50点、ノーテン罰符は場に10点。'
+      + '常に東場で、前局の和了者が次局の親になります。'
+      + '※東天紅は店ごとの差がとくに大きく、ガリを1枚4点・役満を100点とする店もあります。ここは基本形に合わせています。',
     rules: {
       meta: { id: 'toutenkou3', name: '東天紅風' },
       game: {
@@ -284,8 +287,10 @@ export const PRESETS = [
         flat: {
           fuFixed: 30, scale: 0.001, yakumanPoints: 50,
           promoteMinHan: 0, honbaPoints: 5, tsumoIsDouble: true,
-          // ガリ（一萬・五萬・九萬・北の抜き）は1枚4点
-          nukiPoints: 4,
+          // ガリ（一萬・五萬・九萬・北の抜き）は1枚1点。
+          // 役満50点・ノーテン罰符10点と釣り合う基本形の値。
+          // 1枚4点（役満100点）とする店もあるが、混ぜると割に合わなくなる。
+          nukiPoints: 1,
         },
       },
       ryuukyoku: { notenPenalty: 10, nagashiMangan: false },
@@ -297,7 +302,9 @@ export const PRESETS = [
       },
       // 東天紅では筒子・索子の5が常時ドラ（赤牌を入れる店もある）
       dora: { indicators: 1, permanentDora: ['5p', '5s'], red: {}, gold: {} },
-      local: { yakitori: { enabled: true, penalty: 5 } },
+      // 焼き鳥（一度も和了できなかった人への罰）は、東天紅の決まりとしては
+      // はっきりした出典が無いので入れない。カラス（ガリもドラも無い和了に
+      // 点が付く）も、点をそのまま足すしくみが要るため今回は見送る。
       bonus: {
         enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
         ippatsu: 1, ura: 1, aka: 0, gold: 0, pocchi: 0, kita: 0,

@@ -1055,12 +1055,12 @@ it('東天紅：筒子・索子の5が常時ドラになる', () => {
   ok(r.dora.permanentDora.includes('5s'), '5索');
 });
 
-it('東天紅：ガリは1枚4点として和了者の点に乗る', () => {
+it('東天紅：ガリは1枚1点として和了者の点に乗る', () => {
   const r = resolveRules(getPreset('toutenkou3').rules);
   const hand = { han: 3, fu: 30, yakuman: 0 };
   const none = basePoints({ ...hand, nukiCount: 0 }, r);
   const three = basePoints({ ...hand, nukiCount: 3 }, r);
-  eq(three.pointsPerPayer - none.pointsPerPayer, 12, 'ガリ3枚ぶん');
+  eq(three.pointsPerPayer - none.pointsPerPayer, 3, 'ガリ3枚ぶん');
 });
 
 it('東天紅：役満にもガリの点が乗る', () => {
@@ -1068,7 +1068,7 @@ it('東天紅：役満にもガリの点が乗る', () => {
   const none = basePoints({ han: 0, fu: 30, yakuman: 1, nukiCount: 0 }, r);
   const two = basePoints({ han: 0, fu: 30, yakuman: 1, nukiCount: 2 }, r);
   eq(none.pointsPerPayer, 50, '役満は50点');
-  eq(two.pointsPerPayer, 58, '役満50点＋ガリ2枚');
+  eq(two.pointsPerPayer, 52, '役満50点＋ガリ2枚');
 });
 
 it('抜き牌の点は、既定のルールでは加算されない', () => {
