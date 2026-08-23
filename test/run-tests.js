@@ -1085,7 +1085,7 @@ it('少牌マイティ：公式ルールどおりの設定になっている', (
   eq(Object.keys(r.dora.red).length, 0, '赤牌なし');
   eq(r.dora.ura, false, '裏ドラなし');
   eq(r.sanma.northMode, 'yakuhai', '北は共通役牌');
-  ok(r.win.openRiichi.enabled, 'オープンリーチあり');
+  ok(r.local.openRiichi.enabled, 'オープンリーチあり');
   ok(r.local.chiitoiMultiPair, '4枚使い七対子あり');
   ok(r.localYaku.some((y) => y.id === 'daisharin' && y.yakuman === 1), '大車輪は役満');
 });

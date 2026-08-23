@@ -94,12 +94,25 @@ export const PRESETS = [
     id: 'mleague4',
     name: 'Mリーグ風',
     category: '標準',
-    tags: ['四麻', '赤3', 'トビなし'],
-    description: '25000持ち30000返し・ウマ10-30・赤3枚・トビなし・西入なし・同点は起家優先。',
+    tags: ['四麻', '赤3', 'トビなし', '途中流局なし', '頭ハネ'],
+    description: '25000持ち30000返し・ウマ10-30・赤3枚・トビなし・西入なし。'
+      + '途中流局なし、流し満貫なし、ダブロンなしの頭ハネ、切り上げ満貫あり、数え役満なし（11翻以上は三倍満止まり）。',
     rules: {
       meta: { id: 'mleague4', name: 'Mリーグ風' },
-      scoring: { uma: [30, 10, -10, -30], okaToTop: true, roundUpMangan: false },
+      scoring: {
+        uma: [30, 10, -10, -30], okaToTop: true,
+        // 切り上げ満貫はあり。数え役満は採らず、11翻以上は三倍満で頭打ち
+        roundUpMangan: true, countedYakuman: false,
+      },
       game: { tobiEnd: false, agariYame: true, westEntry: false },
+      // ダブロンは採らず頭ハネ。流し満貫も無い
+      win: { doubleRon: false },
+      ryuukyoku: { nagashiMangan: false },
+      // 途中流局はいっさい無い（九種九牌・四風連打・四家立直・四開槓）
+      renchan: {
+        kyuushuKyuuhai: false, suufonRenda: false,
+        suukaikan: false, suuchaRiichi: false,
+      },
       dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
       bonus: { enabled: false },
     },
@@ -137,14 +150,33 @@ export const PRESETS = [
     id: 'kansai3',
     name: '関西三麻風',
     category: '地域',
-    tags: ['三麻', '萬子あり', '北役牌'],
-    description: '萬子を抜かず北を役牌として扱う系統。ツモ損なし・喰いタンあり。',
+    tags: ['三麻', '北役牌', '花牌抜き', '平和ツモなし'],
+    description: '関西のサンマフリー系。北は役牌として手に使い、抜きドラは花牌のほう。'
+      + '35000持ち40000返し・ウマ30/-10/-20・本場1000点・オープンリーチあり・ツモ損なし。'
+      + '平和とツモは複合せず、山はドラ表示牌の隣まで引ききります。',
     rules: {
       meta: { id: 'kansai3', name: '関西三麻風' },
       game: { players: 3, length: 'east' },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
-      sanma: { removeManzu: false, northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false, tsumoLoss: false },
-      dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
+      scoring: {
+        startingPoints: 35000, returnPoints: 40000,
+        // 1位+30 / 2位-10 / 3位-20（沈みを重く見る関西式）
+        uma: [30, -10, -20],
+        honbaPoints: 1000,
+      },
+      // 萬子2〜8を抜いた27種108枚が土台。北は役牌として手に使う
+      sanma: {
+        removeManzu: true, manzuKeep: ['1m', '9m'],
+        northMode: 'yakuhai', northIsYakuhai: true, kitaIsDora: false, tsumoLoss: false,
+      },
+      // 抜きドラは花牌のほう。ドラが増えるだけで、五等サンマのような効果は無い
+      flowers: { enabled: true, isDora: true, effects: {} },
+      // 平和ツモは認めない
+      win: { pinfuTsumo: false },
+      // オープンリーチあり（供託は2000点）
+      local: { openRiichi: { enabled: true, han: 1, bonus: 1 } },
+      // 「ドラの真横まで引く」ため王牌が薄い。1局に打てる巡目が増える
+      wall: { deadWallSize: 8 },
+      dora: { red: { '5p': 1, '5s': 1 } },
     },
   },
   // ---------------- 特殊ルール体験 ----------------
@@ -368,6 +400,8 @@ export const PRESETS = [
         shouhaiMighty: { enabled: true, count: 1 },
         // 4枚使い七対子あり
         chiitoiMultiPair: true,
+        // オープンリーチあり（全開け）
+        openRiichi: { enabled: true, revealMode: 'all' },
       },
       scoring: { startingPoints: 30000, returnPoints: 30000, uma: [15, -5, -10], roundUpMangan: true },
       // 北は抜かずに共通の役牌として使う
@@ -377,8 +411,6 @@ export const PRESETS = [
       },
       // 赤5筒・赤5索なし、裏ドラなし
       dora: { indicators: 1, ura: false, red: {} },
-      // オープンリーチあり（全開け）
-      win: { openRiichi: { enabled: true, revealMode: 'all' } },
       // 公式ルールで採用されている役
       localYaku: [
         // 大車輪（清一色の七対子）

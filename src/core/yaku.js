@@ -195,7 +195,9 @@ function checkYaku(ctx, counts, sets, decomp) {
       if (s.t + 2 === wt && numOf(wt) >= 3 && s.t % 9 !== 0) return true; // 上端待ち
       return false;
     });
-    if (ryanmen) out.push({ name: '平和', han: 1 });
+    // 関西のサンマには「平和ツモなし」（ツモると平和が消える）店が多い
+    const pinfuOk = ctx.rules.win.pinfuTsumo !== false || !ctx.tsumo;
+    if (ryanmen && pinfuOk) out.push({ name: '平和', han: 1 });
   }
 
   // --- 断幺九

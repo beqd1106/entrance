@@ -108,6 +108,12 @@ export const DEFAULT_RULES = {
     tripleRon: 'draw',          // 三家和 'draw'(流局) | 'headbump'(頭ハネ) | 'all'
     headBump: false,            // 頭ハネ（ダブロン不採用時）
     minHan: 1,                  // 和了に必要な最低翻（役なし和了禁止）
+    /**
+     * 平和とツモを複合させるか。
+     * 関西のサンマには「平和ツモなし」（ツモると平和が消える）店が多い。
+     * false にすると、ツモ和了のとき平和を数えない。
+     */
+    pinfuTsumo: true,
   },
 
   // 6-3. 連荘・流局 -------------------------------------------------------
@@ -417,9 +423,12 @@ export function clone(v) {
  */
 export function resolveRules(patch = {}) {
   const r = deepMerge(DEFAULT_RULES, patch);
-  // 赤牌・金牌の指定は「積み上げ」ではなく「置き換え」として扱う
+  // 赤牌・金牌・花牌の効果は「積み上げ」ではなく「置き換え」として扱う。
+  // 重ねてしまうと、既定の効果（春＝ボーナス、冬＝アリスなど）を
+  // 空の指定で消せず、意図しない効果が残ったままになる。
   if (patch.dora && patch.dora.red) r.dora.red = clone(patch.dora.red);
   if (patch.dora && patch.dora.gold) r.dora.gold = clone(patch.dora.gold);
+  if (patch.flowers && patch.flowers.effects) r.flowers.effects = clone(patch.flowers.effects);
   for (const key of ['red', 'gold']) {
     for (const [code, n] of Object.entries(r.dora[key])) if (!n) delete r.dora[key][code];
   }
