@@ -49,7 +49,12 @@ export const DEFAULT_RULES = {
     doubleWindPairFu: false,    // 連風牌の雀頭を4符にする
     honbaPoints: 300,           // 本場点（1本場あたり総額）
     riichiStick: 1000,
-    uma: [15, 5, -5, -15],
+    /**
+     * 順位点。四麻のフリー雀荘でいちばん多いのは「5-10」＝
+     * 1位+10 / 2位+5 / 3位-5 / 4位-10。
+     * 「10-20（ワンツー）」の店も多く、そこは店ごとに設定する。
+     */
+    uma: [10, 5, -5, -10],
     okaToTop: true,
     // 点数体系そのものを差し替える（東天紅・ロケット三麻など）
     mode: 'standard',           // 'standard' | 'flat'

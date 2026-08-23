@@ -72,7 +72,7 @@ export const PRESETS = [
     name: '一般四麻',
     category: '標準',
     tags: ['四麻', '赤あり', '喰いタンあり'],
-    description: 'フリー雀荘で最も普及している東南戦。25000持ち30000返し・赤3枚・喰いタンあり後付けあり。',
+    description: 'フリー雀荘で最も普及している東南戦。25000持ち30000返し（オカ20）・ウマ5-10・赤3枚・喰いタンあり後付けあり。',
     rules: { meta: { id: 'standard4', name: '一般四麻' } },
   },
   {
@@ -340,7 +340,10 @@ export const PRESETS = [
         enabled: true, tiles: ['spring', 'summer', 'autumn', 'winter'], isDora: false,
         effects: {
           spring: [{ type: 'bonusPerTile', value: 5, all: true }],
-          summer: [{ type: 'rankUp', value: 1 }],
+          // 夏は「役が昇格」だけでなく、抜いた時点で20点が付く
+          summer: [{ type: 'rankUp', value: 1 }, { type: 'bonusPerTile', value: 20 }],
+          // 秋は金牌・ロケット牌がダブドラ。どちらも5筒5索に置いてあるので、
+          // 「5牌をダブドラ」で同じことになる
           autumn: [{ type: 'doubleDoraFives' }],
           winter: [{ type: 'alice', value: 5 }],
         },
@@ -630,11 +633,12 @@ export const STORE_PRESETS = [
     name: 'DEMO雀荘 四麻館 ルール',
     category: '店舗',
     tags: ['四麻', '赤あり', '白ポッチ', 'アリス', '青5索'],
-    description: '一般四麻ベース。赤3枚＋白ポッチ1枚、アリスあり、青5索の特殊牌あり。初心者歓迎の看板ルール。',
+    description: '一般四麻ベース。ウマは10-20（ワンツー）。赤3枚＋白ポッチ1枚、アリスあり、青5索の特殊牌あり。初心者歓迎の看板ルール。',
     rules: {
       meta: { id: 'store_yonma_kan', name: 'DEMO雀荘 四麻館 ルール' },
       game: { players: 4, length: 'east_south' },
-      scoring: { startingPoints: 25000, returnPoints: 30000, uma: [15, 5, -5, -15], roundUpMangan: true },
+      // ウマは10-20（ワンツー）。5-10の店より順位の重みが大きい
+      scoring: { startingPoints: 25000, returnPoints: 30000, uma: [20, 10, -10, -20], roundUpMangan: true },
       dora: { red: { '5m': 1, '5p': 1, '5s': 1 } },
       local: {
         shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 2 },
