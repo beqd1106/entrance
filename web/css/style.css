@@ -772,7 +772,29 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     padding-right: max(8px, env(safe-area-inset-right));
     padding-bottom: max(6px, env(safe-area-inset-bottom));
     overflow: hidden;
+    /* 上の帯は浮かせるので、段は「卓」と「手元」の2つだけ */
+    grid-template-rows: minmax(0, 1fr) auto;
   }
+  /* 横持ちは高さが足りない。上の帯に1段まるごと使うと卓が50px縮むので、
+     卓の左脇（卓を中央に置くと空く felt の部分）に縦に並べる。
+     卓に重ならないので、天鳳・雀魂と同じく卓を一番大きく使える。
+     局・残り・供託・ドラは卓の中央に出ているので、ここには出さない。 */
+  .table-top {
+    position: absolute; z-index: 30;
+    left: max(8px, env(safe-area-inset-left)); top: 6px;
+    width: 104px; max-width: 104px;
+    flex-direction: column; align-items: stretch; gap: 5px;
+    overflow: visible; padding: 7px;
+    background: rgba(12, 24, 20, 0.5);
+  }
+  .table-top > .top-stat, .table-top > .grow { display: none; }
+  .table-top > * { width: 100%; justify-content: center; }
+  .table-top .act, .table-top .chip-btn { justify-content: center; font-size: 11px; padding: 5px 6px; }
+  /* 左脇のぶんは卓を寄せて空ける。空けないと、画面が狭いときに
+     卓が menu の下まで広がって左の席が隠れる（iPhone SE の横持ち） */
+  .board-scroll { padding-left: 108px; }
+  /* 縦持ち用の「画面端まで広げる」指定が残ると、横持ちで数px はみ出す */
+  .bottom-bar { margin: 0; padding-inline: 0; }
   /* 上の帯は、折り返すと2段になって卓の高さを50px以上奪う。
      1段に固定して、入りきらないぶんは横に送れるようにする */
   .table-top {
@@ -793,7 +815,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     /* 特殊ルールが多い店だと縦に伸びて手牌に被るので、中でスクロールさせる */
     flex: 0 1 auto; max-height: 52%; overflow-y: auto;
   }
-  .board-scroll { justify-content: flex-start; }
+  /* 卓は中央に置く。以前は左寄せにしていたため、右側に240px以上の
+     felt がむき出しになり、卓が画面の隅に寄って見えていた */
+  .board-scroll { justify-content: center; }
   /* ルールの欄は、横持ちでは右からせり出させる。卓を押し縮めないので、
      見ている間も場の様子が分かる */
   .table-main:not(.side-closed) .side-panel {
@@ -833,7 +857,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      　横幅をいっぱいに使う。残したままだと卓が290pxまで縮む */
     width: 100%; max-width: none; aspect-ratio: auto; height: 100%;
     align-content: stretch;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    /* 余った高さは上下の席（＝その人の河）に回す。
+       以前は真ん中の案内に全部回っていて、河が50pxしか無いのに
+       中央だけ179pxある不釣り合いな卓になっていた */
+    grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
     /* 横持ちは上下の河を1行に伸ばすので、左右の席に幅を回せる */
     grid-template-columns: minmax(140px, 1fr) minmax(0, 2.1fr) minmax(140px, 1fr);
     /* 席の並びも卓の形に戻す。
