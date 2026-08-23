@@ -125,7 +125,16 @@ async function createRoom(ctx, connId, msg) {
     return { statusCode: 200 };
   }
   const n = msg.n === 3 ? 3 : 4;
-  const patch = msg.rulesPatch ? clean(JSON.stringify(msg.rulesPatch), MAX_PATCH) : null;
+  // 自作ルールはそのまま文字にして預かる。長すぎるときは切らずに断る
+  // （途中で切ると、読めない文字列を相手に配ることになる）。
+  let patch = null;
+  if (msg.rulesPatch) {
+    patch = JSON.stringify(msg.rulesPatch);
+    if (patch.length > MAX_PATCH) {
+      await fail(ctx, connId, 'ルールの中身が大きすぎます。設定を減らしてお試しください。');
+      return { statusCode: 200 };
+    }
+  }
   const name = clean(msg.name, MAX_NAME) || 'ホスト';
 
   for (let i = 0; i < 8; i++) {
@@ -151,7 +160,8 @@ async function joinRoom(ctx, connId, msg) {
   const no = clean(msg.no, 8);
   const room = await getItem(roomKey(no), 'META');
   if (!room) { await fail(ctx, connId, 'その部屋番号は見つかりませんでした。'); return { statusCode: 200 }; }
-  if (room.state !== 'lobby') { await fail(ctx, connId, 'その部屋はもう始まっています。'); return { statusCode: 200 }; }
+  if (room.state === 'playing') return rejoinRoom(ctx, connId, room);
+  if (room.state !== 'lobby') { await fail(ctx, connId, 'その部屋はもう終わっています。'); return { statusCode: 200 }; }
 
   const seats = room.seats || [];
   if (seats.length >= Math.min(room.n, MAX_SEATS)) {
@@ -165,6 +175,31 @@ async function joinRoom(ctx, connId, msg) {
 
   const next = { ...room, seats };
   await post(ctx, connId, { type: 'room', you: seat, room: publicRoom(next) });
+  await broadcast(ctx, next, { type: 'room', room: publicRoom(next) });
+  return { statusCode: 200 };
+}
+
+/**
+ * 始まっている部屋に戻る。
+ *
+ * 通信が切れた・画面を読み直したときに、そのまま締め出されると
+ * 卓が3人のまま終わってしまう。空いている（切れている）席に座り直せる。
+ * 部屋番号を知っている人だけが入れる作りなので、友人同士・店内での
+ * 卓という前提のうえで成り立つ。
+ */
+async function rejoinRoom(ctx, connId, room) {
+  const seats = room.seats || [];
+  const seat = seats.findIndex((s) => s && !s.cpu && !s.connId);
+  if (seat < 0) {
+    await fail(ctx, connId, 'その部屋はもう始まっています。空いている席がありません。');
+    return { statusCode: 200 };
+  }
+  seats[seat] = { ...seats[seat], connId };
+  await updateFields(roomKey(room.no), 'META', { seats, expiresAt: ttl() });
+  await putItem({ pk: `CONN#${connId}`, sk: 'META', roomNo: room.no, seat, expiresAt: ttl() });
+
+  const next = { ...room, seats };
+  await post(ctx, connId, { type: 'begin', you: seat, rejoin: true, room: publicRoom(next) });
   await broadcast(ctx, next, { type: 'room', room: publicRoom(next) });
   return { statusCode: 200 };
 }

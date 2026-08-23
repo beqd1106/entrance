@@ -32,7 +32,13 @@ function savePref(key, value) {
 
 export function renderGame(root, params) {
   const presetId = params.preset || 'standard4';
-  const preset = lookupPreset(presetId);
+  // オンライン卓は、部屋を作った人のルールをそのまま使う。
+  // 自作ルールは相手の端末には無いので、部屋が持ってきた中身を優先する。
+  const table = params.room ? currentTable() : null;
+  const online = table && table.no === params.room ? table : null;
+  const preset = online && online.rulesPatch
+    ? { id: presetId, name: (online.rulesPatch.meta && online.rulesPatch.meta.name) || 'オンライン卓', rules: online.rulesPatch }
+    : lookupPreset(presetId);
   const store = STORES.find((s) => s.presetId === presetId);
   // イベント卓：店舗ルールを部分的に上書きして卓を作る
   const baseRules = resolveRules(preset.rules);
@@ -62,14 +68,13 @@ export function renderGame(root, params) {
     seed: Date.now() % 100000,
   };
   // オンライン卓（待合室で開始が決まっている）なら、その席と種を使う
-  const table = params.room ? currentTable() : null;
-  if (table && table.no === params.room) {
+  if (online) {
     G.online = {
-      no: table.no, seats: table.seats,
+      no: online.no, seats: online.seats, host: online.host ?? 0,
       applied: 0, inbox: new Map(), resyncTimer: null, off: null,
     };
-    G.mySeat = table.seat || 0;
-    G.seed = table.seed;
+    G.mySeat = online.seat || 0;
+    G.seed = online.seed;
     clearTable();
   }
 
@@ -81,6 +86,20 @@ export function renderGame(root, params) {
   if (G.online) {
     G.online.off = onMessage((msg) => {
       if (msg.type === '_state') { drawNetState(); return; }
+      if (msg.type === 'error') {
+        // 断られたときに送信中のままにすると、二度と打てなくなる。
+        // 手番に戻して、理由を出す。
+        if (G.sending) {
+          G.sending = false;
+          const seat = G.mySeat;
+          const choices = G.engine ? G.engine.getChoices(seat) : [];
+          if (choices.length) G.waiting = { seat, choices };
+        }
+        pushLog('sys', `※ ${msg.message}`);
+        drainLog();
+        draw();
+        return;
+      }
       if (msg.type === 'acts') { receiveActs(msg.acts || []); return; }
       if (msg.type === 'room' && G && G.online) {
         // 誰かが落ちた・戻ったときの表示だけ更新する
@@ -95,7 +114,13 @@ export function renderGame(root, params) {
   // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
   document.body.classList.add('playing');
   buildDom(root);
-  showPregame();
+  // 途中から戻った卓は、案内を挟まずにそのまま追いつく
+  if (G.online && online.rejoin) {
+    startGame();
+    resync(G.online.no, 0);
+  } else {
+    showPregame();
+  }
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
     if (G && G.ticker) clearInterval(G.ticker);
@@ -417,7 +442,13 @@ function autoPlayFor(seat) {
   const pass = choices.find((c) => c.type === 'pass');
   if (pass) { submitFor(seat, { type: 'pass' }); return; }
   const discard = choices.find((c) => c.type === 'discard');
-  if (!discard) { submitFor(seat, { type: choices[0].type }); return; }
+  if (!discard) {
+    // 打牌もスルーも無い場面（和了だけなど）は、勝手に選ばない。
+    // 中身の足りない手を送ると、その席がずっと止まってしまう。
+    pushLog('sys', `※ ${who}の時間切れだが、自動で選べる手がない`);
+    drainLog();
+    return;
+  }
   const drawn = e.players[seat].drawn;
   const tileId = drawn && discard.tileIds.includes(drawn.id) ? drawn.id : discard.tileIds[0];
   submitFor(seat, { type: 'discard', tileId });

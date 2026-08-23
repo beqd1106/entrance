@@ -18,6 +18,22 @@ import {
   createRoom, joinRoom, startRoom, playerName, savePlayerName,
 } from './net.js';
 
+/**
+ * 部屋が持ってきた自作ルール。
+ * サーバは中身を文字のまま預かるので、ここで組み直す。
+ * 読めなければ null を返し、プリセット名で打つ（黙って壊れた設定を使わない）。
+ */
+function parsePatch(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object') return raw;
+  try {
+    const o = JSON.parse(raw);
+    return o && typeof o === 'object' ? o : null;
+  } catch {
+    return null;
+  }
+}
+
 /** 開始が決まった卓。game.js がここから受け取る */
 let table = null;
 export function currentTable() { return table; }
@@ -56,10 +72,14 @@ export function renderOnline(root, params) {
     }
     if (msg.type === 'begin') {
       room = msg.room;
+      // 戻ってきたときは席が新しく割り当てられる
+      if (typeof msg.you === 'number') mySeat = msg.you;
       table = {
-        no: room.no, seat: mySeat, seed: room.seed,
-        presetId: room.presetId, rulesPatch: room.rulesPatch,
+        no: room.no, seat: mySeat, seed: room.seed, host: room.host,
+        presetId: room.presetId, rulesPatch: parsePatch(room.rulesPatch),
         seats: room.seats,
+        // 途中から戻った卓は、これまでの手を配り直してもらって追いつく
+        rejoin: !!msg.rejoin, actionCount: room.actionCount || 0,
       };
       location.hash = `#/play?preset=${encodeURIComponent(room.presetId)}&room=${room.no}`;
     }
@@ -81,8 +101,12 @@ export function renderOnline(root, params) {
     const make = h('button.btn.btn-primary', { text: '部屋を作る' });
     make.addEventListener('click', () => {
       const preset = lookupPreset(sel.value);
+      // 自作ルールは相手の端末には無い。中身をそのまま部屋に持っていかないと、
+      // 相手だけ既定のルールで打つことになり、局面がずれる。
+      const isCustom = loadCustomPresets().some((p) => p.id === sel.value);
       createRoom({
         presetId: sel.value,
+        rulesPatch: isCustom ? preset.rules : null,
         n: (preset.rules && preset.rules.game && preset.rules.game.players) === 3 ? 3 : 4,
         name: name.value.trim(),
       });
@@ -115,7 +139,7 @@ export function renderOnline(root, params) {
         make),
       h('div.card.card-pad',
         h('h3', { style: { fontSize: '16px', marginBottom: '4px' }, text: '部屋に入る' }),
-        h('p.tiny.muted', { text: '教えてもらった4桁の番号を入れてください。' }),
+        h('p.tiny.muted', { text: '教えてもらった4桁の番号を入れてください。通信が切れて抜けてしまったときも、同じ番号で戻れます。' }),
         h('div.row.gap-8', { style: { margin: '10px 0' } }, no, join))));
     body.appendChild(h('p.tiny.muted', { style: { marginTop: '12px' },
       text: status() === 'open' ? '接続しています。' : 'サーバにつないでいます…' }));
