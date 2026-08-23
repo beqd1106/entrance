@@ -203,11 +203,16 @@ async function pushAct(ctx, connId, msg) {
   const mine = seats.findIndex((s) => s && s.connId === connId);
   if (mine < 0) return { statusCode: 200 };
 
-  // 自分の席か、AIの席（AIは部屋を作った人がまとめて決める）だけ通す
+  // 通すのは次の3つだけ
+  //   ・自分の席
+  //   ・AIの席（部屋を作った人がまとめて決める）
+  //   ・席を外している人の席（卓が止まらないよう部屋を作った人が代打ちする）
   const seat = Number(msg.seat);
   const target = seats[seat];
   if (!target) return { statusCode: 200 };
-  const allowed = seat === mine || (target.cpu && mine === room.hostSeat);
+  const away = !target.cpu && !target.connId;
+  const allowed = seat === mine
+    || ((target.cpu || away) && mine === room.hostSeat);
   if (!allowed) { await fail(ctx, connId, 'その席の操作はできません。'); return { statusCode: 200 }; }
 
   const counted = await bump(roomKey(no), 'META', 'actionCount', 1);

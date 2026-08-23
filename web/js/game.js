@@ -55,6 +55,8 @@ export function renderGame(root, params) {
     mySeat: 0,
     // オンライン対局のときだけ入る。null なら今までどおりひとりで打つ卓。
     online: null,
+    // 手番の残り時間（オンラインのときだけ動く）
+    clock: null, ticker: null, remoteWait: null, sending: false,
     debugAvailable: params.debug === '1',
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
@@ -95,6 +97,7 @@ export function renderGame(root, params) {
   showPregame();
   return () => {
     if (G && G.timer) clearTimeout(G.timer);
+    if (G && G.ticker) clearInterval(G.ticker);
     if (G && G.online) {
       if (G.online.off) G.online.off();
       if (G.online.resyncTimer) clearTimeout(G.online.resyncTimer);
@@ -117,6 +120,8 @@ function buildDom(root) {
   G.dom.myArea = h('div.my-area');
   G.dom.actions = h('div.actions');
   G.dom.hint = h('div.hint');
+  // 自分の残り時間。オンラインのときだけ意味を持つ
+  G.dom.myClock = h('div.seat-clock.my-clock', h('span.seat-clock-num'), h('i.seat-clock-bar'));
   G.dom.hand = h('div.hand-row', { style: { justifyContent: 'center', minHeight: '52px' } });
   G.dom.logbox = h('div.logbox');
   G.dom.ruleCard = h('div.side-card.rule-summary');
@@ -137,7 +142,8 @@ function buildDom(root) {
     G.dom.top,
     G.dom.rotate,
     G.dom.main,
-    h('div.bottom-bar', G.dom.myArea, G.dom.actions, G.dom.hint, G.dom.hand, G.dom.debug),
+    h('div.bottom-bar', G.dom.myArea, G.dom.actions,
+      h('div.hint-row', G.dom.hint, G.dom.myClock), G.dom.hand, G.dom.debug),
     G.dom.toasts);
   root.appendChild(shell);
   G.dom.overlay = null;
@@ -318,9 +324,138 @@ function startGame() {
     : `${G.preset.name} で対局開始（シード ${G.seed}）`);
   drainLog();
   draw();
+  if (G.online) resetClocks();
   loop();
   // 開始を押すのが遅れた間に届いていた手を、ここでまとめて入れる
   if (G.online) pumpInbox();
+}
+
+// ---------------------------------------------------------------------------
+// 持ち時間（オンラインのときだけ）
+//
+// 天鳳・雀魂と同じ「基礎時間＋考慮時間」の2段にする。
+// 基礎時間はふつうに打つぶんには足りる長さで、迷ったときだけ
+// 考慮時間が減る。減った考慮時間は、その局のあいだ戻らない。
+//
+// ひとりで打つ卓には入れない。待たせる相手が居ないのに急かす理由がない。
+// ---------------------------------------------------------------------------
+const CLOCK = { base: 8000, pool: 20000, grace: 3000 };
+
+/** 局のはじめに、全員の考慮時間を戻す */
+function resetClocks() {
+  if (!G || !G.online) return;
+  G.clock = { seat: null, token: -1, startedAt: 0, pool: G.engine.players.map(() => CLOCK.pool) };
+}
+
+/** いま手番の席（人が待たれている席）。誰も待っていなければ null */
+function actingSeat() {
+  if (!G || !G.engine) return null;
+  if (G.engine.finished || G.engine.phase === 'kyokuEnd') return null;
+  if (G.waiting) return G.waiting.seat;
+  return G.remoteWait != null ? G.remoteWait : null;
+}
+
+/**
+ * 手番が変わったら時計を掛け直す。
+ *
+ * 席だけを見ていると、あいだのAIが自動で打つぶん「自分→自分」に見えて
+ * 掛け直されない。何手目かも一緒に見て、手が進んだら必ず掛け直す。
+ */
+function syncClock() {
+  if (!G || !G.online) return;
+  if (!G.clock) resetClocks();
+  const seat = actingSeat();
+  const token = G.online.applied;
+  if (seat === G.clock.seat && token === G.clock.token) return;
+  G.clock.seat = seat;
+  G.clock.token = token;
+  G.clock.startedAt = seat == null ? 0 : Date.now();
+  if (seat == null) stopTicker(); else startTicker();
+}
+
+function startTicker() {
+  if (G.ticker) return;
+  G.ticker = setInterval(tick, 200);
+  tick();
+}
+function stopTicker() {
+  if (!G || !G.ticker) return;
+  clearInterval(G.ticker);
+  G.ticker = null;
+  paintClock(null);
+}
+
+/** 残り時間を計算して、表示と時間切れの処理をする */
+function tick() {
+  if (!G || !G.online || !G.clock || G.clock.seat == null) { stopTicker(); return; }
+  const seat = G.clock.seat;
+  const spent = Date.now() - G.clock.startedAt;
+  const baseLeft = Math.max(0, CLOCK.base - spent);
+  const poolLeft = Math.max(0, G.clock.pool[seat] - Math.max(0, spent - CLOCK.base));
+  paintClock({ seat, baseLeft, poolLeft });
+  if (baseLeft > 0 || poolLeft > 0) return;
+
+  // 時間切れ。自分の席は自分で、離席中の席は部屋主が代わりに打つ。
+  G.clock.pool[seat] = 0;
+  if (seat === G.mySeat) { stopTicker(); autoPlayFor(seat); return; }
+  const p = G.online.seats[seat];
+  const away = p && !p.cpu && p.connected === false;
+  if (away && G.mySeat === G.online.host && spent > CLOCK.base + CLOCK.pool + CLOCK.grace) {
+    stopTicker();
+    autoPlayFor(seat);
+  }
+}
+
+/** 時間切れのときの手。ツモ切り、無ければ最初の打牌、鳴きの場面ならスルー */
+function autoPlayFor(seat) {
+  const e = G.engine;
+  const choices = e.getChoices(seat) || [];
+  const who = e.players[seat] ? e.players[seat].name : `席${seat}`;
+  if (!choices.length) { pushLog('sys', `※ 時間切れだが${who}に打てる手がない`); drainLog(); return; }
+  pushLog('sys', `${who}：時間切れのため自動で処理しました`);
+  const pass = choices.find((c) => c.type === 'pass');
+  if (pass) { submitFor(seat, { type: 'pass' }); return; }
+  const discard = choices.find((c) => c.type === 'discard');
+  if (!discard) { submitFor(seat, { type: choices[0].type }); return; }
+  const drawn = e.players[seat].drawn;
+  const tileId = drawn && discard.tileIds.includes(drawn.id) ? drawn.id : discard.tileIds[0];
+  submitFor(seat, { type: 'discard', tileId });
+}
+
+/** 席を指定して手を送る（自分の席なら通常の経路と同じ） */
+function submitFor(seat, action) {
+  drainLog();
+  if (seat === G.mySeat) {
+    G.waiting = null;
+    G.mode = 'idle';
+    G.riichiIds = null;
+    G.selectedTileId = null;
+    G.sending = true;
+  }
+  sendAct(G.online.no, seat, action);
+  draw();
+}
+
+/** 残り時間を画面に反映する。描き直しは重いので、ここは値だけ触る */
+function paintClock(state) {
+  if (!G || !G.dom || !G.dom.board) return;
+  const all = [...G.dom.board.querySelectorAll('.seat-clock')];
+  if (G.dom.myClock) all.push(G.dom.myClock);
+  for (const el of all) el.classList.remove('on', 'urgent');
+  if (!state) return;
+  const el = state.seat === G.mySeat
+    ? G.dom.myClock
+    : G.dom.board.querySelector(`.seat-${seatPos(G.engine.n, state.seat)} .seat-clock`);
+  if (!el) return;
+  const sec = Math.ceil((state.baseLeft + state.poolLeft) / 1000);
+  const ratio = state.baseLeft > 0
+    ? state.baseLeft / CLOCK.base
+    : state.poolLeft / Math.max(1, CLOCK.pool);
+  el.classList.add('on');
+  if (state.baseLeft === 0) el.classList.add('urgent');
+  el.style.setProperty('--left', `${Math.max(0, Math.min(1, ratio)) * 100}%`);
+  const num = el.querySelector('.seat-clock-num');
+  if (num) num.textContent = String(sec);
 }
 
 /**
@@ -349,7 +484,7 @@ function pumpInbox() {
     G.online.inbox.delete(G.online.applied);
     if (a.action && a.action.type === 'nextKyoku') {
       // 誰が押しても1回だけ効く（先に進んでいたら何もしない）
-      if (G.engine.phase === 'kyokuEnd') { closeOverlay(); G.engine.nextKyoku(); }
+      if (G.engine.phase === 'kyokuEnd') { closeOverlay(); G.engine.nextKyoku(); resetClocks(); }
     } else {
       const r = G.engine.act(a.seat, a.action);
       if (r && r.error) pushLog('sys', `※ ${r.error}`);
@@ -376,8 +511,12 @@ function loop() {
   if (!G || !G.engine) return;
   if (G.timer) clearTimeout(G.timer);
   const e = G.engine;
-  if (e.finished) { drainLog(); draw(); showFinal(); return; }
-  if (e.phase === 'kyokuEnd') { drainLog(); draw(); flashResult(e.kyokuEnd, () => showKyokuResult()); return; }
+  if (e.finished) { drainLog(); draw(); stopTicker(); showFinal(); return; }
+  if (e.phase === 'kyokuEnd') {
+    drainLog(); draw(); stopTicker();
+    flashResult(e.kyokuEnd, () => showKyokuResult());
+    return;
+  }
   const r = e.advance(decide, 1);
   drainLog();
   if (r.waiting) {
@@ -387,11 +526,13 @@ function loop() {
       G.waiting = null;
       G.remoteWait = r.waiting.seat;
       draw();
+      syncClock();
       return;
     }
     G.remoteWait = null;
     G.waiting = r.waiting;
     draw();
+    syncClock();
     maybeAutoDiscard();
     return;
   }
@@ -563,7 +704,8 @@ function drawRuleCard(s) {
 
 function drawTop(s) {
   const top = clear(G.dom.top);
-  const item = (k, v) => h('div', h('div.k', { text: k }), h('div.v', { text: v }));
+  // 卓の中央にも同じ内容が出るので、狭い画面ではこちらを隠す（.top-stat）
+  const item = (k, v) => h('div.top-stat', h('div.k', { text: k }), h('div.v', { text: v }));
   // どこから来たかは分からないので、来た道を戻す。履歴が無いときはホームへ。
   const back = h('button.chip.chip-btn.game-back', { type: 'button' }, h('span', { text: '← もどる' }));
   back.addEventListener('click', () => {
@@ -578,7 +720,7 @@ function drawTop(s) {
   const total = Math.max(1, s.wallTotal || 70);
   const ratio = Math.max(0, Math.min(1, s.wallRemaining / total));
   const low = s.wallRemaining <= 8;
-  top.appendChild(h('div.wall-box',
+  top.appendChild(h('div.wall-box.top-stat',
     h('div.k', { text: '残り' }),
     h('div.row.gap-4',
       h('div.v', { class: low ? 'low' : '', text: String(s.wallRemaining) }),
@@ -586,49 +728,23 @@ function drawTop(s) {
         class: low ? 'low' : '',
         style: { width: `${(ratio * 100).toFixed(0)}%` },
       })))));
-  top.appendChild(h('div',
+  top.appendChild(h('div.top-stat',
     h('div.k', { text: '供託' }),
     h('div.row.gap-4', { style: { height: '22px' } },
       s.round.kyotaku ? Array.from({ length: s.round.kyotaku }, () => h('div.stick')) : h('div.v', { text: '0' }))));
-  const dora = h('div.dora-box');
+  const dora = h('div.dora-box.top-stat');
   dora.appendChild(h('div.k', { text: 'ドラ表示' }));
   s.dora.forEach((d) => dora.appendChild(tileEl(d, { size: 'sm', cls: 'dora-ind' })));
   top.appendChild(dora);
   top.appendChild(h('div.grow'));
-  const sp = h('div.row.gap-4');
-  SPEEDS.forEach((x) => {
-    const b = h('button.act', { text: x.label, style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } });
-    if (x.v === G.speed) b.style.background = 'rgba(240,227,200,.28)';
-    b.addEventListener('click', () => { G.speed = x.v; draw(); });
-    sp.appendChild(b);
-  });
-  top.appendChild(sp);
-  const conf = h('button.act', {
-    text: G.confirmDiscard ? '2度押しで確定：ON' : '2度押しで確定：OFF',
-    title: '打牌の押し間違いを防ぎます',
-    style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' },
-  });
-  if (G.confirmDiscard) conf.style.background = 'rgba(16,185,129,.28)';
-  conf.addEventListener('click', () => {
-    G.confirmDiscard = !G.confirmDiscard;
-    G.selectedTileId = null;
-    savePref('confirmDiscard', G.confirmDiscard);
-    draw();
-  });
-  top.appendChild(conf);
-  const auto = h('button.act', {
-    text: G.autoTsumogiri ? 'リーチ後は自動 : ON' : 'リーチ後は自動 : OFF',
-    title: 'リーチ後、ほかに選ぶものが無いときは自動でツモ切りします',
-    style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' },
-  });
-  if (G.autoTsumogiri) auto.style.background = 'rgba(16,185,129,.28)';
-  auto.addEventListener('click', () => {
-    G.autoTsumogiri = !G.autoTsumogiri;
-    savePref('autoTsumogiri', G.autoTsumogiri);
-    draw();
-    if (G.autoTsumogiri) maybeAutoDiscard();
-  });
-  top.appendChild(auto);
+
+  // 速度や打ち方の設定は、卓の上に並べるとスマホで5段になり、
+  // 卓そのものが画面の下に押し出されていた。ひとまとめにして、
+  // 押したときだけ開く。
+  const gear = h('button.act.act-gear', { title: '速度と打ち方の設定' },
+    icon('settings', 13), h('span', { text: '設定' }));
+  gear.addEventListener('click', () => showTableSettings());
+  top.appendChild(gear);
 
   // 打っている最中に「この店のルールは何だったか」を確かめるためのボタン。
   // 卓を広く使うため右の欄は既定で畳んであるので、ここが入口になる。
@@ -654,6 +770,56 @@ function drawTop(s) {
     });
     top.appendChild(dbg);
   }
+}
+
+/**
+ * 速度と打ち方の設定。
+ * 卓の上に常時並べるほど頻繁に触るものではないので、ここにまとめる。
+ */
+function showTableSettings() {
+  const body = h('div.sheet-body');
+
+  const speedRow = h('div.row.gap-4.wrapflex');
+  SPEEDS.forEach((x) => {
+    const b = h('button.act', { text: x.label });
+    if (x.v === G.speed) b.classList.add('on');
+    b.addEventListener('click', () => { G.speed = x.v; draw(); showTableSettings(); });
+    speedRow.appendChild(b);
+  });
+  body.appendChild(h('div.set-row',
+    h('div',
+      h('div.set-title', { text: 'CPUの打つ速さ' }),
+      h('div.set-desc', { text: '考えている間の待ち時間です。' })),
+    speedRow));
+
+  const toggle = (title, desc, on, onChange) => {
+    const b = h('button.act', { text: on ? 'ON' : 'OFF' });
+    if (on) b.classList.add('on');
+    b.addEventListener('click', () => { onChange(); showTableSettings(); });
+    return h('div.set-row',
+      h('div', h('div.set-title', { text: title }), h('div.set-desc', { text: desc })), b);
+  };
+  body.appendChild(toggle('2度押しで確定', '打つ牌を1度目で選び、2度目で確定します。押し間違いを防げます。',
+    G.confirmDiscard, () => {
+      G.confirmDiscard = !G.confirmDiscard;
+      G.selectedTileId = null;
+      savePref('confirmDiscard', G.confirmDiscard);
+      draw();
+    }));
+  body.appendChild(toggle('リーチ後は自動でツモ切り', 'リーチしたあと、ほかに選ぶものが無いときは自動で切ります。',
+    G.autoTsumogiri, () => {
+      G.autoTsumogiri = !G.autoTsumogiri;
+      savePref('autoTsumogiri', G.autoTsumogiri);
+      draw();
+      if (G.autoTsumogiri) maybeAutoDiscard();
+    }));
+
+  const close = h('button.btn.btn-brass', { text: '閉じる' });
+  close.addEventListener('click', () => closeOverlay());
+  overlay(h('div.sheet',
+    h('div.sheet-head', h('div.eyebrow', { text: 'SETTINGS' }), h('h3', { text: '設定' })),
+    body,
+    h('div.sheet-foot', close)));
 }
 
 /** 自分の席を必ず下辺に置く。相対位置なので、席が変わっても見え方は変わらない */
@@ -687,11 +853,22 @@ function drawBoard(s) {
     discardsEl(me)));
 }
 
+/** その席の人が接続を切っているか（AIの席は対象外） */
+function awaySeat(seat) {
+  if (!G || !G.online) return false;
+  const p = G.online.seats[seat];
+  return !!p && !p.cpu && p.connected === false;
+}
+
 function seatHead(p, s) {
   const isTurn = s.turn === p.seat && !s.finished && s.phase !== 'kyokuEnd';
   return h('div.seat-head',
     h('div.seat-wind', { class: p.isDealer ? 'dealer' : '', text: p.wind }),
     isTurn ? h('div.turn-dot') : null,
+    // オンラインのときだけ、その席の残り時間を出す
+    G.online ? h('div.seat-clock', h('span.seat-clock-num'), h('i.seat-clock-bar')) : null,
+    // 席を外している人は、待たされている理由が分かるように出す
+    G.online && awaySeat(p.seat) ? h('span.badge-away', { text: '接続待ち' }) : null,
     h('div.grow', { style: { fontSize: '12.5px' } }, p.name),
     p.riichi ? h('span.badge-riichi', { text: p.openRiichi ? 'オープン' : 'リーチ' }) : null,
     s.wareme === p.seat ? h('span.badge-wareme', { text: '割れ目' }) : null,
