@@ -591,6 +591,16 @@ body.playing .nav { display: none; }
 /* うまくいっていない状態の文字。灰色の補足と同じ見た目だと気づかれない */
 .warn-text { color: var(--brass); font-weight: 600; }
 /* オンラインの待合室に出す「この卓のルール」 */
+/* 店舗さがしの条件（30枚ほどの札）。広い画面では出しっぱなし、
+   狭い画面では畳んでおく。店を探す画面なので、店が先に見えるほうが良い。 */
+.filter-toggle { display: none; }
+.filter-conds { display: block; }
+@media (max-width: 860px) {
+  .filter-toggle { display: inline-flex; margin-top: 4px; }
+  .filter-conds { display: none; }
+  .filter-conds.open { display: block; margin-top: 8px; }
+}
+
 .room-rules { display: grid; gap: 8px; }
 .room-rule { display: grid; gap: 2px; }
 .room-rule b { font-size: 13px; }

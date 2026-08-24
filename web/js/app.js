@@ -231,10 +231,24 @@ function viewStores(params) {
     onInput: (v) => { state.q = v; syncHash(); renderResult(); },
   });
 
+  // 条件の札は全部で30枚ほどあり、スマホの縦持ちだと1画面ぶんを埋めて
+  // 最初の店舗カードが y=931（画面の外）に押し出されていた。
+  // 店を探す画面なのに店が見えない。狭い画面では畳んでおき、
+  // 押したときだけ開く。条件を選んでいるときは開いたままにする。
+  let condsOpen = false;
+
   const renderFilters = () => {
     clear(filterBox);
     filterBox.appendChild(field);
     filterBox.appendChild(h('div.filter-sep'));
+    const conds = h('div.filter-conds', { class: condsOpen || state.active.size ? 'open' : '' });
+    const toggle = h('button.btn.btn-sm.btn-ghost.filter-toggle', { type: 'button' },
+      h('span', { text: state.active.size
+        ? `条件で絞る（${state.active.size}件選択中）`
+        : '条件で絞る' }));
+    toggle.addEventListener('click', () => { condsOpen = !condsOpen; renderFilters(); });
+    filterBox.appendChild(toggle);
+    filterBox.appendChild(conds);
     for (const f of FILTERS) {
       const holder = h('div.row.gap-8.wrapflex.grow');
       for (const o of f.options) {
@@ -248,7 +262,7 @@ function viewStores(params) {
         });
         holder.appendChild(c);
       }
-      filterBox.appendChild(h('div.filter-row', h('div.filter-label', { text: f.label }), holder));
+      conds.appendChild(h('div.filter-row', h('div.filter-label', { text: f.label }), holder));
     }
     if (state.active.size || state.q.trim()) {
       const clearBtn = h('button.btn.btn-sm.btn-ghost', { text: '条件をすべて外す' });
