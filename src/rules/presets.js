@@ -562,7 +562,7 @@ export const PRESETS = [
       ryuukyoku: { nagashiMangan: true },
       // オープンリーチあり（供託は2000点）
       local: {
-        openRiichi: { enabled: true, han: 1, bonus: 1 },
+        openRiichi: { enabled: true, sticks: 2, han: 1, bonus: 1 },
         // トパーズポッチ：リーチ後はオールマイティ
         shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 2 },
       },

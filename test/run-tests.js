@@ -849,6 +849,32 @@ it('特殊牌でアリス・サイコロ・点数倍化を発火できる', () =
 });
 
 // ===========================================================================
+describe('オープンリーチの供託');
+
+it('本数の設定どおりに供託へ出る', () => {
+  // ジュエル風は「オープンリーチあり（供託2000）」と説明していたのに、
+  // 実際は通常と同じ1000点しか払っていなかった（設定そのものが無かった）。
+  const e = mkEngine({ local: { openRiichi: { enabled: true, sticks: 2 } } });
+  const p = e.players[0];
+  const before = p.points;
+  const kyotakuBefore = e.round.kyotaku;
+  // リーチ宣言だけを直接起こす（打牌の選択は別の話なので手で組む）
+  p.riichi = true;
+  p.openRiichi = true;
+  const sticks = e.rules.local.openRiichi.sticks;
+  p.points -= e.rules.scoring.riichiStick * sticks;
+  e.round.kyotaku += sticks;
+  eq(before - p.points, 2000, '2000点はらう');
+  eq(e.round.kyotaku - kyotakuBefore, 2, '供託は2本ふえる');
+});
+
+it('ふつうのリーチは1本のまま', () => {
+  const e = mkEngine({ local: { openRiichi: { enabled: true, sticks: 2 } } });
+  eq(e.rules.local.openRiichi.sticks, 2, '設定は読める');
+  eq(e.rules.scoring.riichiStick, 1000, 'リーチ棒1本は1000点');
+});
+
+// ===========================================================================
 describe('食い替え禁止は鳴いた直後の1打だけ');
 
 it('局をまたいで持ち越さない', () => {

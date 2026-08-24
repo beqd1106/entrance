@@ -308,6 +308,7 @@ export class GameEngine {
     }
 
     // リーチ
+    const openSticks = Math.max(1, (R.local.openRiichi && R.local.openRiichi.sticks) || 1);
     if (!p.riichi && this.isMenzen(p) && p.points >= R.scoring.riichiStick
       && (this.wall.remaining >= 4 || R.win.riichiWithoutTsumoban)) {
       const options = [];
@@ -317,7 +318,13 @@ export class GameEngine {
       }
       if (options.length) {
         out.push({ type: 'riichi', label: 'リーチ', tileIds: options });
-        if (R.local.openRiichi.enabled) out.push({ type: 'riichi', open: true, label: 'オープンリーチ', tileIds: options });
+        // オープンリーチは供託を多く出す店がある。出せるだけ持っていなければ選べない
+        if (R.local.openRiichi.enabled && p.points >= R.scoring.riichiStick * openSticks) {
+          out.push({
+            type: 'riichi', open: true, tileIds: options,
+            label: openSticks > 1 ? `オープンリーチ（供託${openSticks}本）` : 'オープンリーチ',
+          });
+        }
       }
     }
 
@@ -557,8 +564,11 @@ export class GameEngine {
           p.riichiIdx = p.discards.length;
           p.openRiichi = !!action.open;
           p.doubleRiichi = this.firstGoAround && p.discards.length === 0 && !this.anyCall;
-          p.points -= R.scoring.riichiStick;
-          this.round.kyotaku += 1;
+          // オープンリーチは供託を多く出す店がある（棒2本＝2000点など）。
+          // 供託は本数で数えているので、本数を増やして払う。
+          const sticks = p.openRiichi ? Math.max(1, R.local.openRiichi.sticks || 1) : 1;
+          p.points -= R.scoring.riichiStick * sticks;
+          this.round.kyotaku += sticks;
           this.riichiDeclaredThisKyoku++;
           this.pushEvent({ type: 'riichi', seat, open: p.openRiichi, double: p.doubleRiichi });
         }

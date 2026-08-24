@@ -198,6 +198,7 @@ export const DEFAULT_RULES = {
       han: 1,
       bonus: 1,
       revealMode: 'all',        // 'all'（全手牌公開）| 'waits'（待ち牌のみ）
+      sticks: 1,                // 供託に出す本数（2なら2000点ぶん）
       allowDouble: false,       // ダブルオープンリーチ（さらに加翻）
       doubleHan: 2,
       dealInPenalty: 'none',    // 'none' | 'yakuman'（オープンリーチへの放銃は役満払い）

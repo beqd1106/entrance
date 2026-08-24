@@ -6,7 +6,7 @@
  *
  *   node test/check-presets.js
  */
-import { ALL_PRESETS } from '../src/rules/presets.js';
+import { ALL_PRESETS, getPreset } from '../src/rules/presets.js';
 import { resolveRules, DEFAULT_RULES } from '../src/rules/defaults.js';
 
 const problems = [];
@@ -164,6 +164,44 @@ for (const p of ALL_PRESETS) {
   // --- 実際に使う牌があるか（属性の付け先が無い指定）
   if ((R.meta.autoFixed || []).length) {
     note(p.id, `使えない指定が自動で外された：${R.meta.autoFixed.join(' / ')}`);
+  }
+}
+
+/**
+ * 説明文が言い切っている数字を、設定と1つずつ突き合わせる。
+ *
+ * 「オープンリーチあり（供託2000）」と書いてあるのに、その設定が
+ * そもそも無く、通常と同じ1000点しか払っていなかったことがある。
+ * 説明文から自動で読み取るのは難しいので、言い切っているものは
+ * ここに書き出して固定する。プリセットを直したらここも直すこと。
+ */
+const CLAIMS = [
+  ['jewel4', 'オープンリーチの供託2000', (R) => R.local.openRiichi.sticks * R.scoring.riichiStick, 2000],
+  ['jewel4', '持ち点25,500', (R) => R.scoring.startingPoints, 25500],
+  ['jewel4', '流し満貫あり', (R) => R.ryuukyoku.nagashiMangan, true],
+  ['toutenkou3', 'ガリ1枚1点', (R) => R.scoring.flat.nukiPoints, 1],
+  ['toutenkou3', '役満50点', (R) => R.scoring.flat.yakumanPoints, 50],
+  ['toutenkou3', 'ノーテン罰符10点', (R) => R.ryuukyoku.notenPenalty, 10],
+  ['mighty3', '本場200点', (R) => R.scoring.honbaPoints, 200],
+  ['goto_dice', 'サイコロ3個', (R) => R.local.dice.count, 3],
+  ['goto_dice', 'ピンゾロ20倍', (R) => R.local.dice.pinzoroMultiplier, 20],
+  ['goto_pocchi', '白ポッチ2枚', (R) => R.local.shiroPocchi.count, 2],
+  ['bakudora4', '表ドラ表示牌を3枚', (R) => R.dora.indicators + R.dora.bakuDora, 3],
+  ['rocket3', '40符固定', (R) => R.scoring.flat.fuFixed, 40],
+  ['mleague4', '数え役満なし', (R) => R.scoring.countedYakuman, false],
+  ['standard4', 'ウマ5-10', (R) => R.scoring.uma, [10, 5, -5, -10]],
+  ['competition4', '順位点30-10', (R) => R.scoring.uma, [30, 10, -10, -30]],
+  ['kansai3', 'ウマ30/-10/-20', (R) => R.scoring.uma, [30, -10, -20]],
+  ['standard3', '本場1000点', (R) => R.scoring.honbaPoints, 1000],
+  ['standard3', 'ノーテン罰符2000', (R) => R.ryuukyoku.notenPenalty, 2000],
+  ['chinitsu3', '14翻で数え役満', (R) => R.scoring.countedYakumanHan, 14],
+];
+for (const [id, label, get, want] of CLAIMS) {
+  const R = resolveRules(getPreset(id).rules);
+  let got;
+  try { got = get(R); } catch (e) { got = `読めない（${e.message}）`; }
+  if (JSON.stringify(got) !== JSON.stringify(want)) {
+    note(id, `説明の「${label}」と中身が違う：${JSON.stringify(got)}（説明では ${JSON.stringify(want)}）`);
   }
 }
 
