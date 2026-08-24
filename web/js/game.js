@@ -1444,8 +1444,12 @@ function callBanner(text, tone, who) {
   if (!host) return;
   // 誰の宣言かが分からないと、卓のどこを見ればいいのか掴めない。
   // 光の帯（.callban-burst）は、静かな盤面に一瞬だけ動きを足すためのもの。
+  // 種類ごとの絵。リーチはリーチ棒、カンは4枚並び（両端が伏せ）。
+  // 鳴き（ポン・チー）は絵を出さない：出番が多く、毎回絵が出ると煩い。
+  const ART = { riichi: 'img/ui/riichi.webp', kan: 'img/ui/kan.webp' };
   const el = h(`div.callban.callban-${tone}`,
     h('span.callban-burst', { 'aria-hidden': 'true' }),
+    ART[tone] ? h('img.callban-art', { src: ART[tone], alt: '', loading: 'eager' }) : null,
     who ? h('span.callban-who', { text: who }) : null,
     h('span.callban-word', { text }));
   host.appendChild(el);

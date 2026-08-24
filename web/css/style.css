@@ -3484,6 +3484,14 @@ body.op-mode::before { display: none; }
 }
 .callban.out { opacity: 0; transform: translate(-50%, -6px); }
 .callban-who { font-size: 11px; letter-spacing: .08em; opacity: .72; }
+/* 種類ごとの絵。文字だけより「何が起きたか」が一目で入る */
+.callban-art {
+  height: 30px; width: auto; flex: 0 0 auto; align-self: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35));
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .callban-art { height: 24px; }
+}
 .callban-word {
   font-size: clamp(17px, 2.8vw, 24px); font-weight: 800; letter-spacing: 0.16em;
 }
