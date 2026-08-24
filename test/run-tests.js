@@ -849,6 +849,34 @@ it('特殊牌でアリス・サイコロ・点数倍化を発火できる', () =
 });
 
 // ===========================================================================
+describe('役満：鳴いた牌も見る');
+
+it('中をポンしていたら緑一色にならない', () => {
+  // 門前の手牌だけを見て判定していたころ、手の中が索子の緑だけなら
+  // 中をポンしていても緑一色（役満）が付いていた。
+  const hand = mk('2s 2s 3s 3s 4s 4s 6s 6s 8s 8s 8s');
+  const melds = [{ kind: 'pon', concealed: false, tiles: mk('7z 7z 7z') }];
+  const res = evaluate(baseCtx({ hand, melds, winTile: hand[10], tsumo: true }));
+  ok(res, '和了として成立する');
+  ok(!yakuNames(res).includes('緑一色'), '緑一色は付かない');
+});
+
+it('鳴いた牌まで緑なら緑一色になる', () => {
+  const hand = mk('2s 2s 3s 3s 4s 4s 6s 6s 8s 8s 8s');
+  const melds = [{ kind: 'pon', concealed: false, tiles: mk('6z 6z 6z') }];   // 發
+  const res = evaluate(baseCtx({ hand, melds, winTile: hand[10], tsumo: true }));
+  ok(yakuNames(res).includes('緑一色'), '緑一色が付く');
+});
+
+it('中をポンしていたら清老頭にならない', () => {
+  const hand = mk('1m 1m 1m 9m 9m 9m 1p 1p 1p 9s 9s');
+  const melds = [{ kind: 'pon', concealed: false, tiles: mk('7z 7z 7z') }];
+  const res = evaluate(baseCtx({ hand, melds, winTile: hand[10], tsumo: true }));
+  ok(res, '和了として成立する');
+  ok(!yakuNames(res).includes('清老頭'), '清老頭は付かない');
+});
+
+// ===========================================================================
 describe('拡張：ローカル役');
 
 it('大車輪・三連刻・一色三順・五門斉が採用設定で成立する', () => {

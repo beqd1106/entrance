@@ -98,10 +98,16 @@ function checkYakuman(ctx, counts, sets, decomp) {
   } else if (windTriplets.length === 3 && decomp && winds.includes(decomp.pair)) {
     out.push({ name: '小四喜', yakuman: 1 });
   }
+  // 緑一色・清老頭は「手牌ぜんぶ」で見る。counts は門前の手牌だけなので、
+  // 鳴いた牌を足さずに判定すると、中をポンしていても手の中が索子だけなら
+  // 緑一色が付いてしまう（役満なので影響が大きい）。
+  // 一色系や字一色は元から鳴きを見ていたのに、この2つだけ抜けていた。
+  const meldTypes = ctx.melds.flatMap((m) => m.tiles.map((t) => t.t));
+  const everyTile = (ok) => counts.every((c, i) => c === 0 || ok(i)) && meldTypes.every(ok);
   // 緑一色
-  if (counts.every((c, i) => c === 0 || isGreen(i))) out.push({ name: '緑一色', yakuman: 1 });
+  if (everyTile(isGreen)) out.push({ name: '緑一色', yakuman: 1 });
   // 清老頭
-  if (counts.every((c, i) => c === 0 || isTerminal(i))) out.push({ name: '清老頭', yakuman: 1 });
+  if (everyTile(isTerminal)) out.push({ name: '清老頭', yakuman: 1 });
   // 四槓子
   if (sets.filter((s) => s.kan).length === 4) out.push({ name: '四槓子', yakuman: 1 });
   // 九蓮宝燈
