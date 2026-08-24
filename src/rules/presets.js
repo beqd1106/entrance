@@ -454,7 +454,8 @@ export const PRESETS = [
     category: '特殊',
     tags: ['三麻', '清一色ゲーム', '2セット混ぜ', '1種8枚', '色が交互'],
     description: '全自動卓の2セットを混ぜて打つ三人麻雀。萬子は使わず、筒子だけの回と索子だけの回を交互に打ちます。'
-      + 'その色を1種8枚入れるので、手はいつも清一色。牌の裏が青と黄の2色になり、裏がそろうと背一色（役満）。',
+      + 'その色を1種8枚入れるので、手はいつも清一色。牌の裏が青と黄の2色になり、裏がそろうと背一色（役満）。'
+      + 'カンは4回で打ち切らず、カンした牌の5枚目以降も足せます（足すたびにドラが増えます）。',
     rules: {
       meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
       game: { players: 3, length: 'east' },
@@ -490,6 +491,9 @@ export const PRESETS = [
       renchan: { suukaikan: false, suuchaRiichi: false },
       // 同じ牌が8枚あるので、七対子の8枚使いを認める
       local: { chiitoiMultiPair: true },
+      // カンは4回で打ち切らない。すでにカンした牌の5枚目以降も足せる
+      // （足すたびにドラ表示牌が増える。無くなったら山から取る）
+      win: { kanBeyondFour: true },
       // 牌の裏の色がそろえばダブル役満
       localYaku: [{ id: 'seiiisou', enabled: true }],
       bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },

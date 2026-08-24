@@ -220,9 +220,21 @@ export class Wall {
 
   revealDora() {
     const idx = 4 + this.revealed * 2;
-    if (idx >= this.deadSize) return null;
-    const tile = this.dead[idx];
-    const ura = this.dead[idx + 1];
+    if (idx + 1 < this.deadSize) {
+      const tile = this.dead[idx];
+      const ura = this.dead[idx + 1];
+      this.doraIndicators.push(tile);
+      this.uraIndicators.push(ura);
+      this.revealed++;
+      return tile;
+    }
+    // 王牌のドラ表示牌を使い切ったとき。
+    // カンを4回より多くできるルール（清一色ゲーム）では、
+    // 「無くなったら山から取る」ので、山の後ろから2枚を表・裏に充てる。
+    if (!(this.rules.win && this.rules.win.kanBeyondFour)) return null;
+    if (this.liveEnd - this.drawIndex < 3) return null;   // 打つ牌が無くなるほどは取らない
+    const tile = this.live[--this.liveEnd];
+    const ura = this.live[--this.liveEnd];
     this.doraIndicators.push(tile);
     this.uraIndicators.push(ura);
     this.revealed++;

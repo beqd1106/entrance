@@ -626,7 +626,11 @@ function drainLog() {
         callBanner(label, 'call');
         break;
       }
-      case 'kan': pushLog('', `${nameOf(ev.seat)}：${{ ankan: '暗槓', kakan: '加槓' }[ev.kind] || 'カン'} ${typeName(ev.t)}`); break;
+      case 'kan': {
+        const label = { ankan: '暗槓', kakan: '加槓', kanadd: 'カンに追加' }[ev.kind] || 'カン';
+        pushLog('', `${nameOf(ev.seat)}：${label} ${typeName(ev.t)}`);
+        break;
+      }
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
       case 'kita': pushLog('rule', `${nameOf(ev.seat)}：${ev.tile.name}を抜く（${ev.count}枚目）`); break;
       case 'flower':
@@ -976,7 +980,11 @@ function meldsEl(p) {
   if (!p.melds.length && !kita.length && !p.flowers.length) return null;
   const wrap = h('div.melds');
   for (const m of p.melds) {
-    wrap.appendChild(h('div.meld', m.tiles.map((t) => tileEl(m.kind === 'kan' && m.concealed ? { hidden: true } : t, { size: 'sm' }))));
+    // 暗槓は伏せて出すが、5枚目以降を足したぶんは表向きに置く
+    // （どれだけ足したかが見えないと、増えたドラの理由が分からない）
+    wrap.appendChild(h('div.meld', m.tiles.map((t, i) => tileEl(
+      m.kind === 'kan' && m.concealed && i < 4 ? { hidden: true } : t, { size: 'sm' },
+    ))));
   }
   // 抜きドラ（北・ガリ）と華牌は別グループにする
   const k = nukiGroup(kita, '抜き');

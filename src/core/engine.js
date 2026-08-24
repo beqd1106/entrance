@@ -270,7 +270,10 @@ export class GameEngine {
     }
 
     // 暗槓・加槓
-    if (R.win.kan && this.kanCount < 4 && this.wall.remaining > 0) {
+    // カンは通常4回まで（嶺上牌が4枚しかないため）。
+    // 同じ牌が8枚あるルールでは、その上限を外して山から取る。
+    const kanRoom = R.win.kanBeyondFour || this.kanCount < 4;
+    if (R.win.kan && kanRoom && this.wall.remaining > 0) {
       const byType = {};
       for (const t of p.hand) byType[t.t] = (byType[t.t] || 0) + 1;
       for (const [ts, c] of Object.entries(byType)) {
@@ -285,6 +288,15 @@ export class GameEngine {
         if (m.kind !== 'pon') continue;
         const has = p.hand.find((t) => t.t === m.tiles[0].t);
         if (has && !p.riichi) out.push({ type: 'kan', kind: 'kakan', t: m.tiles[0].t, label: `加槓 ${typeName(m.tiles[0].t)}` });
+      }
+      // すでにカンした牌の5枚目以降を足す（清一色ゲームのように8枚あるとき）
+      if (R.win.kanBeyondFour && !p.riichi) {
+        for (const m of p.melds) {
+          if (m.kind !== 'kan') continue;
+          const t = m.tiles[0].t;
+          if (!p.hand.some((x) => x.t === t)) continue;
+          out.push({ type: 'kan', kind: 'kanadd', t, label: `カンに足す ${typeName(t)}` });
+        }
       }
     }
 
@@ -631,10 +643,20 @@ export class GameEngine {
         };
         return { ok: true };
       }
+    } else if (action.kind === 'kanadd') {
+      // すでにカンした牌の5枚目以降を、そのカンに足す。
+      // 面子としては変わらず1つのカンのまま。ドラの枚数だけが増える。
+      const meld = p.melds.find((m) => m.kind === 'kan' && m.tiles[0].t === action.t);
+      if (!meld) return { error: 'そのカンがありません' };
+      const idx = p.hand.findIndex((t) => t.t === action.t);
+      if (idx < 0) return { error: '足す牌を持っていません' };
+      const [tile] = p.hand.splice(idx, 1);
+      meld.tiles.push(tile);
     } else {
       return { error: '不正な槓' };
     }
-    this.kanCount++;
+    // カンに足しただけのときは、カンの回数は増やさない（面子は増えていない）
+    if (action.kind !== 'kanadd') this.kanCount++;
     for (const q of this.players) q.ippatsu = false;
     this.pushEvent({ type: 'kan', seat, kind: action.kind, t: action.t });
     if (R.renchan.suukaikan && this.kanCount >= 4) {

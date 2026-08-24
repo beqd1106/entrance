@@ -4,7 +4,7 @@
  */
 import { codeToType, typeToCode, T } from '../src/core/tiles.js';
 import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, isChiiseimukou, makeHandOpts } from '../src/core/hand.js';
-import { evaluate } from '../src/core/yaku.js';
+import { evaluate, countDora } from '../src/core/yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from '../src/core/score.js';
 import { GameEngine } from '../src/core/engine.js';
 import { decide } from '../src/core/ai.js';
@@ -1045,6 +1045,79 @@ it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
   const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
   const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
   no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
+});
+
+describe('清一色ゲーム：5枚目以降をカンに足す');
+
+/** 山から指定の牌をn枚取り出して手牌に移す */
+function grabInto(e, p, t, n) {
+  const got = e.wall.live.filter((x) => x.t === t).slice(0, n);
+  e.wall.live = e.wall.live.filter((x) => !got.includes(x));
+  e.wall.liveEnd = e.wall.live.length;
+  p.hand.push(...got);
+  return got;
+}
+
+function chinitsuEngineWith(t, n) {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const e = new GameEngine({ rules: r, seed: 7, players: [0, 1, 2].map((i) => ({ name: `P${i}`, isCpu: false })) });
+  e.startKyoku();
+  const p = e.players[0];
+  p.hand = p.hand.filter((x) => x.t !== t);
+  grabInto(e, p, t, n);
+  e.turn = 0; e.phase = 'turn'; e.pending = { kind: 'turn', seat: 0 };
+  return { e, p };
+}
+
+it('同じ牌が8枚あるので、暗槓したあとも5枚目6枚目を足せる', () => {
+  const { e, p } = chinitsuEngineWith(codeToType('1p'), 6);
+  e.act(0, { type: 'kan', kind: 'ankan', t: codeToType('1p') });
+  eq(p.melds[0].tiles.length, 4, '暗槓は4枚');
+
+  const add = e.getChoices(0).find((c) => c.kind === 'kanadd');
+  ok(add, '「カンに足す」が選べる');
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  eq(p.melds[0].tiles.length, 5, '5枚目が入る');
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  eq(p.melds[0].tiles.length, 6, '6枚目が入る');
+});
+
+it('カンに足すたびにドラ表示牌が増える', () => {
+  const { e } = chinitsuEngineWith(codeToType('1p'), 6);
+  const before = e.wall.doraIndicators.length;
+  e.act(0, { type: 'kan', kind: 'ankan', t: codeToType('1p') });
+  eq(e.wall.doraIndicators.length, before + 1, '暗槓で1枚');
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  eq(e.wall.doraIndicators.length, before + 2, '5枚目で1枚');
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  eq(e.wall.doraIndicators.length, before + 3, '6枚目で1枚');
+});
+
+it('カンに足しても面子は増えない（カンの回数は変わらない）', () => {
+  const { e } = chinitsuEngineWith(codeToType('1p'), 6);
+  e.act(0, { type: 'kan', kind: 'ankan', t: codeToType('1p') });
+  const n = e.kanCount;
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  eq(e.kanCount, n, 'カンの回数は増えない');
+});
+
+it('6枚のカンは、ドラなら6枚ぶん数える', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const t = codeToType('1p');
+  const mk = (n) => Array.from({ length: n }, (_, i) => ({
+    id: 900 + i, t, red: false, gold: false, blue: false, star: false, rainbow: false, dot: false, sp: null,
+  }));
+  const ctx = {
+    hand: [], melds: [{ kind: 'kan', tiles: mk(6), concealed: true, from: 0, calledTile: mk(1)[0] }],
+    rules: r, doraTypes: [t], uraTypes: [], kitaCount: 0, flags: {},
+  };
+  const d = countDora(ctx);
+  eq(d.dora, 6, '1筒がドラなら、6枚のカンは6枚ぶん数える');
+});
+
+it('ふつうのルールでは、カンに足す選択肢は出ない', () => {
+  const r = resolveRules(getPreset('standard4').rules);
+  eq(r.win.kanBeyondFour, false, '既定では足せない');
 });
 
 describe('出典で確認した値の固定');
