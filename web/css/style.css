@@ -533,14 +533,33 @@ body.playing .nav { display: none; }
    空いた高さは左右の席（縦がいちばん厳しい）に回る */
 .seat-top > .discards, .seat-bottom > .discards { grid-template-columns: repeat(9, auto); }
 .melds { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+/* 自分の鳴き・暗槓・抜きドラ・華牌の置き場所。
+   鳴くまで空でも枠だけ出しておき、毎回どこに出るか探さなくて済むようにする。 */
+.my-melds {
+  align-items: flex-end; align-content: flex-end;
+  padding: 5px 8px; border-radius: 10px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px dashed rgba(255, 255, 255, .16);
+}
+.my-melds-cap {
+  width: 100%; font-size: 9.5px; letter-spacing: .1em;
+  color: rgba(255, 255, 255, .55); margin-bottom: 1px;
+}
+.my-melds-empty { font-size: 10.5px; color: rgba(255, 255, 255, .38); }
 .meld { display: flex; gap: 1px; align-items: flex-end; }
 /* 鳴いた牌は横に倒す。回すだけだと元の縦長の場所を占めたままなので、
    隣の牌に重なる。倒した後の見た目どおりの大きさを箱にも与える。 */
-.meld .tile.side {
+/* 河のリーチ宣言牌も同じ。回すだけだと縦長の場所を占めたまま隣に重なり、
+   牌が崩れて見えていた（リーチした瞬間に河が乱れる）。 */
+.meld .tile.side,
+.discards .tile.side {
   width: calc(var(--tw) * 1.38); height: var(--tw);
   transform: none; writing-mode: horizontal-tb;
 }
-.meld .tile.side > * { transform: rotate(-90deg); }
+.meld .tile.side > *,
+.discards .tile.side > * { transform: rotate(-90deg); }
+/* 倒した牌は下の段にそろえる（実際の卓と同じ見え方） */
+.discards .tile.side { align-self: end; }
 .center-info {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   min-height: 0; overflow: hidden; padding: 8px 16px;
@@ -555,6 +574,14 @@ body.playing .nav { display: none; }
   border-radius: 14px; box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 .dora-box { display: flex; align-items: center; gap: 8px; }
+/* 卓の真ん中のドラ表示。打つあいだじゅう気にするものなので大きく出す */
+.dora-cap {
+  font-size: 10px; letter-spacing: .12em; color: var(--ink-4); font-weight: 700;
+}
+.center-info .dora-box {
+  gap: 6px; padding: 4px 8px; border-radius: 10px;
+  background: rgba(23, 24, 26, .05); border: 1px solid var(--line);
+}
 .center-kyoku { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
 .center-sub { font-size: 11.5px; color: rgba(255,255,255,.6); letter-spacing: 0.02em; }
 .my-area { margin-top: 0; }

@@ -980,7 +980,11 @@ function drawBoard(s) {
     h('div.center-info',
       h('div.center-kyoku', { text: `${s.round.windName}${s.round.kyoku}局` }),
       h('div.center-sub', { text: `${s.round.honba}本場 ／ 残り ${s.wallRemaining}枚` }),
-      h('div.dora-box', s.dora.map((d) => tileEl(d, { size: 'sm' }))),
+      // ドラ表示牌。何がドラかは打つあいだじゅう気にするものなので、
+      // 見出しを付けて大きく出す（以前は sm=22px で、局の文字より小さかった）。
+      h('div.dora-box',
+        h('span.dora-cap', { text: 'ドラ' }),
+        h('div.row.gap-4', s.dora.map((d) => tileEl(d, { size: 'md', cls: 'dora-ind' })))),
       // 供託のリーチ棒。卓の真ん中に出ていないと、場にいくら乗っているかが
       // 分からない。天鳳・雀魂はどちらも卓の中央に置いている。
       s.round.kyotaku
@@ -996,7 +1000,7 @@ function drawBoard(s) {
   const myTurn = actingSeat() === G.mySeat && !s.finished && s.phase !== 'kyokuEnd';
   board.appendChild(h('div.seat.seat-bottom', { class: `${me.riichi ? 'riichi' : ''} ${myTurn ? 'active' : ''}` },
     seatHead(me, s),
-    meldsEl(me),
+    meldsEl(me, true),
     discardsEl(me)));
 }
 
@@ -1107,10 +1111,23 @@ function meldTiles(m, seat) {
   )));
 }
 
-function meldsEl(p) {
+/**
+ * 鳴き・暗槓・抜きドラ・華牌をまとめて並べる。
+ * @param {object} p    その席
+ * @param {boolean} own 自分の席なら true（自分のぶんは常に場所を取っておく）
+ */
+function meldsEl(p, own) {
   const kita = p.kita || [];
-  if (!p.melds.length && !kita.length && !p.flowers.length) return null;
-  const wrap = h('div.melds');
+  const empty = !p.melds.length && !kita.length && !p.flowers.length;
+  // 他家は何も無ければ出さない。自分のぶんは、鳴くまで場所が空でも
+  // 置き場所を決めておく（毎回どこに出るか探さなくて済むように）。
+  if (empty && !own) return null;
+  const wrap = h(`div.melds${own ? '.my-melds' : ''}`);
+  if (own) wrap.appendChild(h('div.my-melds-cap', { text: '鳴き・抜き' }));
+  if (empty) {
+    wrap.appendChild(h('div.my-melds-empty', { text: 'まだありません' }));
+    return wrap;
+  }
   for (const m of p.melds) wrap.appendChild(meldTiles(m, p.seat));
   // 抜きドラ（北・ガリ）と華牌は別グループにする
   const k = nukiGroup(kita, '抜き');
