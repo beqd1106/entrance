@@ -49,6 +49,7 @@ jobs:
           node test/check-rule-coverage.js
           node test/check-settings-effect.js
           node test/check-choice-ui.js
+          node test/check-bonus-tiers.js
           node test/verify-shanten.js 2000
           node test/sim.js 5
 

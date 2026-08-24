@@ -360,6 +360,9 @@ export function collectWinBonus(rules, winInfo) {
     // 名前が変わる。数え役満と同じ扱いで祝儀を出す。
     add(B.countedYakuman, winInfo.limitName);
   } else if (winInfo.limitName === '三倍満') add(B.sanbaiman, '三倍満');
+  // 倍満の段も見る。設定はあったのに判定が無く、いくつ入れても
+  // 何も起きない項目になっていた（五等系は倍満から祝儀の店もある）
+  else if (winInfo.limitName === '倍満') add(B.baiman, '倍満');
   return { bonus, detail };
 }
 

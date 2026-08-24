@@ -38,6 +38,7 @@ jobs:
           node test/check-rule-coverage.js
           node test/check-settings-effect.js
           node test/check-choice-ui.js
+          node test/check-bonus-tiers.js
           node test/sim.js 5
 
       - name: Web資産を配置
