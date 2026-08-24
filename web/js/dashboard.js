@@ -70,24 +70,28 @@ function buildChecklist(store, rules) {
     label: '店舗の基本情報',
     detail: '店名・住所・営業時間',
     fix: '店舗情報の編集から入力してください',
+    go: { href: `#/store-edit?store=${store.id}`, text: '店舗情報を編集する' },
   });
   items.push({
     ok: (store.priceLines || []).length > 0,
     label: '料金',
     detail: `${(store.priceLines || []).length}件`,
     fix: 'セット・フリーの料金を1件以上入れてください',
+    go: { href: `#/store-edit?store=${store.id}`, text: '料金を入れる' },
   });
   items.push({
     ok: (store.staff || []).length > 0,
     label: 'スタッフ紹介',
     detail: `${(store.staff || []).length}名`,
     fix: '1名でも載せると来店のハードルが下がります',
+    go: { href: `#/store-edit?store=${store.id}`, text: 'スタッフを載せる' },
   });
   items.push({
     ok: (store.mood || []).length >= 2,
     label: '店の雰囲気',
     detail: (store.mood || []).join('・') || '未設定',
     fix: '雰囲気を2つ以上選んでください',
+    go: { href: `#/store-edit?store=${store.id}`, text: '雰囲気を選ぶ' },
   });
   const diff = diffFromBaseline(rules);
   items.push({
@@ -95,12 +99,14 @@ function buildChecklist(store, rules) {
     label: 'ハウスルール',
     detail: `一般ルールとの違いが${diff.length}項目`,
     fix: '一般ルールと同じ設定です。この店らしさを足しましょう',
+    go: { href: `#/editor?preset=${store.presetId}`, text: 'ルールを編集する' },
   });
   items.push({
     ok: v.summary.errors === 0,
     label: 'ルールの設定チェック',
     detail: v.summary.errors ? `${v.summary.errors}件の成立しない設定` : '問題なし',
     fix: 'ルール編集の「設定チェック」を確認してください',
+    go: { href: `#/editor?preset=${store.presetId}`, text: '設定チェックを見る' },
     warn: v.summary.warns,
   });
   items.push({
@@ -108,18 +114,21 @@ function buildChecklist(store, rules) {
     label: 'ポイントは非換金',
     detail: rules.bonus.enabled ? rules.bonus.label : 'ポイントを使わない設定',
     fix: '現金や景品と交換できる表記になっていないか確認してください',
+    go: { href: `#/editor?preset=${store.presetId}`, text: 'ルールを編集する' },
   });
   items.push({
     ok: loadStats(store.id).plays > 0,
     label: '試し打ち',
     detail: `${loadStats(store.id).plays}回`,
     fix: '公開前に一度、自分のルールで打ってみてください',
+    go: { href: `#/play?preset=${store.presetId}`, text: '試し打ちする' },
   });
   items.push({
     ok: filled(store.sns && store.sns.x) || filled(store.sns && store.sns.web),
     label: '来店の導線',
     detail: (store.sns && (store.sns.x || store.sns.web)) || '未設定',
     fix: 'SNSかウェブサイトのリンクを入れてください',
+    go: { href: `#/store-edit?store=${store.id}`, text: 'リンクを入れる' },
   });
   return { items, validator: v };
 }
@@ -310,12 +319,17 @@ const MARK_OK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" str
 const MARK_TODO = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 7v7M12 17.5v.5"/></svg>';
 
 function checkRow(it) {
+  // 足りない項目には、そこから直しに行けるボタンを付ける。
+  // 「何が足りないか」だけ示して行き先が無いと、画面を探すことになる。
   return h(`div.check-item${it.ok ? '.ok' : ''}`,
     h('span.check-mark', { html: it.ok ? MARK_OK : MARK_TODO }),
     h('div.grow',
       h('div.check-label', { text: it.label }),
       h('div.check-detail', { text: it.ok ? it.detail : it.fix })),
-    it.warn ? chip(`注意${it.warn}`, 'brass') : null);
+    it.warn ? chip(`注意${it.warn}`, 'brass') : null,
+    !it.ok && it.go
+      ? h('a.btn.btn-sm.btn-ghost.check-go', { href: it.go.href, text: it.go.text })
+      : null);
 }
 
 /** 公開までの進み具合。数字だけより「あと少し」が伝わる。 */

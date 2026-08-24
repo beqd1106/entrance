@@ -1340,6 +1340,14 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   background: #fff8f0; border: 1px solid #fbd9b5;
 }
 .check-item.ok { background: var(--paper-2); border-color: var(--line); }
+/* 足りない項目から、そこを直す画面へ行くボタン */
+.check-go { flex: 0 0 auto; white-space: nowrap; background: #fff; border-color: #f0c48c; }
+.check-go:hover { background: #fff3e4; }
+@media (max-width: 560px) {
+  /* 狭い画面では札と説明の下に落として、文字が潰れないようにする */
+  .check-item { flex-wrap: wrap; }
+  .check-go { width: 100%; justify-content: center; margin-top: 4px; }
+}
 .check-mark {
   width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
   background: #fde3c4; color: #b45309;
