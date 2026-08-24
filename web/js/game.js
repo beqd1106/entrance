@@ -708,7 +708,20 @@ function draw() {
 function drawRuleCard(s) {
   const box = clear(G.dom.ruleCard);
   const R = G.rules;
-  box.appendChild(h('h4', { text: 'このお店のルール' }));
+  // 横持ちではこの欄が右からせり出して卓の右側を覆う。
+  // 閉じるボタンが画面の反対側（左脇のメニュー）にしか無く、
+  // 開いた人が閉じ方を探すことになっていた。見ている場所で閉じられるようにする。
+  const head = h('div.side-card-head', h('h4', { text: 'このお店のルール' }));
+  const close = h('button.side-close', { type: 'button', title: 'ルールの欄を閉じる' },
+    h('span', { text: '×' }));
+  close.addEventListener('click', () => {
+    G.sideOpen = false;
+    savePref('sideOpen', false);
+    G.dom.main.classList.add('side-closed');
+    draw();
+  });
+  head.appendChild(close);
+  box.appendChild(head);
   if (G.event) {
     box.appendChild(h('div.rule-item',
       h('span', { text: 'イベント' }),
