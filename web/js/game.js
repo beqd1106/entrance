@@ -1528,6 +1528,10 @@ function showKyokuResult() {
           d.gain > 0 ? h('div.win-gain', { text: `+${fmt(d.gain)}点` }) : null),
         mine ? h('img.win-art', { src: 'img/ui/win.png', alt: '' }) : null));
       body.appendChild(winHandView(d));
+      // 役や内訳はひとまとめにする。横持ちでは左半分に置き、右半分に
+      // 点数移動を並べるため、まとまりが1つの箱になっている必要がある。
+      // 直に並べていたころは、点数移動が役の下に流れて画面外に出ていた。
+      const detail = h('div.win-detail');
       const list = h('div.yaku-list');
       for (const y of d.yaku) {
         list.appendChild(h('div.yaku-item', h('span', { text: y.name }), h('span.num', { text: y.yakuman ? '役満' : `${y.han}翻` })));
@@ -1543,31 +1547,31 @@ function showKyokuResult() {
       if (d.extraHan) extras.push(`特殊牌翻+${d.extraHan}`);
       if (d.rankUp) extras.push(`打点${d.rankUp}ランクアップ`);
       if (extras.length) list.appendChild(h('div.yaku-item', h('span', { text: extras.join(' / ') }), h('span')));
-      body.appendChild(list);
+      detail.appendChild(list);
       if (d.substituted) {
-        body.appendChild(h('div.notice', {
+        detail.appendChild(h('div.notice', {
           text: d.substituted.mighty
             ? `足りない1枚を ${d.substituted.to} として使いました（少牌マイティ）。`
             : `${d.substituted.from} をオールマイティとして ${d.substituted.to} の代わりに使用しました。`,
         }));
       }
       if (d.aliceFlips && d.aliceFlips.length) {
-        body.appendChild(h('div', { style: { margin: '10px 0' } },
+        detail.appendChild(h('div', { style: { margin: '10px 0' } },
           h('div.label', { text: `${d.aliceFlips[0].label} めくり` }),
           h('div.row.gap-8', d.aliceFlips.map((f) => h('div', { style: { textAlign: 'center' } },
             tileEl(f.tile, { size: 'sm', anim: 'flip' }),
             h('div.tiny', { class: f.matched ? '' : 'muted', text: f.matched ? '一致' : '不一致' }))))));
       }
       if (d.diceRolls && d.diceRolls.length) {
-        body.appendChild(diceView(d.diceRolls));
+        detail.appendChild(diceView(d.diceRolls));
       }
       if (d.bonusDetail.length) {
-        body.appendChild(h('div.tiny.muted', { text: d.bonusDetail.join(' / ') }));
+        detail.appendChild(h('div.tiny.muted', { text: d.bonusDetail.join(' / ') }));
       }
       if (G.rules.bonus.enabled) {
-        body.appendChild(h('div.chip.chip-brass', { text: `${G.rules.bonus.label} ${signed(d.bonus)}` }));
+        detail.appendChild(h('div.chip.chip-brass', { text: `${G.rules.bonus.label} ${signed(d.bonus)}` }));
       }
-      body.appendChild(h('div.rule-line'));
+      body.appendChild(detail);
     }
   } else {
     body.appendChild(h('div.big-score', { text: res.reason || '流局' }));

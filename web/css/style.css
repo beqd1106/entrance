@@ -1568,7 +1568,14 @@ textarea { resize: vertical; min-height: 56px; }
   border: 1px solid rgba(193, 55, 44, 0.16);
   overflow-x: auto;
 }
+/* 和了形は14枚。狭い画面では1行に入らず、横に送らないと
+   いちばん見たい和了牌（右端）が隠れてしまう。折り返して全部出す。
+   広い画面では1行のほうが手の形が読みやすいので、そちらは nowrap のまま。 */
 .win-hand .hand-row { gap: 2px; flex-wrap: nowrap; }
+@media (max-width: 680px) {
+  .win-hand { overflow-x: visible; }
+  .win-hand .hand-row { flex-wrap: wrap; justify-content: center; }
+}
 .win-hand .meld-row { opacity: 0.92; }
 .win-sep { width: 10px; flex: 0 0 10px; }
 .tile.tile-win {
@@ -1933,9 +1940,20 @@ textarea { resize: vertical; min-height: 56px; }
     gap: 4px 20px; align-content: start;
   }
   .sheet-body > .win-hand,
-  .sheet-body > .win-head,
-  .sheet-body > .kv { grid-column: 1 / -1; }
+  .sheet-body > .win-head { grid-column: 1 / -1; }
+  /* 左に役と内訳、右に点数の動き。点数の動きは「勝ったのか負けたのか」を
+     いちばん知りたいところなので、必ず1画面に入れる。
+     以前は横いっぱいに置いていて、役の下に流れて画面外に出ていた。 */
+  .sheet-body > .win-detail { grid-column: 1; min-width: 0; }
+  .sheet-body > .kv { grid-column: 2; align-self: start; }
+  /* チップは本来ひとまわりの小さな札。升目に置くと縦にも横にも
+     引き伸ばされ、角丸999pxのまま巨大な楕円になっていた */
+  .sheet-body .chip { justify-self: start; align-self: start; }
   .sheet-body > .dice-box { margin: 4px 0; }
+  /* 横持ちは高さが足りない。役の行を詰めて、役が多い手でも
+     送らずに読めるようにする */
+  .yaku-item { padding: 2px 0; font-size: 12.5px; }
+  .win-head { padding: 0 0 6px; gap: 10px; }
   /* 和了形は14枚ある。2段組みの幅に入らないので折り返して、
      横スクロールが出ないようにする */
   .sheet-body { overflow-x: hidden; }
