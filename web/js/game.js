@@ -1633,7 +1633,14 @@ function flashResult(res, next) {
     floatChips(res.bonus.map((v, i) => v - (before[i] || 0)));
     G.lastBonus = [...res.bonus];
   }
-  const el = h(`div.flash.flash-${tone}`, h('span.flash-text', { text: label }));
+  // 自分の和了と役満は、いちばん気持ちのいい瞬間。絵と光を足す。
+  // 他家の和了・流局は静かなまま（毎回派手だと、自分の手番が霞む）。
+  const big = tone === 'win' || tone === 'yakuman';
+  const el = h(`div.flash.flash-${tone}`,
+    tone === 'yakuman' ? h('span.flash-rays', { 'aria-hidden': 'true' }) : null,
+    h('div.flash-stack',
+      big ? h('img.flash-art', { src: 'img/ui/win.png', alt: '' }) : null,
+      h('span.flash-text', { text: label })));
   G.dom.toasts.parentElement.appendChild(el);
   const wait = tone === 'yakuman' ? 1500 : 850;
   G.timer = setTimeout(() => {

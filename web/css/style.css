@@ -3421,6 +3421,22 @@ body.op-mode::before { display: none; }
   animation: flashIn 0.26s var(--ease) both;
 }
 .flash.out { animation: flashOut 0.22s var(--ease) both; }
+.flash-stack { display: grid; justify-items: center; gap: 6px; }
+/* 自分の和了のときだけ出す絵 */
+.flash-art {
+  width: clamp(74px, 17vw, 132px); height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .45));
+  animation: flashPop 0.42s var(--ease) both;
+}
+/* 役満のときだけ、後ろから光が差す */
+.flash-rays {
+  position: absolute; left: 50%; top: 50%; width: 150vmax; height: 150vmax;
+  margin: -75vmax 0 0 -75vmax; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255, 224, 150, .16) 0deg 7deg, transparent 7deg 20deg);
+  animation: raysTurn 5s linear infinite, flashIn .4s var(--ease) both;
+}
+@keyframes raysTurn { to { transform: rotate(360deg); } }
 @keyframes flashIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes flashOut { to { opacity: 0; } }
 .flash-text {
@@ -3573,6 +3589,8 @@ body.op-mode::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .callban, .pt-float { animation-duration: 0.01s; }
   .callban-burst { display: none; }
+  .flash-rays { animation: none; }
+  .flash-art { animation: none; }
 }
 
 /* 残り牌のゲージ。数字だけより「あと何巡か」が掴みやすい */
