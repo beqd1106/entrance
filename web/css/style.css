@@ -2786,6 +2786,17 @@ body.op-mode .nav { display: none; }
     grid-template-rows: minmax(0, 1fr) auto;
   }
   .tbl-left { border-right: 0; }
+  /* 狭い画面では、見出し（人数タブ・検索・カテゴリ・タグ）だけで349px使い、
+     ルール一覧に47px＝1件ぶんしか残っていなかった。12件あっても選べない。
+     見出しごと一緒に送れるようにして、一覧に高さを回す。 */
+  .tbl-left { display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-list { overflow-y: visible; padding-bottom: 12px; }
+  /* 見出しは貼り付けない。349pxのうち196px（半分）を占めたままになり、
+     結局2件しか見えない。ふつうに一緒に送って、一覧を広く使う。 */
+  .tbl-left-head { position: static; }
+  /* 画面名はナビにも出ている。狭い縦幅では一覧に高さを譲る */
+  .tbl-title { display: none; }
+
   .tbl-right {
     max-height: 46dvh;
     border-top: 1px solid var(--line-2);
@@ -3561,9 +3572,13 @@ body.op-mode::before { display: none; }
   padding-top: 2px;
 }
 .tbl-conds .chip { font-size: 11.5px; }
-@media (orientation: landscape) and (max-height: 560px) {
-  /* 横持ちは縦が足りないので、1行に流して横スクロールさせる */
-  .tbl-conds { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+/* 縦が足りない画面（横持ち・スマホの縦持ち）では1行に流して横スクロールさせる。
+   縦持ちでは3段に折り返して92px使い、見出しだけで画面の4割を取っていた。 */
+@media (orientation: landscape) and (max-height: 560px), (max-width: 860px) {
+  .tbl-conds {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
   .tbl-conds::-webkit-scrollbar { display: none; }
   .tbl-conds .chip { flex: 0 0 auto; }
 }
