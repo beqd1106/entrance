@@ -660,17 +660,19 @@ function drainLog() {
       case 'riichi':
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
         toast(ev.open ? 'オープンリーチ' : 'リーチ', nameOf(ev.seat), 'rose');
-        callBanner(ev.open ? 'オープンリーチ' : 'リーチ', 'riichi');
+        callBanner(ev.open ? 'オープンリーチ' : 'リーチ', 'riichi', nameOf(ev.seat));
         break;
       case 'call': {
         const label = { pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind;
         pushLog('', `${nameOf(ev.seat)}：${label}（${nameOf(ev.from)}の${ev.tile.name}）`);
-        callBanner(label, 'call');
+        callBanner(label, 'call', nameOf(ev.seat));
         break;
       }
       case 'kan': {
         const label = { ankan: '暗槓', kakan: '加槓', kanadd: 'カンに追加' }[ev.kind] || 'カン';
         pushLog('', `${nameOf(ev.seat)}：${label} ${typeName(ev.t)}`);
+        // カンはドラが増える大きな出来事なのに、これまでログに書くだけだった
+        callBanner(label, 'kan', nameOf(ev.seat));
         break;
       }
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
@@ -1434,13 +1436,19 @@ function kyokuBanner(title, sub) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, 1100);
 }
 
-function callBanner(text, tone) {
+function callBanner(text, tone, who) {
   if (!G || !G.dom || !G.dom.toasts) return;
   const host = G.dom.toasts.parentElement;
   if (!host) return;
-  const el = h(`div.callban.callban-${tone}`, h('span', { text }));
+  // 誰の宣言かが分からないと、卓のどこを見ればいいのか掴めない。
+  // 光の帯（.callban-burst）は、静かな盤面に一瞬だけ動きを足すためのもの。
+  const el = h(`div.callban.callban-${tone}`,
+    h('span.callban-burst', { 'aria-hidden': 'true' }),
+    who ? h('span.callban-who', { text: who }) : null,
+    h('span.callban-word', { text }));
   host.appendChild(el);
-  setTimeout(() => el.remove(), 900);
+  setTimeout(() => el.classList.add('out'), 820);
+  setTimeout(() => el.remove(), 1150);
 }
 
 /**
