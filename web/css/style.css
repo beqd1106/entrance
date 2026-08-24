@@ -754,7 +754,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
 
 /* ---------------- レスポンシブ ---------------- */
 @media (max-width: 860px) {
-  .editor-grid { grid-template-columns: 1fr; }
+  /* 1fr のままだと中身の最大幅（横に流す目次601px）まで列が広がり、
+     390px の画面で文書が615pxになって横スクロールしていた。
+     升目の子は既定で min-width: auto なので、下限を0にして列を抑える。 */
+  .editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .editor-grid, .editor-grid > * { min-width: 0; }
   .sticky-side { position: static; }
   .nav-links { gap: 14px; font-size: 12.5px; }
   .nav-note { display: none; }
@@ -2219,7 +2223,12 @@ textarea { resize: vertical; min-height: 56px; }
 /* 分野へ飛んだとき、見出しが上の帯に隠れないようにする */
 .card[id^='edsec-'] { scroll-margin-top: 80px; }
 @media (max-width: 680px) {
-  .editor-jump { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .editor-jump {
+    overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch;
+    max-width: 100%; scrollbar-width: none;
+  }
+  .editor-jump::-webkit-scrollbar { display: none; }
+  .jump-chip { flex: 0 0 auto; }
 }
 /* 目次から飛んだとき、見出しが目次の下に隠れないようにする */
 [id^='edsec-'] { scroll-margin-top: calc(var(--nav-h) + 72px); }
