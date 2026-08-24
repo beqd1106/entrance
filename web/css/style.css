@@ -153,7 +153,10 @@ a.btn.btn-primary[href^="#/play"] {
 .chip-brass { background: var(--brass-3); color: var(--brass); }
 .chip-felt { background: var(--paper-3); color: var(--ink-2); }
 .chip-red { background: var(--brass-3); color: var(--brass); }
-.chip-btn { cursor: pointer; transition: 0.15s var(--ease); }
+/* 押せる札はキーボードからも届くよう button で作る。
+   span のままだとタブキーで飛べず、Enterでも押せなかった。
+   button の既定の見た目（フォント・余白）は打ち消しておく。 */
+.chip-btn { cursor: pointer; transition: 0.15s var(--ease); font: inherit; text-align: center; }
 .chip-btn:hover { background: var(--paper); border-color: var(--line-2); }
 .chip-btn.on { background: var(--ink); color: var(--paper-2); }
 .label { font-size: 11px; letter-spacing: 0.14em; color: var(--ink-4); text-transform: uppercase; }

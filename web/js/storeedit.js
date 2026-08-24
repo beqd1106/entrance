@@ -162,7 +162,7 @@ function renderForm(left, state, onChange) {
   const moodRow = h('div.row.gap-6.wrapflex');
   for (const m of MOOD_CHOICES) {
     const on = (d.mood || []).includes(m);
-    const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: m });
+    const c = h('button.chip.chip-btn', { type: 'button', class: on ? 'on' : '', text: m });
     c.addEventListener('click', () => {
       const cur = new Set(d.mood || []);
       if (on) cur.delete(m); else cur.add(m);

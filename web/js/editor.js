@@ -460,7 +460,7 @@ function buildControl(item, R, onChange) {
       const box = h('div.row.gap-8.wrapflex');
       for (const u of UMA_PRESETS) {
         const on = cur && cur.key === u.key;
-        const b = h(`span.chip.chip-btn${on ? '.on' : ''}`, { text: u.label });
+        const b = h(`button.chip.chip-btn${on ? '.on' : ''}`, { type: 'button', text: u.label });
         b.addEventListener('click', () => {
           R.scoring.uma = [...(three ? u.three : u.four)];
           onChange();
@@ -645,7 +645,7 @@ function renderLeft(left, state, onChange) {
       control({ type: 'switch', path: 'sanma.tsumoLoss', label: 'ツモ損あり', desc: 'オフで丸取り（4人麻雀と同額）' }, R, onChange),
       field('残す萬子', h('div.row.gap-4.wrapflex', ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m'].map((code) => {
         const on = (R.sanma.manzuKeep || []).includes(code);
-        const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: code });
+        const c = h('button.chip.chip-btn', { type: 'button', class: on ? 'on' : '', text: code });
         c.addEventListener('click', () => {
           const cur = new Set(R.sanma.manzuKeep || []);
           if (on) cur.delete(code); else cur.add(code);
@@ -656,7 +656,7 @@ function renderLeft(left, state, onChange) {
       })), '「萬子を抜く」がオンのとき、ここで選んだ萬子だけが残ります（東天紅は1m・5m・9m）'),
       field('北以外の抜き牌（ガリ）', h('div.row.gap-4.wrapflex', ['1m', '5m', '9m', '1p', '9p', '1s', '9s'].map((code) => {
         const on = (R.sanma.extraNukiTiles || []).includes(code);
-        const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: code });
+        const c = h('button.chip.chip-btn', { type: 'button', class: on ? 'on' : '', text: code });
         c.addEventListener('click', () => {
           const cur = new Set(R.sanma.extraNukiTiles || []);
           if (on) cur.delete(code); else cur.add(code);
@@ -724,7 +724,7 @@ function renderLeft(left, state, onChange) {
       ['fourFlower', '四華'], ['pocchiTsumo', '白ポッチツモ'],
     ].map(([v, label]) => {
       const on = R.local.dice.triggers.includes(v);
-      const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: label });
+      const c = h('button.chip.chip-btn', { type: 'button', class: on ? 'on' : '', text: label });
       c.addEventListener('click', () => {
         R.local.dice.triggers = on ? R.local.dice.triggers.filter((x) => x !== v) : [...R.local.dice.triggers, v];
         onChange();
@@ -846,7 +846,7 @@ function renderLeft(left, state, onChange) {
     ev.ruleOverrides = ev.ruleOverrides || {};
     const chips = h('div.row.gap-4.wrapflex', { style: { marginTop: '8px' } }, OVERRIDES.map((o) => {
       const on = (ev.appliedKeys || []).includes(o.key);
-      const c = h('span.chip.chip-btn', { class: on ? 'on' : '', text: o.label });
+      const c = h('button.chip.chip-btn', { type: 'button', class: on ? 'on' : '', text: o.label });
       c.addEventListener('click', () => {
         const keys = new Set(ev.appliedKeys || []);
         if (on) keys.delete(o.key); else keys.add(o.key);
@@ -1305,7 +1305,7 @@ function specialTileCard(def, index, R, onChange) {
     [['menzenOnly', '門前限定'], ['riichiOnly', 'リーチ時限定'], ['tsumoOnly', 'ツモ限定'], ['ronOnly', 'ロン限定'], ['ippatsuOnly', '一発時限定']]
       .map(([k, label]) => {
         const on = !!def.conditions[k];
-        const c = h(`span.chip.chip-btn${on ? '.on' : ''}`, { text: label });
+        const c = h(`button.chip.chip-btn${on ? '.on' : ''}`, { type: 'button', text: label });
         c.addEventListener('click', () => { def.conditions[k] = !on; onChange(); });
         return c;
       }));
@@ -1384,7 +1384,7 @@ function filterBar(left, state) {
     autocomplete: 'off', 'aria-label': '設定をさがす',
   });
   const count = h('span.tiny.muted.ed-filter-count');
-  const onlyChanged = h('span.chip.chip-btn', { text: '変えたところだけ' });
+  const onlyChanged = h('button.chip.chip-btn', { type: 'button', text: '変えたところだけ' });
 
   const apply = () => {
     const q = normalize(input.value);

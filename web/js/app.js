@@ -253,7 +253,7 @@ function viewStores(params) {
       const holder = h('div.row.gap-8.wrapflex.grow');
       for (const o of f.options) {
         const on = state.active.has(o.value);
-        const c = h(`span.chip.chip-btn.tag-${toneOf(o.value)}${on ? '.on' : ''}`, { text: o.value });
+        const c = h(`button.chip.chip-btn.tag-${toneOf(o.value)}${on ? '.on' : ''}`, { type: 'button', text: o.value });
         c.addEventListener('click', () => {
           if (on) state.active.delete(o.value); else state.active.add(o.value);
           syncHash();
@@ -369,7 +369,7 @@ function viewSearch(params) {
       result.appendChild(h('p.muted', { text: 'よく探されるもの' }));
       result.appendChild(h('div.row.gap-8.wrapflex', { style: { marginBottom: '28px' } },
         suggests.map((t) => {
-          const c = h(`span.chip.chip-btn.chip-lg.tag-${toneOf(t)}`, { text: t });
+          const c = h(`button.chip.chip-btn.chip-lg.tag-${toneOf(t)}`, { type: 'button', text: t });
           c.addEventListener('click', () => {
             state.q = t;
             field.input.value = t;
@@ -457,6 +457,17 @@ function couponCard(store, c) {
 }
 
 function viewCard(storeId) {
+  // 会員カードも、知らない店舗番号なら別の店のカードを出さない
+  if (!findStore(storeId)) {
+    app.appendChild(h('section.wrap', { style: { padding: '48px 0' } },
+      h('div.card.card-pad',
+        h('h2', { style: { marginTop: 0 }, text: 'この店舗は見つかりませんでした' }),
+        h('p.muted', { text: `「${storeId}」という店舗はありません。` }),
+        h('div.row.gap-8', { style: { marginTop: '14px' } },
+          h('a.btn.btn-primary', { href: '#/cards', text: '持っているカードを見る' }),
+          h('a.btn.btn-ghost', { href: '#/stores', text: '店舗をさがす' })))));
+    return;
+  }
   const s = resolveStore(storeId);
   const card = getCard(s.id);
   if (!card) return viewCardIssuing(s);
