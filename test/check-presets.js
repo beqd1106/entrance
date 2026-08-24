@@ -50,9 +50,11 @@ for (const p of ALL_PRESETS) {
   }
 
   // --- 一発・裏
-  if (has(/一発裏なし|一発・裏ドラなし|一発裏ドラなし/)) {
-    if (R.dora.ura) note(p.id, '「一発裏なし」と書いてあるが裏ドラが有効');
-    if (R.bonus.enabled && R.bonus.ippatsu) note(p.id, '「一発裏なし」と書いてあるが一発ボーナスが有効');
+  if (has(/一発裏なし|一発・裏ドラなし|一発裏ドラなし|一発なし/)) {
+    if (R.dora.ura) note(p.id, '「一発なし」と書いてあるが裏ドラが有効');
+    // 裏ドラを切るだけでは足りない。一発は役としても採らない設定が要る
+    if (R.win.ippatsu !== false) note(p.id, '「一発なし」と書いてあるが一発が役として付く');
+    if (R.bonus.enabled && R.bonus.ippatsu) note(p.id, '「一発なし」と書いてあるが一発の祝儀が付く');
   }
 
   // --- 局数

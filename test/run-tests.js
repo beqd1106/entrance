@@ -1047,7 +1047,24 @@ it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
   no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
 });
 
-describe('実ルールとの照合（東天紅・少牌マイティ）');
+describe('実ルールとの照合（東天紅・少牌マイティ・競技ルール）');
+
+it('競技ルール：一発は役としても付かない', () => {
+  const r = resolveRules(getPreset('competition4').rules);
+  eq(r.win.ippatsu, false, '一発を採らない設定');
+  eq(r.dora.ura, false, '裏ドラなし');
+  eq(Object.keys(r.dora.red).length, 0, '赤なし');
+  // 裏ドラを切るだけでは「一発なし」にならない。役の側も落ちていること
+  const flags = { riichi: true, ippatsu: true, menzen: true, tsumo: false };
+  ok(!(r.win.ippatsu !== false && flags.ippatsu), '一発の判定が落ちる');
+});
+
+it('一般四麻では一発が付く（競技ルールとの違い）', () => {
+  const r = resolveRules(getPreset('standard4').rules);
+  eq(r.win.ippatsu, true, '一発あり');
+  eq(r.dora.ura, true, '裏ドラあり');
+});
+
 
 it('東天紅：筒子・索子の5が常時ドラになる', () => {
   const r = resolveRules(getPreset('toutenkou3').rules);

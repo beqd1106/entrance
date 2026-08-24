@@ -83,11 +83,15 @@ export const PRESETS = [
     id: 'competition4',
     name: '競技ルール風',
     category: '標準',
-    tags: ['四麻', '赤なし', '一発裏なし'],
-    description: '一発・裏ドラ・赤牌なし。喰いタンあり、供託は次局へ。順位点は素点重視。',
+    tags: ['四麻', '赤なし', '一発裏なし', 'オカなし'],
+    description: '一発・裏ドラ・赤牌なし。30000持ち30000返しでオカなし、順位点は30-10。'
+      + '喰いタン・後付けあり、切り上げ満貫なし、西入あり。'
+      + '（最高位戦・日本プロ麻雀協会系の並び。連盟Aルールは喰いタンなし）',
     rules: {
       meta: { id: 'competition4', name: '競技ルール風' },
       scoring: { startingPoints: 30000, returnPoints: 30000, uma: [30, 10, -10, -30], okaToTop: false, roundUpMangan: false },
+      // 一発は役としても採らない。裏ドラを切るだけでは「一発なし」にならない
+      win: { ippatsu: false },
       dora: { red: {}, ura: false, kanUra: false },
       local: { openRiichi: { enabled: false } },
       bonus: { enabled: false },
@@ -404,7 +408,10 @@ export const PRESETS = [
     name: '少牌マイティ風',
     category: '特殊',
     tags: ['三麻', '少牌マイティ', '高速'],
-    description: '手牌が常に1枚少なく、足りない1枚は何にでもなる牌として扱います。テンパイ形がそのまま和了になるので、驚くほど速く決着します。東南戦・テンパイ連荘、30,000点持ち30,000点返し、赤なし・裏なし、北は共通役牌。',
+    description: '手牌が常に1枚少なく、足りない1枚は何にでもなる牌として扱います。テンパイ形がそのまま和了になるので、驚くほど速く決着します。'
+      + '東南戦・テンパイ連荘、30,000点持ち30,000点返し、本場は場に200点、赤なし・裏なし・抜きドラなし、北は共通役牌。'
+      + 'オープンリーチあり、4枚使い七対子あり。大車輪・萬子混一色は役満。'
+      + '※「無」（4副露完了で役満）は未実装です。',
     rules: {
       meta: { id: 'mighty3', name: '少牌マイティ風' },
       // 公式ルールは東南戦・テンパイ連荘
@@ -417,7 +424,11 @@ export const PRESETS = [
         // オープンリーチあり（全開け）
         openRiichi: { enabled: true, revealMode: 'all' },
       },
-      scoring: { startingPoints: 30000, returnPoints: 30000, uma: [15, -5, -10], roundUpMangan: true },
+      scoring: {
+        startingPoints: 30000, returnPoints: 30000, uma: [15, -5, -10],
+        // 符計算あり・1000おきに切り上げ。本場は場に200点（8000は8200）
+        roundUpMangan: true, honbaPoints: 200,
+      },
       // 北は抜かずに共通の役牌として使う
       sanma: {
         tsumoLoss: false,

@@ -426,7 +426,8 @@ export class GameEngine {
       riichi: p.riichi,
       doubleRiichi: p.doubleRiichi,
       openRiichi: p.openRiichi,
-      ippatsu: p.ippatsu && !opts.noIppatsu,
+      // 一発を採らないルール（競技ルールなど）ではここで落とす
+      ippatsu: p.ippatsu && !opts.noIppatsu && this.rules.win.ippatsu !== false,
       rinshan: !!opts.rinshan,
       chankan: !!opts.chankan,
       haitei: tsumo && this.wall.remaining === 0,
