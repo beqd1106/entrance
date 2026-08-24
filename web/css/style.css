@@ -441,6 +441,18 @@ body.playing .nav { display: none; }
   border-color: rgba(255, 255, 255, 0.18);
 }
 .seat.riichi { background: rgba(193, 55, 44, 0.16); border-color: rgba(193, 55, 44, 0.34); }
+/* 横持ちでは席そのものを塗らない。上下の席は卓の幅いっぱいなので、
+   塗ると画面を横切る帯になる。リーチは名札の色で示す（下に定義）。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .board .seat.riichi { background: none; border-color: transparent; }
+  /* 席を塗らないぶん、名札をはっきり赤くしてリーチを示す */
+  .board .seat.riichi > .seat-head {
+    background: rgba(200, 52, 42, .92); color: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 150, 140, .5);
+  }
+  .board .seat.riichi > .seat-head .seat-pts,
+  .board .seat.riichi > .seat-head .tiny { color: #fff; }
+}
 .seat-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
 /* 名前は、リーチや割れ目の札が入っても点数を押し出さないよう縮める */
 .seat-head .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -941,6 +953,8 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        切れて「直前に何を切ったか」が見えなくなっていた。
        等分なら1行79pxで、4人とも河が最後まで出る。 */
     grid-template-rows: repeat(3, minmax(0, 1fr));
+    /* 三麻は対面がいない。上の段は詰めて、そのぶんを残る3席に回す */
+    row-gap: 4px;
     /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
        「卓を囲んでいる」形に見えなくなる（河は中央側へ寄せてある） */
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -971,6 +985,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
   .seat-left > .discards { justify-content: end; }
   .seat-right > .discards { justify-content: start; }
+  /* 三麻は上の段に誰もいない。等分のままだと卓の1/3が空の緑になる */
+  .board.p3 { grid-template-rows: 0 minmax(0, 1fr) minmax(0, 1fr); }
+
   /* 上下の席は「名札｜河｜鳴き」を横に並べる。
      名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
      切れて直前の捨て牌が見えなくなっていた。左右の席は元から横並びで、

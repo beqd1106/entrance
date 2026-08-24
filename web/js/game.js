@@ -912,6 +912,9 @@ function seatPos(n, seat) {
 function drawBoard(s) {
   const board = clear(G.dom.board);
   const n = s.players.length;
+  // 三麻には対面がいない。上の段をそのまま空けておくと卓の1/3が
+  // 何も無い緑のままになるので、席数を印にして高さを配り直す
+  board.classList.toggle('p3', n === 3);
   for (const p of s.players) {
     const pos = seatPos(n, p.seat);
     if (pos === 'bottom') continue;
