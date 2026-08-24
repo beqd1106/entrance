@@ -141,8 +141,18 @@ export function renderOnline(root, params) {
         h('h3', { style: { fontSize: '16px', marginBottom: '4px' }, text: '部屋に入る' }),
         h('p.tiny.muted', { text: '教えてもらった4桁の番号を入れてください。通信が切れて抜けてしまったときも、同じ番号で戻れます。' }),
         h('div.row.gap-8', { style: { margin: '10px 0' } }, no, join))));
-    body.appendChild(h('p.tiny.muted', { style: { marginTop: '12px' },
-      text: status() === 'open' ? '接続しています。' : 'サーバにつないでいます…' }));
+    // 「接続しています」は日本語だと「接続中」に読める。つながった状態と
+    // つないでいる途中が同じ言い方だったので、状態ごとに言い分ける。
+    // 切れたまま気づかないと、部屋を作っても何も起きない理由が分からない。
+    const NET_TEXT = {
+      open: 'サーバにつながっています。',
+      connecting: 'サーバにつないでいます…',
+      closed: 'サーバとの通信が切れました。しばらくしてからもう一度お試しください。',
+      idle: 'サーバにつないでいます…',
+    };
+    const st = status();
+    body.appendChild(h('p.tiny', { class: st === 'closed' ? 'warn-text' : 'muted',
+      style: { marginTop: '12px' }, text: NET_TEXT[st] || NET_TEXT.idle }));
   }
 
   // --- 部屋のなか（席が埋まるのを待つ）

@@ -94,7 +94,8 @@ export function renderStoreEdit(root, params) {
     h('div',
       h('div.eyebrow', { text: 'STORE PROFILE' }),
       h('h1', { style: { fontSize: 'clamp(22px,3vw,30px)', marginTop: '6px' }, text: '店舗情報の編集' }),
-      h('p.tiny.muted', { style: { margin: '6px 0 0' }, text: 'お客様が最初に見る情報です。右側に見え方が出ます。' })),
+      h('p.tiny.muted', { style: { margin: '6px 0 0' }, // スマホでは1列に積むので「右側」は無い。どちらでも正しい言い方にする
+        text: 'お客様が最初に見る情報です。見え方のプレビューも一緒に出ます。' })),
     h('div.grow'),
     sel));
   wrap.appendChild(h('div.editor-grid', left, right));
