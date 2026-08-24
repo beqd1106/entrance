@@ -8,7 +8,7 @@ import { validateRules } from '../../src/rules/validator.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { codeToType, typeName } from '../../src/core/tiles.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../../src/rules/explain.js';
-import { lookupPreset, saveCustomPreset, loadCustomPresets } from './custom.js';
+import { lookupPreset, saveCustomPreset, loadCustomPresets, deleteCustomPreset } from './custom.js';
 import { h, clear, icon, chip, field, switchRow, stepper, sectionHead, toggleRow, tileEl } from './ui.js';
 import { hasServer, draftRules } from './api.js';
 
@@ -1149,6 +1149,33 @@ function renderRight(right, state, onChange) {
   actions.appendChild(save);
   actions.appendChild(play);
   actions.appendChild(savedNote);
+
+  // 保存した自作ルールを消す手段が無く、増える一方だった。
+  // 消せるのは自分で保存したものだけ（お店のルールは消さない）。
+  // 取り返しがつかないので、1度目は確かめ、5秒たてば元に戻す。
+  if (loadCustomPresets().some((p) => p.id === state.id)) {
+    const del = h('button.btn.btn-sm.btn-ghost.btn-block.ed-delete',
+      { type: 'button', style: { marginTop: '10px' }, text: 'このルールを削除' });
+    let armed = false;
+    let timer = null;
+    del.addEventListener('click', () => {
+      if (!armed) {
+        armed = true;
+        del.textContent = 'もう一度押すと削除します';
+        del.classList.add('is-armed');
+        timer = setTimeout(() => {
+          armed = false;
+          del.textContent = 'このルールを削除';
+          del.classList.remove('is-armed');
+        }, 5000);
+        return;
+      }
+      clearTimeout(timer);
+      deleteCustomPreset(state.id);
+      location.hash = '#/table';
+    });
+    actions.appendChild(del);
+  }
   actions.appendChild(h('div.tiny.muted', { style: { marginTop: '10px' }, text: shortSummary(R) }));
   right.appendChild(actions);
 

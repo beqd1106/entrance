@@ -604,6 +604,10 @@ body.playing .nav { display: none; }
   .filter-conds.open { display: block; margin-top: 8px; }
 }
 
+/* 自作ルールの削除。取り返しがつかないので、押す前と押したあとで色を変える */
+.ed-delete { color: var(--ink-4); }
+.ed-delete.is-armed { color: var(--brass); border-color: var(--brass); font-weight: 700; }
+
 .room-rules { display: grid; gap: 8px; }
 .room-rule { display: grid; gap: 2px; }
 .room-rule b { font-size: 13px; }
