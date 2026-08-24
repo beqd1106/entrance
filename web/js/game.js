@@ -114,10 +114,14 @@ export function renderGame(root, params) {
   // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
   document.body.classList.add('playing');
   buildDom(root);
-  // 途中から戻った卓は、案内を挟まずにそのまま追いつく
-  if (G.online && online.rejoin) {
+  // オンラインの卓は、案内を挟まずそのまま始める。
+  // 部屋主が開始を押したあとに全員が確認を閉じる作りだと、読んでいる間も
+  // 持ち時間が進み、最初の番を自動で切られることがある。
+  // ルールの要点は入る前（部屋の画面）に出しているので、ここでは出さない。
+  // 天鳳・雀魂も、部屋が始まったらそのまま卓に入る。
+  if (G.online) {
     startGame();
-    resync(G.online.no, 0);
+    if (online.rejoin) resync(G.online.no, 0);
   } else {
     showPregame();
   }

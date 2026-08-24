@@ -12,6 +12,8 @@
  */
 import { h, clear, sectionHead, chip, field } from './ui.js';
 import { ALL_PRESETS } from '../../src/rules/presets.js';
+import { resolveRules } from '../../src/rules/defaults.js';
+import { explainForBeginners } from '../../src/rules/explain.js';
 import { loadCustomPresets, lookupPreset } from './custom.js';
 import {
   hasOnline, connect, disconnect, onMessage, status,
@@ -155,6 +157,20 @@ export function renderOnline(root, params) {
       style: { marginTop: '12px' }, text: NET_TEXT[st] || NET_TEXT.idle }));
   }
 
+  /**
+   * その卓のルールで、打つ前に知っておく点を3つまで返す。
+   * 対局前の確認と同じ中身だが、オンラインでは「入る前」に見せたい。
+   */
+  function roomRulePoints(preset) {
+    try {
+      const r = resolveRules(preset.rules);
+      return explainForBeginners(r).slice(0, 3)
+        .map((x) => ({ title: x.title, body: x.body }));
+    } catch (e) {
+      return [];
+    }
+  }
+
   // --- 部屋のなか（席が埋まるのを待つ）
   function drawRoom() {
     clear(body);
@@ -169,6 +185,17 @@ export function renderOnline(root, params) {
 
     body.appendChild(h('div.row.gap-8.wrapflex', { style: { marginBottom: '12px' } },
       chip(preset.name), chip(`${room.n}人打ち`)));
+
+    // この卓のルールで押さえておく点。始まってから案内を挟むと、
+    // 読んでいる間も持ち時間が進んでしまうので、入る前のここで出す。
+    const points = roomRulePoints(preset);
+    if (points.length) {
+      body.appendChild(h('div.card.card-pad', { style: { marginBottom: '12px' } },
+        h('div.tiny.muted', { style: { marginBottom: '6px' }, text: 'この卓のルール' }),
+        h('div.room-rules', points.map((pt) => h('div.room-rule',
+          h('b', { text: pt.title }),
+          h('span.tiny.muted', { text: pt.body }))))));
+    }
 
     const list = h('div.seat-list');
     room.seats.forEach((s) => {

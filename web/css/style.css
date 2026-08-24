@@ -590,6 +590,11 @@ body.playing .nav { display: none; }
 .big-score { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
 /* うまくいっていない状態の文字。灰色の補足と同じ見た目だと気づかれない */
 .warn-text { color: var(--brass); font-weight: 600; }
+/* オンラインの待合室に出す「この卓のルール」 */
+.room-rules { display: grid; gap: 8px; }
+.room-rule { display: grid; gap: 2px; }
+.room-rule b { font-size: 13px; }
+.room-rule .tiny { line-height: 1.6; }
 .pt-plus { color: var(--ink); font-family: var(--mono); font-weight: 700; }
 .pt-minus { color: var(--red); font-family: var(--mono); }
 
