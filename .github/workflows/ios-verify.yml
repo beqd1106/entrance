@@ -40,6 +40,7 @@ jobs:
           node test/check-choice-ui.js
           node test/check-bonus-tiers.js
           node test/check-zero-sum.js
+          node test/check-reduced-motion.js
           node test/sim.js 5
 
       - name: Web資産を配置

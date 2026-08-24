@@ -3353,6 +3353,15 @@ body.op-mode::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .tile.just, .seat.active, .hand-row.my-turn::before { animation: none; }
   .flash, .flash-text { animation: none; }
+  /* 横持ちでは席そのものではなく名札を光らせている。
+     こちらも止めないと、動きを減らす設定にしても点滅が残る。 */
+  .board .seat.active > .seat-head { animation: none; }
+  .turn-dot { animation: none; }
+  /* まだ振っていないサイコロの揺れ */
+  .die-idle .die-cube { animation: none; }
+  /* ツモ牌の呼吸と、縦持ちの「横にしてください」の揺れ */
+  .bottom-bar .tile.tsumo-gap { animation: none; }
+  .rotate-hint svg { animation: none; }
 }
 
 /* 鳴き・リーチを卓の上に一瞬だけ出す */
