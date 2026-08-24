@@ -911,7 +911,9 @@ function drawBoard(s) {
   board.appendChild(center);
   // 自分の捨て牌・副露はbottomエリアへ
   const me = s.players[G.mySeat];
-  board.appendChild(h('div.seat.seat-bottom', { class: me.riichi ? 'riichi' : '' },
+  // 自分の席も、自分の番なら光らせる（他家と同じ扱いにする）
+  const myTurn = actingSeat() === G.mySeat && !s.finished && s.phase !== 'kyokuEnd';
+  board.appendChild(h('div.seat.seat-bottom', { class: `${me.riichi ? 'riichi' : ''} ${myTurn ? 'active' : ''}` },
     seatHead(me, s),
     meldsEl(me),
     discardsEl(me)));

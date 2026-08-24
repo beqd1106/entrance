@@ -723,9 +723,22 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      360/1.28＝281pxに押し込むことになり、どの席も河が27px切れていた。
      縦持ちは下に伸ばせるので、高さは中身に合わせて外に出さない。 */
   .board {
-    grid-template-columns: 1fr; grid-template-areas: 'top' 'left' 'right' 'center' 'bottom';
+    grid-template-columns: 1fr;
+    /* 局・残り・ドラは常に見えていないと困る。縦持ちでは真ん中に置くと
+       下へスクロールしないと見えなくなるので、いちばん上に置く */
+    grid-template-areas: 'center' 'top' 'left' 'right' 'bottom';
     aspect-ratio: auto; height: auto; align-content: start; grid-auto-rows: auto;
   }
+  /* 縦持ちは高さが足りない。他家の伏せ牌は「何を持っているか」が分からない以上
+     情報が無いので畳み、そのぶんを河に回す（鳴いた牌は残す） */
+  .seat-top > .hand-row, .seat-left > .hand-row, .seat-right > .hand-row { display: none; }
+  /* 中央の案内は、縦持ちでは横長の帯にする */
+  .board-center { justify-items: stretch; }
+  .center-info {
+    flex-direction: row; flex-wrap: wrap; gap: 4px 14px;
+    padding: 7px 12px; width: 100%; aspect-ratio: auto; min-height: 0;
+  }
+  .center-kyoku { font-size: 15px; }
   .table-main { height: auto; }
   .seat, .seat-left, .seat-right { overflow: visible; }
   /* 上の帯は、横持ちだけ1段に固定する。縦持ちは下に余裕があるので折り返す。
@@ -794,7 +807,23 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      卓が menu の下まで広がって左の席が隠れる（iPhone SE の横持ち） */
   .board-scroll { padding-left: 108px; }
   /* 縦持ち用の「画面端まで広げる」指定が残ると、横持ちで数px はみ出す */
-  .bottom-bar { margin: 0; padding-inline: 0; }
+  /* 手元の帯は、向聴・待ち・案内で3段になって120px以上使っていた。
+     天鳳・雀魂と同じく卓を主役にしたいので、1段にまとめて詰める。
+     浮いたぶんは卓の高さになり、河が3段とも見えるようになる。 */
+  .bottom-bar {
+    margin: 0; padding-inline: 0;
+    display: grid; gap: 2px;
+    grid-template-areas: 'info hint' 'hand hand';
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+  .bottom-bar > .my-area { grid-area: info; justify-self: start; }
+  .bottom-bar > .hint-row { grid-area: hint; justify-self: center; }
+  .bottom-bar > .hand-row { grid-area: hand; }
+  .bottom-bar > .actions, .bottom-bar > .debug-panel { grid-area: hand; }
+  .my-area .row { margin-top: 0 !important; }
+  .shanten-tag { padding: 2px 9px; font-size: 10.5px; }
+  .waits { font-size: 10px; }
   /* 上の帯は、折り返すと2段になって卓の高さを50px以上奪う。
      1段に固定して、入りきらないぶんは横に送れるようにする */
   .table-top {
@@ -861,8 +890,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        以前は真ん中の案内に全部回っていて、河が50pxしか無いのに
        中央だけ179pxある不釣り合いな卓になっていた */
     grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
-    /* 横持ちは上下の河を1行に伸ばすので、左右の席に幅を回せる */
-    grid-template-columns: minmax(140px, 1fr) minmax(0, 2.1fr) minmax(140px, 1fr);
+    /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
+       「卓を囲んでいる」形に見えなくなる（河は中央側へ寄せてある） */
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     /* 席の並びも卓の形に戻す。
        iPhone SE の横持ち（667px幅）は「狭い画面」の指定にも当てはまるため、
        縦に積む並び（5段）が残ったまま横持ちの3列が重なり、
@@ -877,16 +907,47 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-top > .hand-row,
   .seat-left > .hand-row,
   .seat-right > .hand-row { display: none; }
-  /* 上下は横に広い。河を1行に伸ばして高さを最小にし、
-     そのぶんを左右の席（縦がいちばん厳しい）へ回す */
-  .seat-top > .discards, .seat-bottom > .discards { grid-template-columns: repeat(18, auto); }
-  /* 左右は行数を減らすほうが効く。列を増やして縦を詰める */
-  .seat-left > .discards, .seat-right > .discards { grid-template-columns: repeat(9, auto); }
-  /* 河は最後まで（18〜20枚）出しきる必要がある。横持ちの高さで4人ぶん
-     収めるには、この大きさまで落とすしかない。角の数字は9pxを下限に
-     しているので、小さくても何の牌かは読める */
-  .seat .tile { --tw: 14px; }
-  .seat-left .tile, .seat-right .tile { --tw: 13px; }
+  /* 河は4人とも6列。天鳳・雀魂と同じで、6枚で折り返して3段になる。
+     1行に伸ばすと高さは稼げるが、何巡目に何を切ったのかが読めない。
+     卓を囲んでいる形も出ない。見やすさを優先して6列に戻す。 */
+  .seat > .discards { grid-template-columns: repeat(6, auto); }
+  /* 6列に折り返すぶん、牌は大きくできる。14pxでは何の牌か判別しづらかった */
+  .seat .tile { --tw: 19px; }
+  .seat-left .tile, .seat-right .tile { --tw: 19px; }
+  /* 4つの河を中央に寄せて、卓を囲む形にする。
+     外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
+  .seat-left > .discards { justify-content: end; }
+  .seat-right > .discards { justify-content: start; }
+  .seat-top, .seat-bottom {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  /* 上の席は中身を下端へ（＝河が中央に近づく）、下の席は上端へ */
+  .seat-top { justify-content: flex-end; }
+  .seat-bottom { justify-content: flex-start; }
+  .seat-top > .discards, .seat-bottom > .discards { justify-content: center; }
+  /* 左右の席も、中身を中央側へ寄せる */
+  .seat-left { justify-items: end; }
+  .seat-right { justify-items: start; }
+  /* 中央の案内は小さく。ここが大きいと河が中心から離れる */
+  .center-info { padding: 5px 12px; gap: 2px; border-radius: 12px; }
+  /* 卓は正方形に近い形にまとめる。横に広げると4人の河が散って、
+     1つの卓を囲んでいるように見えない（天鳳・雀魂はどれも正方形に近い） */
+  .board { max-width: 560px; margin-inline: auto; }
+  /* 点数は勝負そのもの。名前より大きく、はっきり出す */
+  .seat-pts { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0; }
+  .seat-bp { font-size: 10px; }
+  .seat-head .grow { font-size: 11px; opacity: .82; }
+  /* いま誰の番かが分からないと、待っているのか自分の番なのか掴めない */
+  .seat.active {
+    background: rgba(255, 236, 176, 0.14);
+    border-color: rgba(255, 216, 122, 0.75);
+    box-shadow: 0 0 0 1px rgba(255, 216, 122, .35), 0 0 18px rgba(255, 205, 90, .28);
+  }
+  .turn-dot {
+    width: 9px; height: 9px; background: #ffd166;
+    box-shadow: 0 0 0 3px rgba(255, 209, 102, .3);
+    animation: turnPulse 1.1s ease-in-out infinite;
+  }
   .center-info { min-width: 0; aspect-ratio: auto; }
   /* それでも溢れたときは、切らずに席の中で送れるようにしておく */
   .seat { overflow-y: auto; scrollbar-width: none; }
@@ -1395,6 +1456,11 @@ textarea { resize: vertical; min-height: 56px; }
   pointer-events: none;
 }
 .board > * { position: relative; z-index: 1; }
+@keyframes turnPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 209, 102, .30); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 209, 102, .12); }
+}
+
 /* 卓の枠は、ふだんは卓のひとまわり外側（-14px）に置いている。
    横持ちは卓が画面いっぱいなので、その外側は切り取られ、枠の上下が
    見えなくなる。卓が見切れて見えるので、横持ちだけ枠を内側に合わせる。 */
