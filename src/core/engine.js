@@ -1110,7 +1110,13 @@ export class GameEngine {
         // 結果画面で「どんな手で和了ったか」を見せるための表示用データ
         handTiles: sortTiles(win.ctx.hand.filter((t) => t !== win.ctx.winTile)).map((t) => this.tileInfo(t)),
         winTile: this.tileInfo(win.ctx.winTile),
-        meldsView: p.melds.map((m) => ({ type: m.type, tiles: m.tiles.map((t) => this.tileInfo(t)) })),
+        // m.type という項目は存在しない（正しくは kind）。ずっと undefined を
+        // 渡していて、結果画面は鳴きを「ただの3枚」としか出せなかった。
+        meldsView: p.melds.map((m) => ({
+          kind: m.kind, concealed: m.concealed, from: m.from ?? null,
+          calledTileId: m.calledTile ? m.calledTile.id : null,
+          tiles: m.tiles.map((t) => this.tileInfo(t)),
+        })),
         gain: s.deltas[seat],
       });
     }
@@ -1610,7 +1616,15 @@ export class GameEngine {
         mighty: this.wild,
         riichiTileId: p.riichiTileId || null,
         drawn: p.drawn && (p.seat === viewerSeat || reveal) ? this.tileInfo(p.drawn) : (p.drawn ? { hidden: true } : null),
-        melds: p.melds.map((m) => ({ kind: m.kind, concealed: m.concealed, tiles: m.tiles.map((t) => this.tileInfo(t)) })),
+        // from（誰から鳴いたか）と calledTileId（鳴いた牌）も渡す。
+        // 麻雀では鳴いた牌を横に倒し、倒す位置で出どころを示す決まりがある
+        // （上家＝左端・対面＝真ん中・下家＝右端）。渡していないと画面が
+        // 全部まっすぐ並べてしまい、誰が振り込んだのかが読めない。
+        melds: p.melds.map((m) => ({
+          kind: m.kind, concealed: m.concealed, from: m.from ?? null,
+          calledTileId: m.calledTile ? m.calledTile.id : null,
+          tiles: m.tiles.map((t) => this.tileInfo(t)),
+        })),
         discards: p.discards.map((t) => this.tileInfo(t)),
         kita: p.kita.map((t) => this.tileInfo(t)),
         kitaCount: p.kita.length,

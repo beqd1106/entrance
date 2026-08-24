@@ -772,7 +772,9 @@ function drawTop(s) {
   // 卓の中央にも同じ内容が出るので、狭い画面ではこちらを隠す（.top-stat）
   const item = (k, v) => h('div.top-stat', h('div.k', { text: k }), h('div.v', { text: v }));
   // どこから来たかは分からないので、来た道を戻す。履歴が無いときはホームへ。
-  const back = h('button.chip.chip-btn.game-back', { type: 'button' }, h('span', { text: '← もどる' }));
+  // 狭い横持ちでは文字を畳んで矢印だけにするので、印と語を分けて持たせる
+  const back = h('button.chip.chip-btn.game-back', { type: 'button' },
+    h('span.mark', { text: '←' }), h('span', { text: 'もどる' }));
   back.addEventListener('click', () => {
     if (history.length > 1) history.back();
     else location.hash = '#/';
@@ -828,7 +830,7 @@ function drawTop(s) {
 
   // デバッグは検証用。ふだんは出さない（URLに debug=1 を付けたときだけ）
   if (G.debugAvailable) {
-    const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), 'デバッグ');
+    const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), h('span', { text: 'デバッグ' }));
     dbg.addEventListener('click', () => {
       G.debugOpen = !G.debugOpen;
       G.dom.debug.classList.toggle('hide', !G.debugOpen);
@@ -921,6 +923,13 @@ function drawBoard(s) {
       h('div.center-kyoku', { text: `${s.round.windName}${s.round.kyoku}局` }),
       h('div.center-sub', { text: `${s.round.honba}本場 ／ 残り ${s.wallRemaining}枚` }),
       h('div.dora-box', s.dora.map((d) => tileEl(d, { size: 'sm' }))),
+      // 供託のリーチ棒。卓の真ん中に出ていないと、場にいくら乗っているかが
+      // 分からない。天鳳・雀魂はどちらも卓の中央に置いている。
+      s.round.kyotaku
+        ? h('div.center-kyotaku',
+          h('div.sticks', Array.from({ length: Math.min(s.round.kyotaku, 8) }, () => h('div.stick'))),
+          h('span.center-sub', { text: `供託 ${fmt(s.round.kyotaku * G.rules.scoring.riichiStick)}点` }))
+        : null,
       s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
   board.appendChild(center);
   // 自分の捨て牌・副露はbottomエリアへ
@@ -1004,17 +1013,47 @@ function nukiGroup(tiles, label) {
       n > 1 ? h('span.nuki-count', { text: `×${n}` }) : null)));
 }
 
+/**
+ * 鳴き1組を牌で組み立てる。卓の上でも結果画面でも同じ形にする。
+ *
+ * 麻雀では鳴いた牌を横に倒し、倒す位置で出どころを示す決まりがある
+ * （上家＝左端・対面＝真ん中・下家＝右端）。これを守らないと、
+ * 誰が振り込んだのかを卓の上から追えない。天鳳・雀魂も同じ置き方。
+ *
+ * @param {object} m    鳴き（kind/concealed/from/calledTileId/tiles）
+ * @param {number} seat 鳴いた人の席
+ */
+function meldTiles(m, seat) {
+  // 暗槓は「両端を伏せ、中の2枚を表」にするのが麻雀の決まり。
+  // 4枚とも伏せると何を槓したのか誰にも分からず、ドラが増えた理由も
+  // 追えない。天鳳・雀魂も両端だけ伏せている。
+  // 5枚目以降（1種8枚のルールで足したぶん）は表向きのまま置く。
+  const hide = (i) => m.kind === 'kan' && m.concealed && (i === 0 || i === 3);
+  let tiles = m.tiles.map((t, i) => ({
+    t: hide(i) ? { hidden: true } : t,
+    called: m.calledTileId != null && t.id === m.calledTileId,
+  }));
+  if (!m.concealed && m.from != null && seat != null) {
+    const n = G.rules.game.players;
+    const rel = ((m.from - seat) + n) % n;  // 1=下家、n-1=上家、それ以外=対面
+    const called = tiles.find((x) => x.called);
+    if (called) {
+      const rest = tiles.filter((x) => x !== called);
+      if (rel === n - 1) tiles = [called, ...rest];
+      else if (rel === 1) tiles = [...rest, called];
+      else tiles = [rest[0], called, ...rest.slice(1)];
+    }
+  }
+  return h('div.meld', tiles.map((x) => tileEl(
+    x.t, { size: 'sm', attrs: x.called && !m.concealed ? { class: 'side' } : null },
+  )));
+}
+
 function meldsEl(p) {
   const kita = p.kita || [];
   if (!p.melds.length && !kita.length && !p.flowers.length) return null;
   const wrap = h('div.melds');
-  for (const m of p.melds) {
-    // 暗槓は伏せて出すが、5枚目以降を足したぶんは表向きに置く
-    // （どれだけ足したかが見えないと、増えたドラの理由が分からない）
-    wrap.appendChild(h('div.meld', m.tiles.map((t, i) => tileEl(
-      m.kind === 'kan' && m.concealed && i < 4 ? { hidden: true } : t, { size: 'sm' },
-    ))));
-  }
+  for (const m of p.melds) wrap.appendChild(meldTiles(m, p.seat));
   // 抜きドラ（北・ガリ）と華牌は別グループにする
   const k = nukiGroup(kita, '抜き');
   if (k) wrap.appendChild(k);
@@ -1272,9 +1311,11 @@ function winHandView(d) {
     row.appendChild(tileEl(d.winTile, { size: 'sm', cls: 'tile-win' }));
   }
   box.appendChild(row);
-  for (const m of d.meldsView || []) {
+  // 鳴きも卓の上と同じ形（暗槓は伏せ、鳴いた牌は横）で見せる。
+  // 「何で和了ったか」を確かめる画面なので、卓と違う形だと読み替えがいる。
+  if (d.meldsView && d.meldsView.length) {
     const mr = h('div.hand-row.meld-row');
-    for (const t of m.tiles) mr.appendChild(tileEl(t, { size: 'sm' }));
+    for (const m of d.meldsView) mr.appendChild(meldTiles(m, d.seat));
     box.appendChild(mr);
   }
   return box;

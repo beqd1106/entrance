@@ -499,7 +499,14 @@ body.playing .nav { display: none; }
    空いた高さは左右の席（縦がいちばん厳しい）に回る */
 .seat-top > .discards, .seat-bottom > .discards { grid-template-columns: repeat(9, auto); }
 .melds { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-.meld { display: flex; gap: 1px; }
+.meld { display: flex; gap: 1px; align-items: flex-end; }
+/* 鳴いた牌は横に倒す。回すだけだと元の縦長の場所を占めたままなので、
+   隣の牌に重なる。倒した後の見た目どおりの大きさを箱にも与える。 */
+.meld .tile.side {
+  width: calc(var(--tw) * 1.38); height: var(--tw);
+  transform: none; writing-mode: horizontal-tb;
+}
+.meld .tile.side > * { transform: rotate(-90deg); }
 .center-info {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   min-height: 0; overflow: hidden; padding: 8px 16px;
@@ -928,7 +935,12 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     /* 余った高さは上下の席（＝その人の河）に回す。
        以前は真ん中の案内に全部回っていて、河が50pxしか無いのに
        中央だけ179pxある不釣り合いな卓になっていた */
-    grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    /* 3行を等分する。真ん中を auto にしていたとき、左右の席の中身（札＋河）
+       ぶんの123pxが中央行に取られ、上下の席には62pxしか残らなかった。
+       上下の河は3段（56px）＋札（22px）で78px要るので、最後の段が
+       切れて「直前に何を切ったか」が見えなくなっていた。
+       等分なら1行79pxで、4人とも河が最後まで出る。 */
+    grid-template-rows: repeat(3, minmax(0, 1fr));
     /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
        「卓を囲んでいる」形に見えなくなる（河は中央側へ寄せてある） */
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -936,7 +948,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        iPhone SE の横持ち（667px幅）は「狭い画面」の指定にも当てはまるため、
        縦に積む並び（5段）が残ったまま横持ちの3列が重なり、
        左の席が0pxに潰れて何も見えなくなっていた。 */
-    grid-template-areas: '. top .' 'left center right' '. bottom .';
+    /* 上下の席は3列ぶん使う。名札を河の横に置くための幅がいる。
+       中央の1列（157px）に押し込めると、名札が河に重なる。 */
+    grid-template-areas: 'top top top' 'left center right' 'bottom bottom bottom';
   }
 
   /* 席の見出しも縦を食う。横持ちでは1行に詰める */
@@ -957,13 +971,21 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
   .seat-left > .discards { justify-content: end; }
   .seat-right > .discards { justify-content: start; }
+  /* 上下の席は「名札｜河｜鳴き」を横に並べる。
+     名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
+     切れて直前の捨て牌が見えなくなっていた。左右の席は元から横並びで、
+     だから切れていない。天鳳・雀魂も名札は河の横（卓の角）にある。 */
   .seat-top, .seat-bottom {
-    display: flex; flex-direction: column; align-items: center;
+    display: grid; column-gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: 'head river meld';
   }
-  /* 上の席は中身を下端へ（＝河が中央に近づく）、下の席は上端へ */
-  .seat-top { justify-content: flex-end; }
-  .seat-bottom { justify-content: flex-start; }
-  .seat-top > .discards, .seat-bottom > .discards { justify-content: center; }
+  /* 上の席は河を下端＝中央寄りに、下の席は上端＝中央寄りに置く */
+  .seat-top { align-items: end; }
+  .seat-bottom { align-items: start; }
+  .seat-top > .seat-head, .seat-bottom > .seat-head { grid-area: head; justify-self: end; }
+  .seat-top > .discards, .seat-bottom > .discards { grid-area: river; margin-top: 0; }
+  .seat-top > .melds, .seat-bottom > .melds { grid-area: meld; justify-self: start; margin-top: 0; }
   /* 左右の席も、中身を中央側へ寄せる */
   .seat-left { justify-items: end; }
   .seat-right { justify-items: start; }
@@ -1003,8 +1025,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-top, .seat-bottom, .seat-left, .seat-right { min-height: 0; }
   /* 左脇のメニューは卓の上に重ねる。108px を常時空けておくと
      そのぶん卓が小さくなる（メニューは滅多に触らない） */
-  .board-scroll { padding-left: 0; }
   .table-top { background: rgba(10, 24, 19, .62); }
+  /* 脇のメニューは卓に重ねる。ただし卓がその下まで広がると
+     左の席が隠れるので、卓の幅を抑えて重ならないようにする。 */
+  .board-scroll { padding-left: 0; }
+  .board { max-width: min(620px, 100% - 118px); }
   /* 点数は勝負そのもの。名前より大きく、はっきり出す */
   .seat-pts { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0; }
   .seat-bp { font-size: 11px; }
@@ -1014,12 +1039,17 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-wind { width: 17px; height: 17px; font-size: 11px; border-radius: 4px; }
   /* いちばん上の席が画面の縁に貼りつかないよう、卓の上下に余白を持たせる */
   .board-scroll { padding-block: 4px; }
-  /* いま誰の番かが分からないと、待っているのか自分の番なのか掴めない */
-  .seat.active {
-    background: rgba(255, 236, 176, 0.14);
-    border-color: rgba(255, 216, 122, 0.75);
-    box-shadow: 0 0 0 1px rgba(255, 216, 122, .35), 0 0 18px rgba(255, 205, 90, .28);
+  /* いま誰の番かは名札を光らせて示す。
+     席そのものを囲むと、上下の席は卓の幅いっぱいなので
+     画面を横切る大きな枠が出て、卓に見えなくなる。
+     天鳳・雀魂も光るのは名札のほう。 */
+  .board .seat.active { background: none; border-color: transparent; box-shadow: none; animation: none; }
+  .seat.active > .seat-head {
+    background: rgba(255, 236, 176, 0.9); color: #22301f;
+    box-shadow: 0 0 0 1px rgba(255, 216, 122, .8), 0 0 16px rgba(255, 205, 90, .45);
   }
+  .seat.active > .seat-head .seat-pts, .seat.active > .seat-head .tiny { color: #22301f; }
+  .seat.active > .seat-head { animation: seatBreathe 2.4s var(--ease) infinite; }
   .turn-dot {
     width: 9px; height: 9px; background: #ffd166;
     box-shadow: 0 0 0 3px rgba(255, 209, 102, .3);
@@ -1538,6 +1568,16 @@ textarea { resize: vertical; min-height: 56px; }
   50% { box-shadow: 0 0 0 6px rgba(255, 209, 102, .12); }
 }
 
+/* iPhone SE のような狭い横持ちでは、脇のメニューの文字まで出すと
+   104px を常時使う。アイコンだけに畳んで、そのぶんを卓に回す。 */
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 760px) {
+  .table-top { width: 46px; max-width: 46px; padding: 6px 4px; }
+  .table-top .act span:not(.mark), .table-top .chip-btn span:not(.mark) { display: none; }
+  .table-top .act, .table-top .chip-btn { padding: 7px 4px; gap: 0; }
+  .table-top .chip-brass { display: none; }
+  .board { max-width: min(620px, 100% - 60px); }
+}
+
 /* 卓の枠は、ふだんは卓のひとまわり外側（-14px）に置いている。
    横持ちは卓が画面いっぱいなので、その外側は切り取られ、枠の上下が
    見えなくなる。卓が見切れて見えるので、横持ちだけ枠を内側に合わせる。 */
@@ -1885,6 +1925,21 @@ textarea { resize: vertical; min-height: 56px; }
   .die-face.f5 { transform: rotateY(90deg) translateZ(17px); }
   .die-face.f3 { transform: rotateX(-90deg) translateZ(17px); }
   .die-face.f4 { transform: rotateX(90deg) translateZ(17px); }
+}
+
+/* 供託のリーチ棒。卓の真ん中に積んで、場に乗っている点を見せる */
+.center-kyotaku { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 2px; }
+.center-kyotaku .sticks { display: flex; flex-direction: column; gap: 2px; }
+.center-kyotaku .stick {
+  width: 30px; height: 4px; border-radius: 2px;
+  background: linear-gradient(180deg, #fbf6ea, #e6dcc6);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .18);
+  position: relative;
+}
+.center-kyotaku .stick::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%; background: var(--red);
 }
 
 /* 自分の和了だけ、絵を添えて分かりやすく祝う */
