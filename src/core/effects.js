@@ -355,8 +355,11 @@ export function collectWinBonus(rules, winInfo) {
   if (winInfo.yakuman > 0) {
     const base = B.yakuman * winInfo.yakuman;
     add(winInfo.tsumo ? base : base * B.yakumanRonMultiplier, '役満');
-  } else if (winInfo.limitName === '数え役満') add(B.countedYakuman, '数え役満');
-  else if (winInfo.limitName === '三倍満') add(B.sanbaiman, '三倍満');
+  } else if (winInfo.limitName === '数え役満' || /^\d+倍満$/.test(winInfo.limitName || '')) {
+    // 数え役満から先を伸ばすルール（清一色ゲームの5倍満・6倍満…）では
+    // 名前が変わる。数え役満と同じ扱いで祝儀を出す。
+    add(B.countedYakuman, winInfo.limitName);
+  } else if (winInfo.limitName === '三倍満') add(B.sanbaiman, '三倍満');
   return { bonus, detail };
 }
 

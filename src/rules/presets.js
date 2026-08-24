@@ -536,6 +536,73 @@ export const PRESETS = [
     },
   },
   {
+    id: 'jewel4',
+    name: 'ジュエル風',
+    category: '特殊',
+    tags: ['四麻', '宝石牌', 'ジュエル', '祝儀重視'],
+    description: '新宿の宝石牌ルール系。5の牌に宝石牌を5種類入れ、どれもドラ＋祝儀。'
+      + '3種類以上そろえて和了ると「ジュエル」（1翻）、全種類そろえると「宝石箱」（役満）。'
+      + '25,500持ち30,000返し・ウマ10-3・オープンリーチあり（供託2000）・流し満貫あり。'
+      + '※店によって入れる宝石牌の顔ぶれが変わります（各色2枚まで）。',
+    rules: {
+      meta: { id: 'jewel4', name: 'ジュエル風' },
+      game: { players: 4, length: 'east_south', tobiEnd: true },
+      scoring: {
+        startingPoints: 25500, returnPoints: 30000,
+        // 完全順位制のときの刻み（1位+10 / 2位+3 / 3位-3 / 4位-10）
+        uma: [10, 3, -3, -10], okaToTop: true, roundUpMangan: true,
+      },
+      // フリテンリーチ可・流し満貫あり・役満は複合する
+      win: { furitenRiichi: true },
+      ryuukyoku: { nagashiMangan: true },
+      // オープンリーチあり（供託は2000点）
+      local: {
+        openRiichi: { enabled: true, han: 1, bonus: 1 },
+        // トパーズポッチ：リーチ後はオールマイティ
+        shiroPocchi: { enabled: true, count: 1, mode: 'both', almightyCondition: 'riichi_tsumo', bonus: 2 },
+      },
+      dora: { red: {}, indicators: 1 },
+      // 5の牌に宝石牌を5種類。どれもドラ1枚ぶん＋祝儀（枚数は石ごとに違う）
+      specialTiles: [
+        {
+          id: 'emerald5m', name: 'エメラルド5萬', tile: '5m', count: 1, color: 'green',
+          activationTiming: 'win', description: 'ドラ1枚ぶん＋祝儀3枚',
+          effects: [{ type: 'dora', value: 1 }, { type: 'bonus', value: 3 }], conditions: {},
+        },
+        {
+          id: 'amethyst5p', name: 'アメジスト5筒', tile: '5p', count: 1, color: 'violet',
+          activationTiming: 'win', description: 'ドラ1枚ぶん＋祝儀2枚',
+          effects: [{ type: 'dora', value: 1 }, { type: 'bonus', value: 2 }], conditions: {},
+        },
+        {
+          id: 'gold5p', name: 'ゴールド5筒', tile: '5p', count: 1, color: 'gold',
+          activationTiming: 'win', description: 'ドラ1枚ぶん＋祝儀4枚',
+          effects: [{ type: 'dora', value: 1 }, { type: 'bonus', value: 4 }], conditions: {},
+        },
+        {
+          id: 'tourmaline5s', name: 'トルマリン5索', tile: '5s', count: 1, color: 'blue',
+          activationTiming: 'win', description: 'ドラ1枚ぶん＋祝儀2枚',
+          effects: [{ type: 'dora', value: 1 }, { type: 'bonus', value: 2 }], conditions: {},
+        },
+        {
+          id: 'crystal5s', name: 'クリスタル5索', tile: '5s', count: 1, color: 'silver',
+          activationTiming: 'win', description: 'ドラ1枚ぶん＋祝儀2枚',
+          effects: [{ type: 'dora', value: 1 }, { type: 'bonus', value: 2 }], conditions: {},
+        },
+      ],
+      // 3種類以上で「ジュエル」、全種類で「宝石箱」
+      localYaku: [
+        { id: 'jewel', enabled: true, han: 1 },
+        { id: 'jewelbox', enabled: true, yakuman: 1 },
+      ],
+      bonus: {
+        enabled: true, label: 'BP（ゲーム内ポイント・非換金）',
+        ippatsu: 1, ura: 1, aka: 0, gold: 0, pocchi: 2, kita: 0,
+        sanbaiman: 0, countedYakuman: 5, yakuman: 10, yakumanRonMultiplier: 2, tsumoAll: false,
+      },
+    },
+  },
+  {
     id: 'localyaku4',
     name: 'ローカル役採用ルール',
     category: '特殊',
