@@ -661,6 +661,7 @@ function drainLog() {
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
         toast(ev.open ? 'オープンリーチ' : 'リーチ', nameOf(ev.seat), 'rose');
         callBanner(ev.open ? 'オープンリーチ' : 'リーチ', 'riichi', nameOf(ev.seat));
+        flyRiichiStick(ev.seat);
         break;
       case 'call': {
         const label = { pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind;
@@ -1562,6 +1563,31 @@ function diceView(rolls) {
   };
   armWhenShown();
   return box;
+}
+
+/**
+ * リーチ棒が、宣言した人の席から卓の中央へ飛ぶ。
+ * 供託が「誰かが出したもの」だと分かるし、宣言のあった向きも目で追える。
+ */
+function flyRiichiStick(seat) {
+  if (!G || !G.dom || !G.dom.board) return;
+  // 動きを減らす設定の人には出さない
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const pos = seatPos(G.engine.n, seat);
+  const from = pos === 'bottom' ? G.dom.myArea : G.dom.board.querySelector(`.seat-${pos}`);
+  const to = G.dom.board.querySelector('.center-info');
+  const host = G.dom.board;
+  if (!from || !to || !host) return;
+  const hb = host.getBoundingClientRect();
+  const fb = from.getBoundingClientRect();
+  const tb = to.getBoundingClientRect();
+  const el = h('div.stick-fly');
+  el.style.left = `${fb.left + fb.width / 2 - hb.left}px`;
+  el.style.top = `${fb.top + fb.height / 2 - hb.top}px`;
+  el.style.setProperty('--dx', `${(tb.left + tb.width / 2) - (fb.left + fb.width / 2)}px`);
+  el.style.setProperty('--dy', `${(tb.top + tb.height / 2) - (fb.top + fb.height / 2)}px`);
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 700);
 }
 
 /** 点棒の増減を、その席の上に浮かせる */

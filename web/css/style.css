@@ -336,6 +336,17 @@ body.playing .nav { display: none; }
     radial-gradient(130% 100% at 50% 0%, var(--felt-2) 0%, var(--felt) 48%, var(--felt-3) 100%);
   color: #f2efe6; padding: 10px 12px 12px; overflow: hidden;
 }
+/* 卓らしさ。真ん中が明るく、縁が落ちる。フェルトの目も薄く入れる。
+   平らな緑一色だと「画面」に見えて、卓の上に牌が置いてある感じが出ない。
+   画像は使わない（機内モードでも同じ見た目にするため）。 */
+.table-shell::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(58% 68% at 50% 46%, rgba(255, 255, 255, .10) 0%, transparent 62%),
+    radial-gradient(120% 120% at 50% 50%, transparent 52%, rgba(6, 20, 15, .38) 100%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .014) 0 2px, transparent 2px 4px);
+}
+.table-shell > * { position: relative; z-index: 1; }
 .table-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 10px; min-height: 0; }
 /* 右の欄（ルールと履歴）を畳んだ状態。卓が画面の横幅をすべて使える */
 .table-main.side-closed { grid-template-columns: minmax(0, 1fr); }
@@ -652,6 +663,25 @@ body.playing .nav { display: none; }
 .dora-line.ura .dora-label { color: var(--brass); }
 .dora-arrow { color: var(--ink-4); font-size: 12px; }
 .dora-line .tile.is-dora { outline: 2px solid var(--brass-2); outline-offset: 1px; }
+
+/* リーチ棒が席から卓の中央へ飛ぶ。供託が「誰かが出したもの」だと分かる */
+.stick-fly {
+  position: absolute; z-index: 65; pointer-events: none;
+  width: 34px; height: 6px; margin: -3px 0 0 -17px; border-radius: 3px;
+  background: linear-gradient(180deg, #fff, #e9e4d6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+  animation: stickFly .62s cubic-bezier(.3, .7, .3, 1) both;
+}
+.stick-fly::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%; background: var(--red-2);
+}
+@keyframes stickFly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(.7); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(200deg) scale(1); opacity: 0; }
+}
 
 .room-rules { display: grid; gap: 8px; }
 .room-rule { display: grid; gap: 2px; }
