@@ -13,20 +13,24 @@ const GOTO_BASE = {
   },
   scoring: {
     startingPoints: 35000, returnPoints: 40000,
+    honbaPoints: 2000,
     useFu: false, roundUpMangan: true,
     countedYakuman: true, countedYakumanHan: 13,
     uma: [0, 0, -20], rankOnly: true, umaZeroSum: true,
     shizumiUma: true, shizumiUmaValue: -10,
   },
   renchan: { dealerRepeat: 'tenpai' },
-  ryuukyoku: { notenPenalty: 3000, nagashiMangan: false },
+  // ノーテン罰符は場に4000点、本場は1本2000点。
+  // 四麻の3000点・300点より重く、五等サンマの動きの速さを作っている。
+  ryuukyoku: { notenPenalty: 4000, nagashiMangan: false },
   sanma: {
     removeManzu: true, northMode: 'nuki', kitaIsDora: true,
     northIsYakuhai: false, northRonOk: false, kitaBonus: 1, tsumoLoss: true,
   },
   dora: {
     indicators: 2, ura: true, kanDora: true, kanUra: true,
-    red: { '5p': 2, '5s': 2 }, gold: { '5p': 2, '5s': 2 }, goldIsDora: true,
+    // 5筒・5索は「赤金黒黒」＝4枚のうち赤1枚・金1枚・ふつうの牌2枚
+    red: { '5p': 1, '5s': 1 }, gold: { '5p': 1, '5s': 1 }, goldIsDora: true,
   },
   flowers: {
     enabled: true,
