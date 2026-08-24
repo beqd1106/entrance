@@ -1080,6 +1080,40 @@ it('青5索とふつうの5索も、それぞれ切れる', () => {
   ok(tileFaceKey(plain) !== tileFaceKey(blue), '青牌は別の牌として扱う');
 });
 
+describe('待ち牌の残り枚数');
+
+it('1種8枚のルールでは、4枚見えても「残り4枚」と出る', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const e = new GameEngine({ rules: r, seed: 11, players: [0, 1, 2].map((i) => ({ name: `P${i}`, isCpu: false })) });
+  e.startKyoku();
+  const p = e.players[0];
+  const t = codeToType('1p');
+  const pool = e.wall.live.filter((x) => x.t === t).slice(0, 4);
+  e.wall.live = e.wall.live.filter((x) => !pool.includes(x));
+  e.wall.liveEnd = e.wall.live.length;
+  p.hand = [...pool, ...p.hand.filter((x) => x.t !== t).slice(0, 9)];
+  const counts = new Array(34).fill(0);
+  for (const x of p.hand) counts[x.t]++;
+  const d = e.waitDetail([t], counts);
+  eq(d[0].left, 4, '8枚あるうち4枚見えたので残り4枚');
+});
+
+it('ふつうのルールでは、4枚見えたら「残り0枚」', () => {
+  const r = resolveRules(getPreset('standard4').rules);
+  const e = new GameEngine({ rules: r, seed: 11, players: [0, 1, 2, 3].map((i) => ({ name: `P${i}`, isCpu: false })) });
+  e.startKyoku();
+  const p = e.players[0];
+  const t = codeToType('1p');
+  const pool = e.wall.live.filter((x) => x.t === t).slice(0, 4);
+  e.wall.live = e.wall.live.filter((x) => !pool.includes(x));
+  e.wall.liveEnd = e.wall.live.length;
+  p.hand = [...pool, ...p.hand.filter((x) => x.t !== t).slice(0, 9)];
+  const counts = new Array(34).fill(0);
+  for (const x of p.hand) counts[x.t]++;
+  const d = e.waitDetail([t], counts);
+  eq(d[0].left, 0, '4枚しかないので残り0枚');
+});
+
 describe('清一色ゲーム：5枚目以降をカンに足す');
 
 /** 山から指定の牌をn枚取り出して手牌に移す */

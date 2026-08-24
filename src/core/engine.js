@@ -1494,7 +1494,12 @@ export class GameEngine {
         for (const m of q.melds) for (const x of m.tiles) if (x.t === t) seen++;
       }
       for (const ind of this.wall.doraIndicators) if (ind.t === t) seen++;
-      return { t, code: typeToCode(t), name: typeName(t), left: Math.max(0, 4 - seen) };
+      // 1種が何枚あるかはルールで変わる（清一色ゲームは8枚）。
+      // 4枚固定にしていたため、4枚見えた時点で「残り0」と出て、
+      // まだ4枚残っている待ちが死んだように見えていた。
+      const limits = this.handOpts && this.handOpts.limits;
+      const total = limits ? (limits[t] ?? 4) : 4;
+      return { t, code: typeToCode(t), name: typeName(t), left: Math.max(0, total - seen) };
     });
   }
 
