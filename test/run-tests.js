@@ -2,7 +2,7 @@
  * run-tests.js - 単体テスト（役・点数・進行・ハウスルール）
  * 使い方: node test/run-tests.js
  */
-import { codeToType, typeToCode, T } from '../src/core/tiles.js';
+import { codeToType, typeToCode, T, tileFaceKey } from '../src/core/tiles.js';
 import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, isChiiseimukou, makeHandOpts } from '../src/core/hand.js';
 import { evaluate, countDora } from '../src/core/yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from '../src/core/score.js';
@@ -1046,6 +1046,38 @@ it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
   const hand = mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p');
   const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
   no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
+});
+
+describe('見た目が違う牌は、それぞれ切れる');
+
+it('裏の色が違う同じ牌は、どちらも打牌の選択肢に入る', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const e = new GameEngine({ rules: r, seed: 3, players: [0, 1, 2].map((i) => ({ name: `P${i}`, isCpu: false })) });
+  e.startKyoku();
+  const p = e.players[0];
+  const t = codeToType('1p');
+  // 裏が青の1筒と黄の1筒を1枚ずつ持たせる
+  const blue = e.wall.live.find((x) => x.t === t && x.back === 'blue');
+  const yellow = e.wall.live.find((x) => x.t === t && x.back === 'yellow');
+  ok(blue && yellow, '青裏と黄裏の1筒が山にある');
+  p.hand = [blue, yellow, ...p.hand.filter((x) => x.t !== t).slice(0, 11)];
+  e.turn = 0; e.phase = 'turn'; e.pending = { kind: 'turn', seat: 0 };
+
+  const discard = e.getChoices(0).find((c) => c.type === 'discard');
+  ok(discard.tileIds.includes(blue.id), '青裏を選べる');
+  ok(discard.tileIds.includes(yellow.id), '黄裏も選べる');
+});
+
+it('裏の色で牌を見分ける（背一色を狙うのに要る）', () => {
+  const blue = { t: 9, red: false, gold: false, blue: false, star: false, rainbow: false, dot: false, sp: null, back: 'blue' };
+  const yellow = { ...blue, back: 'yellow' };
+  ok(tileFaceKey(blue) !== tileFaceKey(yellow), '裏の色が違えば別の牌として扱う');
+});
+
+it('青5索とふつうの5索も、それぞれ切れる', () => {
+  const plain = { t: 22, red: false, gold: false, blue: false, star: false, rainbow: false, dot: false, sp: null };
+  const blue = { ...plain, blue: true };
+  ok(tileFaceKey(plain) !== tileFaceKey(blue), '青牌は別の牌として扱う');
 });
 
 describe('清一色ゲーム：5枚目以降をカンに足す');

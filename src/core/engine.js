@@ -14,6 +14,7 @@
  */
 import {
   T, NUM_TYPES, typeToCode, codeToType, tileName, typeName, isYaochu, numOf, isFlower, doraNext, sortTiles,
+  tileFaceKey,
 } from './tiles.js';
 import { shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild, makeHandOpts } from './hand.js';
 import { evaluate } from './yaku.js';
@@ -328,7 +329,7 @@ export class GameEngine {
     const seen = new Set();
     const out = [];
     for (const t of hand) {
-      const key = `${t.t}|${t.red}|${t.gold}|${t.dot}|${t.sp}`;
+      const key = tileFaceKey(t);
       if (seen.has(key)) continue;
       seen.add(key);
       out.push(t);

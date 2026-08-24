@@ -62,6 +62,23 @@ export function typeName(t) {
   return `${n}${['萬', '筒', '索'][Math.floor(t / 9)]}`;
 }
 
+/**
+ * 見た目が同じ牌をひとまとめにするための鍵。
+ *
+ * 打牌の選択肢は「見た目が同じ牌は1枚だけ」にまとめている。
+ * このとき、画面で見分けがつく違いを鍵に入れ忘れると、
+ * 別の牌が切れてしまい「その牌だけいつまでも切れない」ことになる。
+ * 清一色ゲームの裏の色（青/黄）がまさにそれで、背一色を狙うのに
+ * どちらを残すか選べなかった。
+ *
+ * 画面に出ている違いはすべてここに入れること。
+ */
+export function tileFaceKey(t) {
+  return [
+    t.t, t.red, t.gold, t.blue, t.star, t.rainbow, t.dot, t.sp, t.back || '',
+  ].join('|');
+}
+
 export function tileName(tile) {
   if (!tile) return '-';
   let n = typeName(tile.t);

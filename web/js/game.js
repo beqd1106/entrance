@@ -9,7 +9,7 @@ import { lookupPreset } from './custom.js';
 import { recordPlay } from './dashboard.js';
 import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
-import { codeToType, typeName } from '../../src/core/tiles.js';
+import { codeToType, typeName, tileFaceKey } from '../../src/core/tiles.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 import { currentTable, clearTable } from './online.js';
@@ -1039,8 +1039,9 @@ function drawMy(s) {
   const discard = choices.find((c) => c.type === 'discard');
   const selectable = G.mode === 'riichiSelect' ? G.riichiIds : (discard ? discard.tileIds : null);
 
-  // 同種牌は代表1枚しか選択肢に含まれないため、見た目が同じ牌はすべて押せるようにする
-  const keyOf = (t) => `${t.t}|${t.red}|${t.gold}|${t.dot}|${t.sp}`;
+  // 同種牌は代表1枚しか選択肢に含まれないため、見た目が同じ牌はすべて押せるようにする。
+  // 鍵はエンジン側と同じものを使う。ずれると、押した牌と切れる牌が食い違う。
+  const keyOf = tileFaceKey;
   const pickable = new Map();
   if (selectable) {
     for (const id of selectable) {
