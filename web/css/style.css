@@ -27,9 +27,11 @@
   /* --- 卓 ---
      読む画面は白地だが、対局画面だけは没入感を優先して和の墨緑を敷く。
      彩度を落としてあるので、白い牌と朱のアクセントがそのまま映える。 */
-  --felt: #26443c;
-  --felt-2: #315448;
-  --felt-3: #17302a;
+  /* 卓の色。以前は沈んだ深緑で、画面全体が暗く重かった。
+     雀魂のように少し明るく彩度のある緑にして、牌の白と点数の金が映えるようにする。 */
+  --felt: #2f6b52;
+  --felt-2: #3d8465;
+  --felt-3: #1e4a39;
   --red: #c1372c;
   --red-2: #d8483a;
   --blue: #3a5f8f;
@@ -448,7 +450,44 @@ body.playing .nav { display: none; }
 }
 .seat-wind.dealer { background: var(--red); color: #fff; }
 .seat-pts { font-family: var(--mono); font-size: 14px; }
-.seat-bp { font-family: var(--mono); font-size: 11px; color: var(--gold); }
+/* チップ（BP）。数字だけだと勝負が動いているのが伝わらないので絵を添える */
+.seat-bp {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--mono); font-size: 11px; color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.seat-bp .chip-icon { display: block; filter: saturate(1.05); }
+.seat-bp.plus { color: #ffd166; }
+.seat-bp.minus { color: #ff9a8f; }
+.seat-bp.plus .chip-icon, .seat-bp.minus .chip-icon { animation: chipPop .5s var(--ease); }
+@keyframes chipPop {
+  0% { transform: scale(.5) rotate(-25deg); }
+  60% { transform: scale(1.18) rotate(6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* チップが飛ぶ演出。点棒とは別に、その席から浮かせる */
+.chip-float {
+  position: absolute; left: 50%; top: 40%;
+  transform: translate(-50%, 0);
+  z-index: 60; pointer-events: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 14px; font-weight: 800; letter-spacing: .02em;
+  font-variant-numeric: tabular-nums;
+  background: rgba(20, 38, 32, .92);
+  border: 1px solid rgba(255, 209, 102, .55);
+  animation: chipFly 1.8s var(--ease) both;
+}
+.chip-float.plus { color: #ffd166; }
+.chip-float.minus { color: #ff9a8f; border-color: rgba(255, 154, 143, .5); }
+@keyframes chipFly {
+  0% { opacity: 0; transform: translate(-50%, 14px) scale(.7); }
+  16% { opacity: 1; transform: translate(-50%, -4px) scale(1.1); }
+  28% { transform: translate(-50%, 0) scale(1); }
+  76% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -30px) scale(.95); }
+}
 .badge-riichi {
   font-size: 10px; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px;
   background: var(--red); color: #fff;
@@ -1761,6 +1800,36 @@ textarea { resize: vertical; min-height: 56px; }
 }
 .net-bar.is-down { color: #ffd7d1; background: rgba(120, 34, 27, .95); border-color: rgba(216, 72, 58, .55); }
 .net-bar-text { flex: 1 1 auto; }
+
+/* --- 対局画面をポップに ---------------------------------------------- */
+/* 中央の案内。白い箱が浮いていたので、卓に馴染む温かい札にする */
+.center-info {
+  background: linear-gradient(180deg, #fffdf7, #f6eedd);
+  border: 2px solid rgba(255, 255, 255, .9);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28), inset 0 -2px 0 rgba(0, 0, 0, .06);
+  color: #23302b;
+}
+.center-kyoku { color: #1d2b25; }
+.center-sub { color: rgba(35, 48, 43, .68); }
+
+/* 席の札。名前と点数を1つのまとまりに見せる */
+.seat-head {
+  background: rgba(0, 0, 0, .22);
+  border-radius: 999px;
+  padding: 3px 10px;
+  align-self: center;
+  backdrop-filter: blur(3px);
+}
+.seat.active .seat-head { background: rgba(255, 214, 120, .22); }
+.seat.riichi .seat-head { background: rgba(216, 72, 58, .3); }
+
+/* 左脇のメニューは、卓の一部に見えるよう明るく軽く */
+@media (orientation: landscape) and (max-height: 560px) {
+  .table-top { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .22); }
+  .table-top .act, .table-top .chip-btn {
+    background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .3); color: #f4fbf7;
+  }
+}
 
 /* --- オンライン対局：手番の残り時間 --- */
 /* 天鳳・雀魂と同じく、基礎時間のうちは落ち着いた色、

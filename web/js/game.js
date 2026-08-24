@@ -351,6 +351,7 @@ function startGame() {
   drainLog();
   draw();
   if (G.online) resetClocks();
+  G.lastBonus = G.engine.players.map((p) => p.bonus);
   loop();
   // 開始を押すのが遅れた間に届いていた手を、ここでまとめて入れる
   if (G.online) pumpInbox();
@@ -971,7 +972,7 @@ function seatHead(p, s) {
     p.riichi ? h('span.badge-riichi', { text: p.openRiichi ? 'オープン' : 'リーチ' }) : null,
     s.wareme === p.seat ? h('span.badge-wareme', { text: '割れ目' }) : null,
     h('div.seat-pts', { text: fmt(p.points) }),
-    G.rules.bonus.enabled ? h('div.seat-bp', { text: `${signed(p.bonus)}BP` }) : null);
+    G.rules.bonus.enabled ? chipTag(p.bonus) : null);
 }
 
 /** 抜いた牌を種類ごとにまとめて表示（北・ガリ・華牌を混同させない） */
@@ -1273,6 +1274,36 @@ function callBanner(text, tone) {
   setTimeout(() => el.remove(), 900);
 }
 
+/**
+ * チップ（BP）の枚数。チップが動くルールでは、
+ * 数字だけだと増えたのか減ったのかが伝わらないので絵を添える。
+ */
+function chipTag(n) {
+  return h('div.seat-bp', { class: n > 0 ? 'plus' : n < 0 ? 'minus' : '' },
+    h('img.chip-icon', { src: 'img/ui/chip.png', alt: '', width: '14', height: '14' }),
+    h('span', { text: signed(n) }));
+}
+
+/**
+ * チップの増減を、その席から浮かせる。
+ * 点棒とは別に出す。チップがよく動く店では、こちらが勝負の中身になる。
+ */
+function floatChips(deltas) {
+  if (!deltas || !G.dom.board || !G.rules.bonus.enabled) return;
+  const n = G.engine.n;
+  deltas.forEach((d, seat) => {
+    if (!d) return;
+    const pos = seatPos(n, seat);
+    const el = pos === 'bottom' ? G.dom.myArea : G.dom.board.querySelector(`.seat-${pos}`);
+    if (!el) return;
+    const tag = h(`div.chip-float${d > 0 ? '.plus' : '.minus'}`,
+      h('img', { src: 'img/ui/chip.png', alt: '', width: '18', height: '18' }),
+      h('span', { text: `${signed(d)}` }));
+    el.appendChild(tag);
+    setTimeout(() => tag.remove(), 1800);
+  });
+}
+
 /** 点棒の増減を、その席の上に浮かせる */
 function floatPoints(deltas) {
   if (!deltas || !G.dom.board) return;
@@ -1305,6 +1336,12 @@ function flashResult(res, next) {
     if (d.yakuman) { label = d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満'; tone = 'yakuman'; }
   }
   floatPoints(res.deltas);
+  // チップの増減も一緒に。前の局からの差を出す
+  if (G.rules.bonus.enabled && Array.isArray(res.bonus)) {
+    const before = G.lastBonus || res.bonus.map(() => 0);
+    floatChips(res.bonus.map((v, i) => v - (before[i] || 0)));
+    G.lastBonus = [...res.bonus];
+  }
   const el = h(`div.flash.flash-${tone}`, h('span.flash-text', { text: label }));
   G.dom.toasts.parentElement.appendChild(el);
   const wait = tone === 'yakuman' ? 1500 : 850;
