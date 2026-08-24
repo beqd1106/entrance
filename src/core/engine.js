@@ -1210,9 +1210,13 @@ export class GameEngine {
       if (this.n === 3 && R.sanma.dealerRepeatOnRyuukyoku) dealerKeeps = true;
     }
     res.dealerKeeps = dealerKeeps;
+    // 流局で積み棒を増やすかどうか（増やさない店がある）
+    const drawHonba = R.renchan.honbaOnDraw === false && res.kind === 'draw'
+      ? this.round.honba
+      : this.round.honba + 1;
     this.nextKyokuPlan = dealerKeeps
-      ? { honba: this.round.honba + 1, advance: false }
-      : { honba: (res.kind === 'win' ? 0 : this.round.honba + 1), advance: true };
+      ? { honba: drawHonba, advance: false }
+      : { honba: (res.kind === 'win' ? 0 : drawHonba), advance: true };
     if (res.kind === 'win' && !dealerKeeps) this.nextKyokuPlan.honba = 0;
     if (res.kind === 'abort') this.nextKyokuPlan = { honba: this.round.honba + 1, advance: false };
 
