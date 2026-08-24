@@ -352,6 +352,7 @@ function startGame() {
   draw();
   if (G.online) resetClocks();
   G.lastBonus = G.engine.players.map((p) => p.bonus);
+  G.lastKyokuShown = false;
   loop();
   // 開始を押すのが遅れた間に届いていた手を、ここでまとめて入れる
   if (G.online) pumpInbox();
@@ -544,7 +545,19 @@ function loop() {
   if (!G || !G.engine) return;
   if (G.timer) clearTimeout(G.timer);
   const e = G.engine;
-  if (e.finished) { drainLog(); draw(); stopTicker(); showFinal(); return; }
+  if (e.finished) {
+    drainLog(); draw(); stopTicker();
+    // 対局が終わる局も、まず和了の点数と役を見せる。
+    // これまでは終局の判定が先に来ていたので、最後の1局だけ
+    // 何で和了ったのかが分からないまま最終結果へ飛んでいた。
+    if (e.kyokuEnd && !G.lastKyokuShown) {
+      G.lastKyokuShown = true;
+      flashResult(e.kyokuEnd, () => showKyokuResult());
+      return;
+    }
+    showFinal();
+    return;
+  }
   if (e.phase === 'kyokuEnd') {
     drainLog(); draw(); stopTicker();
     flashResult(e.kyokuEnd, () => showKyokuResult());
@@ -1012,13 +1025,19 @@ function meldsEl(p) {
 
 function discardsEl(p) {
   const lastId = G.engine.lastDiscard ? G.engine.lastDiscard.tile.id : null;
-  return h('div.discards', p.discards.map((t) => {
+  // 河が伸びたら牌を一段詰める。序盤は大きく読みやすく、終盤も
+  // 全部見えるようにする（送って隠すと、それまでの捨て牌が読めない）
+  const dense = p.discards.length > 10 ? '.dense' : '';
+  const el = h(`div.discards${dense}`, p.discards.map((t) => {
     const cls = [];
     if (t.id === lastId) cls.push('just');
     // リーチ宣言牌は横に倒す（どこで曲げたかが河を見れば分かる）
     if (p.riichiTileId && t.id === p.riichiTileId) cls.push('side');
     return tileEl(t, { size: 'xs', attrs: cls.length ? { class: cls.join(' ') } : null });
   }));
+  // 詰めても入りきらないときの保険。いちばん新しい捨て牌を必ず見せる
+  requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  return el;
 }
 
 function seatEl(p, s, cls) {

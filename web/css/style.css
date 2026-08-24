@@ -970,12 +970,50 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 中央の案内は小さく。ここが大きいと河が中心から離れる */
   .center-info { padding: 5px 12px; gap: 2px; border-radius: 12px; }
   /* 卓は正方形に近い形にまとめる。横に広げると4人の河が散って、
-     1つの卓を囲んでいるように見えない（天鳳・雀魂はどれも正方形に近い） */
-  .board { max-width: 560px; margin-inline: auto; }
+     1つの卓を囲んでいるように見えない（天鳳・雀魂はどれも正方形に近い）。
+     ただし小さすぎても読めないので、高さいっぱいまで使う。 */
+  .board { max-width: min(100%, 620px); margin-inline: auto; }
+  /* 天鳳・雀魂は卓の中に枠を描かない。felt がそのまま卓。
+     枠があると「小さな箱が画面に浮いている」ように見える。 */
+  .board::before { display: none; }
+  /* 河の牌は、画面のいちばん見たいところ。
+     ただし河は最後まで18〜20枚（6列なら3〜4段）になる。
+     大きくしすぎると終盤に下の段が切れて、いちばん見たい直前の捨て牌が
+     見えなくなる。3段が確実に入る大きさに合わせる。 */
+  .seat .tile { --tw: 20px; }
+  .seat-left .tile, .seat-right .tile { --tw: 20px; }
+  /* 11枚を超えたら一段詰める。3〜4段になっても河がぜんぶ見える */
+  .seat .discards.dense .tile { --tw: 15px; }
+  /* 中央は最小限に。ここを削ったぶんが4人の河の高さになる */
+  .center-info { padding: 4px 10px; }
+  .center-kyoku { font-size: 15px; }
+  .center-sub { font-size: 9.5px; }
+  /* 席の札と河のすき間を詰めて、そのぶんを河に回す */
+  .seat { padding: 2px; }
+  .seat > .discards { margin-top: 2px; }
+  .melds { margin-top: 2px; }
+  /* 河が席に収まりきらないときは、席ではなく河の中で送る。
+     席ごと切ると、名前や点数まで見えなくなる。 */
+  .seat { overflow: visible; }
+  .seat > .discards {
+    overflow-y: auto; scrollbar-width: none; align-content: start;
+    max-height: 100%; min-height: 0;
+  }
+  .seat > .discards::-webkit-scrollbar { display: none; }
+  .seat-top, .seat-bottom, .seat-left, .seat-right { min-height: 0; }
+  /* 左脇のメニューは卓の上に重ねる。108px を常時空けておくと
+     そのぶん卓が小さくなる（メニューは滅多に触らない） */
+  .board-scroll { padding-left: 0; }
+  .table-top { background: rgba(10, 24, 19, .62); }
   /* 点数は勝負そのもの。名前より大きく、はっきり出す */
-  .seat-pts { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0; }
-  .seat-bp { font-size: 10px; }
-  .seat-head .grow { font-size: 11px; opacity: .82; }
+  .seat-pts { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0; }
+  .seat-bp { font-size: 11px; }
+  .seat-head { padding: 4px 12px; gap: 7px; }
+  .seat-head .grow { font-size: 12px; opacity: .9; }
+  /* 風は席の目印。小さいと自分がどこか分からない */
+  .seat-wind { width: 17px; height: 17px; font-size: 11px; border-radius: 4px; }
+  /* いちばん上の席が画面の縁に貼りつかないよう、卓の上下に余白を持たせる */
+  .board-scroll { padding-block: 4px; }
   /* いま誰の番かが分からないと、待っているのか自分の番なのか掴めない */
   .seat.active {
     background: rgba(255, 236, 176, 0.14);
