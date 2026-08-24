@@ -1097,8 +1097,11 @@ function drawMy(s) {
   const doraSet = new Set(s.doraTypes || []);
   const drawnId = me.drawn && !me.drawn.hidden ? me.drawn.id : null;
   const tiles = me.hand.filter((t) => t.id !== drawnId);
+  // 華牌は打牌の選択肢に入らない。押して抜けるよう、別に拾っておく
+  const flowerIds = new Set(choices.filter((c) => c.type === 'flower').map((c) => c.tileId));
   const render = (t, gap) => {
-    const id = pickable.get(keyOf(t));
+    const isFlowerPick = flowerIds.has(t.id);
+    const id = isFlowerPick ? t.id : pickable.get(keyOf(t));
     const can = id !== undefined;
     const el = tileEl(t, {
       size: 'lg',
@@ -1130,6 +1133,10 @@ function drawMy(s) {
 
 function onTileClick(t) {
   if (G.mode === 'riichiSelect') { act({ type: 'riichi', tileId: t.id, open: G.riichiOpen }); return; }
+  // 華牌は切る牌ではなく「抜く」牌。手牌のそれを押したら、そのまま抜く
+  const flower = (G.waiting ? G.waiting.choices : [])
+    .find((c) => c.type === 'flower' && c.tileId === t.id);
+  if (flower) { act({ type: 'flower', tileId: t.id }); return; }
   // 押し間違い防止：1度目のタップで選択、同じ牌をもう一度タップで確定
   if (!G.confirmDiscard) { act({ type: 'discard', tileId: t.id }); return; }
   if (G.selectedTileId === t.id) {
@@ -1221,6 +1228,11 @@ function drawActions(s) {
         add(c.label, 'act-call', () => act({ type: 'kan', kind: c.kind, t: c.t }), [{ t: c.t }]);
         break;
       case 'kita': add(c.label || '北抜き', 'act-nuki', () => act({ type: 'kita', t: c.t })); break;
+      // 華牌を自分で抜く設定のとき。エンジンは選択肢を出していたのに
+      // ここに分岐が無く、ボタンが1つも出ていなかった
+      case 'flower':
+        add(c.label || '華牌を抜く', 'act-nuki', () => act({ type: 'flower', tileId: c.tileId }), [{ t: c.t }]);
+        break;
       case 'kyuushu': add('九種九牌', '', () => act({ type: 'kyuushu' })); break;
       case 'pass': add('スルー', 'act-pass', () => act({ type: 'pass' })); break;
       default: break;
@@ -1631,6 +1643,11 @@ function buildDebugPanel() {
   grid.appendChild(btn('手牌に特殊牌を入れる', () => {
     const ok = G.engine.debugInjectToHand(0, (t) => !!t.sp || t.dot || t.gold);
     pushLog('rule', ok ? '［デバッグ］手牌に特殊牌／金牌／白ポッチを差し込み' : '［デバッグ］該当する牌がありません');
+  }));
+  // 華牌を自分で抜くルールの確認用。ツモ待ちだと他家に流れてしまう
+  grid.appendChild(btn('手牌に華牌を入れる', () => {
+    const ok = G.engine.debugInjectToHand(G.mySeat, (t) => t.t >= 34);
+    pushLog('rule', ok ? '［デバッグ］手牌に華牌を差し込み' : '［デバッグ］山に華牌がありません');
   }));
   grid.appendChild(btn('手牌をテンパイにする', () => {
     const ok = G.engine.debugMakeTenpai(0);
