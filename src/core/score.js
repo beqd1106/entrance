@@ -19,6 +19,16 @@ const ceil100 = (n) => Math.ceil(n / 100) * 100;
  * @param {Object} rules
  * @param {number} rankUp 打点ランクアップ回数（花牌「夏」など）
  */
+/**
+ * 役満が複合したときの呼び名。
+ * 2つならダブル役満、3つならトリプル役満。それ以上は数で呼ぶ。
+ * 画面と点数計算で呼び名がずれないよう、ここ1か所で決める。
+ */
+export function yakumanName(mult) {
+  if (mult >= 4) return `${mult}倍役満`;
+  return ['', '役満', 'ダブル役満', 'トリプル役満'][mult] || '役満';
+}
+
 export function basePoints(hand, rules, rankUp = 0) {
   const S = rules.scoring;
   let base, name, level = -1;
@@ -65,7 +75,7 @@ export function basePoints(hand, rules, rankUp = 0) {
     const cap = S.maxYakumanMultiplier || 0;
     const mult = cap > 0 ? Math.min(hand.yakuman, cap) : hand.yakuman;
     base = 8000 * mult;
-    name = mult > 1 ? `${mult}倍役満` : '役満';
+    name = yakumanName(mult);
     level = 4 + (mult - 1);
   } else {
     const han = hand.han;

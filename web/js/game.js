@@ -10,6 +10,7 @@ import { recordPlay } from './dashboard.js';
 import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
 import { codeToType, typeName, tileFaceKey, doraNext } from '../../src/core/tiles.js';
+import { yakumanName } from '../../src/core/score.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 import { currentTable, clearTable } from './online.js';
@@ -1619,7 +1620,7 @@ function flashResult(res, next) {
     const d = mine || res.details[0];
     label = d.tsumo ? 'ツモ' : 'ロン';
     tone = mine ? 'win' : 'lose';
-    if (d.yakuman) { label = d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満'; tone = 'yakuman'; }
+    if (d.yakuman) { label = yakumanName(d.yakuman); tone = 'yakuman'; }
   }
   floatPoints(res.deltas);
   // チップの増減も一緒に。前の局からの差を出す
@@ -1648,7 +1649,7 @@ function showKyokuResult() {
 
   if (res.kind === 'win') {
     for (const d of res.details) {
-      const rank = d.yakuman ? (d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満')
+      const rank = d.yakuman ? yakumanName(d.yakuman)
         : (d.limitName || `${d.han}翻${G.rules.scoring.useFu ? ` ${d.fu}符` : ''}`);
       // 自分の和了は、ひと目で分かるように見せ方を変える
       const mine = d.seat === G.mySeat;

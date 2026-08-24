@@ -849,6 +849,25 @@ it('特殊牌でアリス・サイコロ・点数倍化を発火できる', () =
 });
 
 // ===========================================================================
+describe('役満の複合');
+
+it('複合するとダブル・トリプル役満になる', () => {
+  // 大三元＋字一色＋四暗刻単騎（ダブル）で4つぶん
+  const hand = mk('5z 5z 5z 6z 6z 6z 7z 7z 7z 1z 1z 1z 2z 2z');
+  const res = evaluate(baseCtx({ hand, winTile: hand[13], tsumo: true }));
+  ok(res.yakuman >= 2, '役満が複合して2つ以上になる');
+  eq(basePoints({ han: 0, fu: 0, yakuman: 2 }, R4).limitName, 'ダブル役満', '2つでダブル役満');
+  eq(basePoints({ han: 0, fu: 0, yakuman: 3 }, R4).limitName, 'トリプル役満', '3つでトリプル役満');
+  eq(basePoints({ han: 0, fu: 0, yakuman: 1 }, R4).limitName, '役満', '1つなら役満');
+});
+
+it('複合するぶんだけ点数も上がる', () => {
+  const one = basePoints({ han: 0, fu: 0, yakuman: 1 }, R4).base;
+  const two = basePoints({ han: 0, fu: 0, yakuman: 2 }, R4).base;
+  eq(two, one * 2, 'ダブル役満は役満の2倍');
+});
+
+// ===========================================================================
 describe('オープンリーチの供託');
 
 it('本数の設定どおりに供託へ出る', () => {
