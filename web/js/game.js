@@ -1513,7 +1513,10 @@ function showKyokuResult() {
   const e = G.engine;
   const res = e.kyokuEnd;
   const nameOf = (i) => e.players[i].name;
-  const body = h('div.sheet-body');
+  // 局の結果だけ横持ちで2段組みにする（左に役、右に点数の動き）。
+  // 印を付けずにいたころは、設定や対局終了の紙まで2段になり、
+  // 左半分が空いたまま右に中身が寄っていた。
+  const body = h('div.sheet-body.result-body');
 
   if (res.kind === 'win') {
     for (const d of res.details) {
@@ -1623,7 +1626,9 @@ function showFinal() {
   body.appendChild(h('div.muted', { text: `終了理由：${r.reason} ／ ${r.kyokuCount}局` }));
   const list = h('div.mini-list', { style: { marginTop: '12px' } });
   for (const f of r.finals) {
-    list.appendChild(h(`div.mini-item${f.rank === 1 ? '.is-top' : ''}`,
+    // 自分がどこにいるかは、順位表でいちばん知りたいところ
+    const mine = f.seat === G.mySeat ? '.is-me' : '';
+    list.appendChild(h(`div.mini-item${f.rank === 1 ? '.is-top' : ''}${mine}`,
       h('div.seat-wind', { text: String(f.rank) }),
       h('div.grow', h('div', { text: f.name }),
         h('div.tiny.muted', {

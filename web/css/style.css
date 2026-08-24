@@ -1533,6 +1533,9 @@ textarea { resize: vertical; min-height: 56px; }
 .big-score { display: inline-flex; align-items: baseline; gap: 8px; }
 /* 役の一覧を読みやすく */
 .yaku-item { padding: 5px 0; font-size: 13.5px; }
+/* 順位表で自分がどこにいるかは、いちばん知りたいところ。
+   1位の色（.is-top）と紛れないよう、塗りではなく左の帯で示す */
+.mini-item.is-me { box-shadow: inset 4px 0 0 var(--brass); }
 .yaku-item span:last-child { font-family: var(--mono); color: var(--ink-3); }
 /* 点棒の増減を目立たせる */
 .pt-plus, .pt-minus { font-size: 14px; }
@@ -1934,8 +1937,8 @@ textarea { resize: vertical; min-height: 56px; }
   /* 横持ちは高さが足りず、和了の内訳が下に流れてスクロールしていた。
      2段組みにして、和了形は横いっぱい、残りを左右に振り分ける。
      雀魂の結果表示と同じで、1画面で全部見えるほうが読みやすい。 */
-  .sheet-body {
-    padding: 10px 16px;
+  .sheet-body { padding: 10px 16px; }
+  .sheet-body.result-body {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 4px 20px; align-content: start;
   }
@@ -1953,6 +1956,10 @@ textarea { resize: vertical; min-height: 56px; }
   /* 横持ちは高さが足りない。役の行を詰めて、役が多い手でも
      送らずに読めるようにする */
   .yaku-item { padding: 2px 0; font-size: 12.5px; }
+  /* 対局終了の順位表も、横持ちでは1画面に収める */
+  .mini-item { padding: 6px 10px; }
+  .mini-list { gap: 5px; }
+  .sheet-body > .notice { margin-top: 8px !important; padding: 6px 10px; font-size: 11.5px; }
   .win-head { padding: 0 0 6px; gap: 10px; }
   /* 和了形は14枚ある。2段組みの幅に入らないので折り返して、
      横スクロールが出ないようにする */
