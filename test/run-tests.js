@@ -1047,6 +1047,62 @@ it('背一色：裏に色が無い通常の麻雀では成立しない', () => {
   no(res.yaku.some((y) => y.name === '背一色'), '背一色は付かない');
 });
 
+describe('出典で確認した値の固定');
+
+// 説明文に書いていない値は、食い違い検査では守れない。
+// 調べて根拠のある数字は、ここで直接おさえておく。
+
+it('一般四麻：ウマはフリー雀荘で最も多い5-10', () => {
+  const r = resolveRules(getPreset('standard4').rules);
+  eq(JSON.stringify(r.scoring.uma), JSON.stringify([10, 5, -5, -10]), 'ウマ5-10');
+  eq(r.scoring.startingPoints, 25000, '25000持ち');
+  eq(r.scoring.returnPoints, 30000, '30000返し');
+  ok(r.scoring.okaToTop, 'オカはトップが総取り');
+});
+
+it('Mリーグ：途中流局なし・頭ハネ・切り上げ満貫あり・数え役満なし', () => {
+  const r = resolveRules(getPreset('mleague4').rules);
+  for (const k of ['kyuushuKyuuhai', 'suufonRenda', 'suukaikan', 'suuchaRiichi']) {
+    eq(r.renchan[k], false, `途中流局 ${k}`);
+  }
+  eq(r.win.doubleRon, false, 'ダブロンなし＝頭ハネ');
+  eq(r.scoring.roundUpMangan, true, '切り上げ満貫あり');
+  eq(r.scoring.countedYakuman, false, '数え役満なし');
+  eq(r.ryuukyoku.nagashiMangan, false, '流し満貫なし');
+  eq(JSON.stringify(r.scoring.uma), JSON.stringify([30, 10, -10, -30]), 'ウマ10-30');
+});
+
+it('五等サンマ：本場2000点・ノーテン罰符4000点・5は赤金黒黒', () => {
+  const r = resolveRules(getPreset('goto_standard').rules);
+  eq(r.scoring.honbaPoints, 2000, '本場は場に2000点');
+  eq(r.ryuukyoku.notenPenalty, 4000, 'ノーテン罰符は場に4000点');
+  eq(r.dora.red['5p'], 1, '5筒の赤は1枚');
+  eq(r.dora.gold['5p'], 1, '5筒の金は1枚');
+  eq(r.dora.indicators, 2, 'ドラ表示牌は常時2枚');
+  ok(r.sanma.tsumoLoss, 'ツモ損あり');
+  ok(r.scoring.rankOnly, '完全順位戦');
+});
+
+it('関西三麻：萬子は抜く・ウマ30/-10/-20・本場1000点・平和ツモなし', () => {
+  const r = resolveRules(getPreset('kansai3').rules);
+  ok(r.sanma.removeManzu, '萬子2〜8を抜く');
+  eq(JSON.stringify(r.scoring.uma), JSON.stringify([30, -10, -20]), 'ウマ');
+  eq(r.scoring.honbaPoints, 1000, '本場1000点');
+  eq(r.win.pinfuTsumo, false, '平和ツモなし');
+  eq(r.sanma.northMode, 'yakuhai', '北は役牌');
+  ok(r.flowers.enabled && r.flowers.isDora, '抜きドラは花牌');
+  ok(r.local.openRiichi.enabled, 'オープンリーチあり');
+});
+
+it('ロケット五等：華牌「夏」は昇格と加点の両方', () => {
+  const r = resolveRules(getPreset('rocket3').rules);
+  const summer = r.flowers.effects.summer || [];
+  ok(summer.some((e) => e.type === 'rankUp'), '役が昇格する');
+  ok(summer.some((e) => e.type === 'bonusPerTile' && e.value === 20), '20点が付く');
+  eq(r.scoring.flat.yakumanPoints, 32, '役満は32点');
+  eq(r.scoring.flat.fuFixed, 40, '40符固定');
+});
+
 describe('実ルールとの照合（東天紅・少牌マイティ・競技ルール）');
 
 it('競技ルール：一発は役としても付かない', () => {

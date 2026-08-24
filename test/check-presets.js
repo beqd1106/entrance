@@ -99,6 +99,63 @@ for (const p of ALL_PRESETS) {
   // --- 流し満貫
   if (has(/流し満貫なし/) && R.ryuukyoku.nagashiMangan) note(p.id, '「流し満貫なし」と書いてあるが有効');
 
+  // --- ドラ表示牌の枚数
+  const indShown = R.dora.indicators + (R.dora.bakuDora || 0);
+  const indClaim = /(?:表)?ドラ表示牌を?(\d+)枚/.exec(t);
+  if (indClaim && Number(indClaim[1]) !== indShown) {
+    note(p.id, `「ドラ表示牌${indClaim[1]}枚」と書いてあるが実際は${indShown}枚`);
+  }
+  if (/常時2枚|常時ドラ2枚|ドラ表示牌は?常に?2枚/.test(t) && indShown !== 2) {
+    note(p.id, `「常時2枚」と書いてあるが実際は${indShown}枚`);
+  }
+
+  // --- 本場・ノーテン罰符
+  const honba = /本場(?:は)?(?:場に)?([\d,]+)\s*点/.exec(t);
+  if (honba) {
+    const want = Number(honba[1].replace(/,/g, ''));
+    if (want !== R.scoring.honbaPoints) note(p.id, `「本場${honba[1]}点」と書いてあるが実際は${R.scoring.honbaPoints}`);
+  }
+  const noten = /ノーテン罰符(?:は)?(?:場に)?([\d,]+)\s*点/.exec(t);
+  if (noten) {
+    const want = Number(noten[1].replace(/,/g, ''));
+    if (want !== R.ryuukyoku.notenPenalty) note(p.id, `「ノーテン罰符${noten[1]}点」と書いてあるが実際は${R.ryuukyoku.notenPenalty}`);
+  }
+
+  // --- ウマ（5-10 / 10-20 / 30-10 のような書き方）
+  const uma = /ウマ\s*(\d+)\s*[-−ー]\s*(\d+)/.exec(t);
+  if (uma) {
+    const [a, b] = [Number(uma[1]), Number(uma[2])].sort((x, y) => x - y);
+    const u = R.scoring.uma;
+    if (R.game.players === 4) {
+      const want = [b, a, -a, -b];
+      if (JSON.stringify(u) !== JSON.stringify(want)) {
+        note(p.id, `「ウマ${uma[1]}-${uma[2]}」と書いてあるが実際は${JSON.stringify(u)}`);
+      }
+    }
+  }
+
+  // --- 有無をそのまま書いてある特徴
+  const onoff = [
+    [/オープンリーチあり/, () => R.local.openRiichi.enabled, 'オープンリーチ'],
+    [/花牌/, () => R.flowers.enabled, '花牌'],
+    [/白ポッチ/, () => R.local.shiroPocchi.enabled, '白ポッチ'],
+    // アリスは3つの入口がある。どれかで成立していればよい
+    //   ・local.alice     … そのままのアリス
+    //   ・local.tulip     … 現物＋両隣まで見るチューリップ
+    //   ・華牌「冬」の効果 … 五等サンマ系はこちら
+    [/アリス/, () => R.local.alice.enabled || R.local.tulip.enabled
+      || Object.values(R.flowers.effects || {})
+        .some((list) => (list || []).some((e) => e && e.type === 'alice')),
+      'アリス'],
+    [/割れ目/, () => R.local.wareme.enabled, '割れ目'],
+    [/完全順位戦/, () => R.scoring.rankOnly, '完全順位制'],
+    [/切り上げ満貫あり/, () => R.scoring.roundUpMangan, '切り上げ満貫'],
+  ];
+  for (const [re, get, label] of onoff) {
+    if (re.test(t) && !get()) note(p.id, `「${label}」と書いてあるが設定が入っていない`);
+  }
+  if (/数え役満なし/.test(t) && R.scoring.countedYakuman) note(p.id, '「数え役満なし」と書いてあるが有効');
+
   // --- 書いても効かない指定
   const dead = [];
   findDeadKeys(DEFAULT_RULES, p.rules, '', dead);
