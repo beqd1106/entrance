@@ -79,6 +79,14 @@ function runOne(rules, seed, errors, stats) {
     const r = engine.advance(decide, 20000);
     if (r.error) { errors.push(`seed${seed}: advance error ${r.error}`); break; }
     if (r.waiting) { errors.push(`seed${seed}: CPU専用なのに人間待ち`); break; }
+    // ツモってきた牌は必ず手牌の中にある。ここが崩れると、画面は
+    // 手に無い牌をツモ牌として右端に並べてしまい、押しても切れない
+    // （選択肢に無いのでグレーになる）。
+    for (const p of engine.players) {
+      if (p.drawn && !p.hand.some((t) => t.id === p.drawn.id)) {
+        errors.push(`seed${seed}: ${p.name} のツモ牌が手牌に無い（牌${p.drawn.t}）`);
+      }
+    }
     if (r.kyokuEnd) {
       checkTiles(engine, `seed${seed} 局終了`, errors);
       const sum = engine.players.reduce((a, p) => a + p.points, 0) + engine.round.kyotaku * rules.scoring.riichiStick;

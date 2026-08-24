@@ -313,7 +313,14 @@ body.playing .nav { display: none; }
   background: rgba(240, 227, 200, 0.14); color: #d8e2dc;
 }
 .shanten-tag.tenpai { background: var(--brass-2); color: #fff; font-weight: 700; }
-.tile.tsumo-gap { margin-left: 12px; }
+/* ツモ牌。12pxの隙間と光だけでは、スマホだとどれを引いたのか分からない
+   （動きを減らす設定にしていると光も出ない）。隙間を広げ、動きに頼らない
+   印（下の帯）も付けて、ひと目で分かるようにする。 */
+.tile.tsumo-gap { margin-left: 22px; position: relative; }
+.bottom-bar .tile.tsumo-gap::after {
+  content: ''; position: absolute; left: 12%; right: 12%; bottom: -5px; height: 3px;
+  border-radius: 2px; background: var(--brass-2);
+}
 .tile-xs { --tw: 23px; }
 .tile-sm { --tw: 25px; }
 .tile-md { --tw: 34px; }
@@ -814,7 +821,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .table-top { gap: 10px; padding: 8px 10px; }
   .actions { margin: 6px 0 4px; min-height: 0; }
   .hint { font-size: 11px; }
-  .tile.tsumo-gap { margin-left: 6px; }
+  .tile.tsumo-gap { margin-left: 14px; }
   .wrap, .wrap-narrow { width: calc(100% - 28px); }
   /* 縦持ちでは席を上から順に並べる。
      卓の縦横比（aspect-ratio）を残したままだと、5段ぶんの中身を
@@ -945,15 +952,24 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 卓は中央に置く。以前は左寄せにしていたため、右側に240px以上の
      felt がむき出しになり、卓が画面の隅に寄って見えていた */
   .board-scroll { justify-content: center; }
-  /* ルールの欄は、横持ちでは右からせり出させる。卓を押し縮めないので、
-     見ている間も場の様子が分かる */
+  /* ルールの欄は「読むための紙」として真ん中に出す。
+     横からせり出す形にしていたころは、320pxの欄が667pxの画面の半分近くを
+     覆い、右の席だけでなく自分の手牌の右半分まで隠れていた。
+     卓を左へ寄せる形も試したが、今度は卓が339pxまで縮んで名札が欠けた。
+     この幅で両方を並べるのは無理があるので、読むあいだは前に出し、
+     閉じたら卓が元の広さに戻る形にする。 */
+  body.side-open::after {
+    content: ''; position: fixed; inset: 0; z-index: 55;
+    background: rgba(6, 16, 13, 0.55);
+  }
   .table-main:not(.side-closed) .side-panel {
-    position: fixed; right: 0; top: 0; bottom: 0;
-    width: min(320px, 62vw); z-index: 60;
-    background: rgba(23, 48, 42, 0.97);
-    border-left: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.3);
-    padding: 10px; overflow-y: auto;
+    position: fixed; z-index: 60;
+    top: 10px; bottom: 10px; left: 50%; transform: translateX(-50%);
+    width: min(480px, 92vw);
+    background: rgba(23, 48, 42, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+    padding: 12px; overflow-y: auto;
   }
   .table-main:not(.side-closed) { grid-template-columns: minmax(0, 1fr); }
 

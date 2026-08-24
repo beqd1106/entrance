@@ -141,6 +141,7 @@ export function renderGame(root, params) {
     showPregame();
   }
   return () => {
+    document.body.classList.remove('side-open');
     if (G && G.timer) clearTimeout(G.timer);
     if (G && G.ticker) clearInterval(G.ticker);
     if (G && G.online) {
@@ -184,6 +185,10 @@ function buildDom(root) {
   // ここで印を付けずにいたころは、覚えている設定は「開」なのに
   // 画面は閉じたままで、ボタンだけ「ルールを閉じる」と出ていた。
   // 押しても見た目が変わらず、もう一度押してやっと開く状態だった。
+  // ルールの欄は右からせり出して卓の右半分を覆う。手牌まで隠れてしまうので、
+  // 開いている間は卓と手牌をそのぶん左へ寄せる。印は body に持たせる
+  // （欄は .table-main の中にあり、CSSから親をたどれないため）。
+  setSideOpen(G.sideOpen);
   G.dom.main = h('div.table-main', { class: G.sideOpen ? '' : 'side-closed' },
     h('div.board-scroll', G.dom.board),
     h('div.side-panel', G.dom.ruleCard, G.dom.logbox));
@@ -741,6 +746,7 @@ function drawRuleCard(s) {
     G.sideOpen = false;
     savePref('sideOpen', false);
     G.dom.main.classList.add('side-closed');
+    setSideOpen(false);
     draw();
   });
   head.appendChild(close);
@@ -801,6 +807,11 @@ function drawRuleCard(s) {
       href: `#/store/${G.store.id}`, style: { marginTop: '8px' }, text: '店舗ページを見る',
     }));
   }
+}
+
+/** ルールの欄が開いているかを body にも持たせる（卓と手牌を左へ寄せるため） */
+function setSideOpen(open) {
+  document.body.classList.toggle('side-open', !!open);
 }
 
 function drawTop(s) {
@@ -864,6 +875,7 @@ function drawTop(s) {
     G.sideOpen = !G.sideOpen;
     savePref('sideOpen', G.sideOpen);
     G.dom.main.classList.toggle('side-closed', !G.sideOpen);
+    setSideOpen(G.sideOpen);
     draw();
   });
   top.appendChild(side);
@@ -1180,7 +1192,11 @@ function drawMy(s) {
   }
 
   const doraSet = new Set(s.doraTypes || []);
-  const drawnId = me.drawn && !me.drawn.hidden ? me.drawn.id : null;
+  // ツモ牌は手牌から抜いて右端に置き直す。手牌に無い牌を指していたら
+  // 置き直さない（手に無い牌が増えて見え、押しても切れない状態になる）。
+  const drawnInHand = me.drawn && !me.drawn.hidden
+    && me.hand.some((t) => t.id === me.drawn.id);
+  const drawnId = drawnInHand ? me.drawn.id : null;
   const tiles = me.hand.filter((t) => t.id !== drawnId);
   // 華牌は打牌の選択肢に入らない。押して抜けるよう、別に拾っておく
   const flowerIds = new Set(choices.filter((c) => c.type === 'flower').map((c) => c.tileId));
