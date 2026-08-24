@@ -1887,6 +1887,23 @@ textarea { resize: vertical; min-height: 56px; }
   .die-face.f4 { transform: rotateX(90deg) translateZ(17px); }
 }
 
+/* 自分の和了だけ、絵を添えて分かりやすく祝う */
+.win-head.is-me {
+  background: linear-gradient(180deg, rgba(255, 209, 102, .22), rgba(255, 209, 102, .06));
+  border-radius: 14px; padding: 8px 12px;
+}
+.win-art {
+  width: 76px; height: auto; flex: 0 0 auto; align-self: center;
+  animation: winPop .5s var(--ease) both;
+}
+@keyframes winPop {
+  0% { opacity: 0; transform: scale(.6) rotate(-12deg); }
+  65% { opacity: 1; transform: scale(1.1) rotate(4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@media (orientation: landscape) and (max-height: 560px) { .win-art { width: 56px; } }
+@media (prefers-reduced-motion: reduce) { .win-art { animation: none; } }
+
 /* --- サイコロチャンス --------------------------------------------------
    数字を並べるだけだと当たった手応えが無い。立方体を転がして見せる。 */
 .dice-box { margin: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }

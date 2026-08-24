@@ -1445,11 +1445,14 @@ function showKyokuResult() {
     for (const d of res.details) {
       const rank = d.yakuman ? (d.yakuman > 1 ? `${d.yakuman}倍役満` : '役満')
         : (d.limitName || `${d.han}翻${G.rules.scoring.useFu ? ` ${d.fu}符` : ''}`);
-      body.appendChild(h('div.win-head',
+      // 自分の和了は、ひと目で分かるように見せ方を変える
+      const mine = d.seat === G.mySeat;
+      body.appendChild(h(`div.win-head${mine ? '.is-me' : ''}`,
         h('div.win-rank', { text: rank }),
         h('div.grow',
           h('div.win-who', { text: `${nameOf(d.seat)} の ${d.tsumo ? 'ツモ' : 'ロン'}` }),
-          d.gain > 0 ? h('div.win-gain', { text: `+${fmt(d.gain)}点` }) : null)));
+          d.gain > 0 ? h('div.win-gain', { text: `+${fmt(d.gain)}点` }) : null),
+        mine ? h('img.win-art', { src: 'img/ui/win.png', alt: '' }) : null));
       body.appendChild(winHandView(d));
       const list = h('div.yaku-list');
       for (const y of d.yaku) {
