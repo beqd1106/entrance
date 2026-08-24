@@ -1380,6 +1380,37 @@ export class GameEngine {
   }
 
   /** 手牌に条件に合う牌を差し込む（山の牌と交換するので総数は保存される） */
+  /**
+   * 同じ牌を手牌に集める（検証用）。
+   * 1種8枚あるルールで「5枚目以降」の挙動を確かめるのに使う。
+   * 山から同じ牌を取ってきて、手牌の何でもない牌と入れ替える。
+   * @returns {number} 実際に集められた枚数
+   */
+  debugCollectSame(seat, count = 5) {
+    const p = this.players[seat];
+    const w = this.wall;
+    // いま手牌にいちばん多い牌を狙う（無ければ最初の牌）
+    const byType = {};
+    for (const t of p.hand) byType[t.t] = (byType[t.t] || 0) + 1;
+    let target = -1, best = -1;
+    for (const [ts, c] of Object.entries(byType)) {
+      if (c > best) { best = c; target = Number(ts); }
+    }
+    if (target < 0) return 0;
+    let have = byType[target] || 0;
+    for (let i = w.drawIndex; i < w.liveEnd && have < count; i++) {
+      if (w.live[i].t !== target) continue;
+      const at = p.hand.findIndex((t) => t.t !== target);
+      if (at < 0) break;
+      const tmp = p.hand[at];
+      p.hand[at] = w.live[i];
+      w.live[i] = tmp;
+      have++;
+    }
+    p.hand = sortTiles(p.hand);
+    return have;
+  }
+
   debugInjectToHand(seat, pred) {
     const p = this.players[seat];
     const w = this.wall;

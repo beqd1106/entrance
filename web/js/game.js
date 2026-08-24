@@ -63,7 +63,7 @@ export function renderGame(root, params) {
     online: null,
     // 手番の残り時間（オンラインのときだけ動く）
     clock: null, ticker: null, remoteWait: null, sending: false,
-    debugAvailable: params.debug === '1',
+    debugAvailable: params.debug === '1' || loadPref('debugPanel', false),
     debug: { showCpuHands: false, forceAlice: false, forceDice: false },
     seed: Date.now() % 100000,
   };
@@ -865,6 +865,19 @@ function showTableSettings() {
       if (G.autoTsumogiri) maybeAutoDiscard();
     }));
 
+  // 珍しい場面（同じ牌が5枚以上そろう等）は、待っていても滅多に来ない。
+  // 店のルールが思ったとおりに動くかを確かめたいとき用の操作。
+  body.appendChild(toggle('検証用の操作を出す',
+    '手牌を作って、そのルールが思ったとおりに動くか確かめられます。ふだんの対局では使いません。',
+    G.debugAvailable, () => {
+      G.debugAvailable = !G.debugAvailable;
+      savePref('debugPanel', G.debugAvailable);
+      G.debugOpen = false;
+      G.dom.debug.classList.add('hide');
+      buildDebugPanel();
+      draw();
+    }));
+
   const close = h('button.btn.btn-brass', { text: '閉じる' });
   close.addEventListener('click', () => closeOverlay());
   overlay(h('div.sheet',
@@ -1453,9 +1466,25 @@ function buildDebugPanel() {
 
   const btn = (label, fn) => {
     const b = h('button.act', { text: label });
-    b.addEventListener('click', () => { fn(); drainLog(); draw(); });
+    b.addEventListener('click', () => {
+      fn();
+      // 手牌を入れ替えたら、選べる手も取り直す。
+      // 取り直さないと、直前に計算した選択肢（暗槓など）が古いまま残る。
+      if (G.waiting) G.waiting = { seat: G.waiting.seat, choices: G.engine.getChoices(G.waiting.seat) };
+      drainLog();
+      draw();
+    });
     return b;
   };
+  // 1種8枚あるルール（清一色ゲーム）で、5枚目以降の挙動を確かめる
+  grid.appendChild(btn('同じ牌を5枚集める', () => {
+    const n = G.engine.debugCollectSame(G.mySeat, 5);
+    pushLog('rule', `［デバッグ］同じ牌を${n}枚に揃えました`);
+  }));
+  grid.appendChild(btn('同じ牌を6枚集める', () => {
+    const n = G.engine.debugCollectSame(G.mySeat, 6);
+    pushLog('rule', `［デバッグ］同じ牌を${n}枚に揃えました`);
+  }));
   grid.appendChild(btn('次ツモ：白ポッチ', () => {
     const ok = G.engine.debugForceNextDraw((t) => t.dot);
     pushLog('rule', ok ? '［デバッグ］次のツモを白ポッチに設定' : '［デバッグ］白ポッチが山にありません');
