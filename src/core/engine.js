@@ -112,6 +112,10 @@ export class GameEngine {
       p.riichiTileId = null;
       p.menzenAtRiichi = true;
       p.nagashi = true;
+      // 食い替え禁止は「鳴いた直後の1打」だけの話。局をまたいで残すと、
+      // 次の局の第一打で前の局の鳴きに引っかかり、特定の牌が切れなくなる。
+      p.lastCall = null;
+      p.lastCallDiscarded = true;
       p.effectAcc = emptyEffect();
     }
     // 配牌。少牌マイティのときは、その枚数だけ少なく配る
@@ -341,9 +345,11 @@ export class GameEngine {
 
   isKuikaeBanned(p, tile) {
     if (this.rules.win.kuikae) return false;
-    if (!p.lastCall) return false;
+    // 鳴いた直後の1打だけが対象。鳴いたときに false にして、
+    // その人が1枚切ったら true に戻る。捨て牌の枚数は見ない
+    // （鳴かれて河から抜かれると0枚になり、禁止が復活していた）。
+    if (!p.lastCall || p.lastCallDiscarded) return false;
     const c = p.lastCall;
-    if (p.discards.length && p.lastCallDiscarded) return false;
     if (tile.t === c.calledTile.t) return true;
     if (c.kind === 'chi') {
       const min = Math.min(...c.tiles.map((x) => x.t));
@@ -895,6 +901,8 @@ export class GameEngine {
       p.melds.push({ kind: 'chi', tiles: [...tiles, tile], concealed: false, from, calledTile: tile });
       p.lastCall = { kind: 'chi', tiles: [...tiles, tile], calledTile: tile };
     } else if (action.type === 'kan') {
+      // カンは食い替えの対象外。前のチー・ポンの禁止を引きずらないよう消す
+      p.lastCall = null;
       const same = p.hand.filter((t) => t.t === tile.t).slice(0, 3);
       p.hand = p.hand.filter((t) => !same.includes(t));
       p.melds.push({ kind: 'kan', tiles: [...same, tile], concealed: false, from, calledTile: tile });

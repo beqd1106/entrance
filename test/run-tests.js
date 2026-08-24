@@ -849,6 +849,39 @@ it('特殊牌でアリス・サイコロ・点数倍化を発火できる', () =
 });
 
 // ===========================================================================
+describe('食い替え禁止は鳴いた直後の1打だけ');
+
+it('局をまたいで持ち越さない', () => {
+  // 局のはじめに捨て牌が0枚に戻るのを解除の条件にしていたため、
+  // 前の局でチーしていると、次の局の第一打で特定の牌が切れなくなっていた。
+  const e = mkEngine({ win: { kuikae: false } });
+  const p = e.players[0];
+  p.lastCall = { kind: 'chi', tiles: mk('3m 4m 5m'), calledTile: mk('3m')[0] };
+  p.lastCallDiscarded = true;
+  e.startKyoku();
+  ok(!e.isKuikaeBanned(e.players[0], mk('3m')[0]), '新しい局では禁止されない');
+});
+
+it('鳴いた直後は禁止、1枚切ったら解ける', () => {
+  const e = mkEngine({ win: { kuikae: false } });
+  const p = e.players[0];
+  p.lastCall = { kind: 'chi', tiles: mk('3m 4m 5m'), calledTile: mk('3m')[0] };
+  p.lastCallDiscarded = false;
+  ok(e.isKuikaeBanned(p, mk('3m')[0]), '鳴いた牌と同じ牌は切れない');
+  p.lastCallDiscarded = true;
+  ok(!e.isKuikaeBanned(p, mk('3m')[0]), '1枚切ったら切れるようになる');
+});
+
+it('河から鳴かれて捨て牌が0枚になっても、禁止は復活しない', () => {
+  const e = mkEngine({ win: { kuikae: false } });
+  const p = e.players[0];
+  p.lastCall = { kind: 'chi', tiles: mk('3m 4m 5m'), calledTile: mk('3m')[0] };
+  p.lastCallDiscarded = true;
+  p.discards = [];   // 自分の捨て牌が鳴かれて0枚になった状態
+  ok(!e.isKuikaeBanned(p, mk('3m')[0]), '捨て牌の枚数は関係ない');
+});
+
+// ===========================================================================
 describe('役満：鳴いた牌も見る');
 
 it('中をポンしていたら緑一色にならない', () => {
