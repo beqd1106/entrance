@@ -1041,12 +1041,14 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-top > .hand-row,
   .seat-left > .hand-row,
   .seat-right > .hand-row { display: none; }
-  /* 河は4人とも6列。天鳳・雀魂と同じで、6枚で折り返して3段になる。
-     1行に伸ばすと高さは稼げるが、何巡目に何を切ったのかが読めない。
-     卓を囲んでいる形も出ない。見やすさを優先して6列に戻す。 */
-  .seat > .discards { grid-template-columns: repeat(6, auto); }
-  /* 6列に折り返すぶん、牌は大きくできる。14pxでは何の牌か判別しづらかった */
-  .seat .tile { --tw: 19px; }
+  /* 河は8列で折り返す。天鳳・雀魂は6列だが、あちらは卓が画面いっぱいで
+     牌そのものが大きい。こちらは横持ちの高さ（1席あたり83px）が先に効くので、
+     6列だと18枚で3段になり、収めるために牌を15pxまで小さくしていた。
+     15pxでは何の牌か読めず、これが「画面が見づらい」の正体だった。
+     8列にすると16枚まで2段で済み、そのぶん牌を大きくできる。
+     幅は余っている（中央と左右を足しても597pxのうち500px弱）。 */
+  .seat > .discards { grid-template-columns: repeat(8, auto); }
+  .seat .tile { --tw: 22px; }
   .seat-left .tile, .seat-right .tile { --tw: 19px; }
   /* 4つの河を中央に寄せて、卓を囲む形にする。
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
@@ -1087,10 +1089,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      ただし河は最後まで18〜20枚（6列なら3〜4段）になる。
      大きくしすぎると終盤に下の段が切れて、いちばん見たい直前の捨て牌が
      見えなくなる。3段が確実に入る大きさに合わせる。 */
-  .seat .tile { --tw: 20px; }
-  .seat-left .tile, .seat-right .tile { --tw: 20px; }
-  /* 11枚を超えたら一段詰める。3〜4段になっても河がぜんぶ見える */
-  .seat .discards.dense .tile { --tw: 15px; }
+  .seat .tile { --tw: 22px; }
+  .seat-left .tile, .seat-right .tile { --tw: 22px; }
+  /* 17枚を超えると3段になるので、そのぶんだけ一段小さくする。
+     以前は11枚で15pxまで落としていた（6列で4段になるため）。 */
+  .seat .discards.dense .tile { --tw: 18px; }
   /* 中央は最小限に。ここを削ったぶんが4人の河の高さになる */
   .center-info { padding: 4px 10px; }
   .center-kyoku { font-size: 15px; }

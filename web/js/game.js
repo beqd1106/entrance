@@ -1124,7 +1124,9 @@ function discardsEl(p) {
   const lastId = G.engine.lastDiscard ? G.engine.lastDiscard.tile.id : null;
   // 河が伸びたら牌を一段詰める。序盤は大きく読みやすく、終盤も
   // 全部見えるようにする（送って隠すと、それまでの捨て牌が読めない）
-  const dense = p.discards.length > 10 ? '.dense' : '';
+  // 8列で折り返すので、2段に収まる16枚までは大きいまま。
+  // 3段になるところで初めて一段小さくする（以前は6列だったため11枚から）。
+  const dense = p.discards.length > 16 ? '.dense' : '';
   const el = h(`div.discards${dense}`, p.discards.map((t) => {
     const cls = [];
     if (t.id === lastId) cls.push('just');
