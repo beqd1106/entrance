@@ -11,7 +11,7 @@ import { lastTable } from './recent.js';
 import { lookupPreset } from './custom.js';
 import { resolveRules } from '../../src/rules/defaults.js';
 import { shortSummary } from '../../src/rules/explain.js';
-import { showOnboarding } from './onboarding.js';
+import { showOnboarding, shouldShowOnboarding } from './onboarding.js';
 import { markIcon } from './marks.js';
 
 /** OPのタイル。mark はアプリ専用の和風マーク（marks.js） */
@@ -116,6 +116,18 @@ export function renderHub(root) {
   // タイルが順に立ち上がるよう、並び順をCSSへ渡す
   sec.querySelectorAll('.op-tiles > *').forEach((el, i) => el.style.setProperty('--i', String(i)));
   root.appendChild(sec);
+
+  // はじめて開いた人には、案内をひととおり出す。
+  // shouldShowOnboarding はこのために用意してあったのに、
+  // どこからも呼んでおらず、初回の案内が一度も出ていなかった
+  // （「はじめての方へ」を自分で押した人にしか出なかった）。
+  // 画面が組み上がってから出したいので、次の描画まで待つ。
+  if (shouldShowOnboarding()) {
+    requestAnimationFrame(() => {
+      // 案内を読んでいる間に別の画面へ移っていたら、もう出さない
+      if (document.body.classList.contains('op-mode')) showOnboarding();
+    });
+  }
 }
 
 /** ハブから離れるときに、背景モードを戻す */
