@@ -34,6 +34,9 @@ const GOTO_BASE = {
   },
   flowers: {
     enabled: true,
+    // 華牌は自分でタップして抜く。抜く間合いも打ち手の判断のうち、
+    // という店が多い（勝手に抜けると、抜くかどうかを選べない）
+    manualDraw: true,
     tiles: ['spring', 'summer', 'autumn', 'winter'],
     isDora: false,
     effects: {

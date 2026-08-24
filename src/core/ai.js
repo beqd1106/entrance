@@ -8,7 +8,7 @@
  *   4. 鳴きは向聴が進み、かつ役の目処がある時のみ
  *   5. level で 初心者 / 標準 / 上級 を切り替え（拡張余地を確保）
  */
-import { shanten, waits, ukeire, countsFromTiles, shantenWithWild } from './hand.js';
+import { shanten, waits, ukeire, countsFromTiles, shantenWithWild, limitOf } from './hand.js';
 import { isHonor, isTerminal, isYaochu, numOf, suitOf, doraNext, T } from './tiles.js';
 
 const LEVELS = {
@@ -137,7 +137,9 @@ function bestRiichiTile(engine, p, tileIds) {
     const w = waits(counts, p.melds.length, engine.handOpts);
     let left = 0;
     const vis = visibleCounts(engine, p);
-    for (const t of w) left += Math.max(0, 4 - vis[t]);
+    // 1種の枚数はルールで変わる。4枚固定だと、8枚あるルールで
+    // まだ残っている待ちを「もう無い」と見て手を曲げてしまう
+    for (const t of w) left += Math.max(0, limitOf(engine.handOpts, t) - vis[t]);
     const doraKeep = rest.filter((t) => doraTypes.includes(t.t) || t.red || t.gold).length;
     const score = left * 2 + doraKeep * 1.5;
     if (!best || score > best.score) best = { tileId: id, score, waitCount: left, waits: w };

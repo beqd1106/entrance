@@ -38,8 +38,12 @@ export function makeHandOpts(limits = null, chiitoiMultiPair = false, chiiseimuk
 
 const PLAIN_OPTS = makeHandOpts();
 
-/** 牌種 t を最大何枚まで使えるか */
-function limitOf(opts, t) {
+/**
+ * 牌種 t を最大何枚まで使えるか。
+ * ふつうは4枚だが、2セット混ぜの清一色ゲームなどは8枚ある。
+ * 「4枚」を決め打ちすると、残り枚数や純カラの判定がずれる。
+ */
+export function limitOf(opts, t) {
   const l = opts && opts.limits;
   return l ? l[t] : 4;
 }

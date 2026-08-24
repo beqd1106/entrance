@@ -16,7 +16,9 @@ import {
   T, NUM_TYPES, typeToCode, codeToType, tileName, typeName, isYaochu, numOf, isFlower, doraNext, sortTiles,
   tileFaceKey,
 } from './tiles.js';
-import { shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild, makeHandOpts } from './hand.js';
+import {
+  shanten, waits, countsFromTiles, shantenWithWild, waitsWithWild, makeHandOpts, limitOf,
+} from './hand.js';
 import { evaluate } from './yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from './score.js';
 import { Wall, makeRng, tileLimits, FLOWER_ID, FLOWER_LABEL } from './wall.js';
@@ -408,7 +410,7 @@ export class GameEngine {
     let best = null;
     let bestScore = -Infinity;
     for (let t = 0; t < NUM_TYPES; t++) {
-      if (counts[t] >= 4) continue;
+      if (counts[t] >= limitOf(this.handOpts, t)) continue;
       counts[t]++;
       const ok = shanten(counts, p.melds.length, this.handOpts) === -1;
       counts[t]--;
@@ -1136,8 +1138,12 @@ export class GameEngine {
         isTenpai = hasYaku;
       }
       if (isTenpai && !R.win.junkara) {
+        // 待ち牌が全部見えていたらテンパイと認めない（純カラ）。
+        // 1種の枚数はルールで変わるので、4枚固定にすると
+        // 8枚あるルールでまだ残っているのにノーテンにされてしまう。
         const visible = this.visibleCount(w);
-        if (visible >= 4 * w.length) isTenpai = false;
+        const total = w.reduce((a, t) => a + limitOf(this.handOpts, t), 0);
+        if (visible >= total) isTenpai = false;
       }
       p.tenpai = isTenpai;
       if (isTenpai) tenpai.push(p.seat);
