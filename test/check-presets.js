@@ -195,6 +195,21 @@ const CLAIMS = [
   ['standard3', '本場1000点', (R) => R.scoring.honbaPoints, 1000],
   ['standard3', 'ノーテン罰符2000', (R) => R.ryuukyoku.notenPenalty, 2000],
   ['chinitsu3', '14翻で数え役満', (R) => R.scoring.countedYakumanHan, 14],
+  ['chinitsu3', '1種8枚', (R) => R.wall.tileCounts.p, 8],
+  ['chinitsu3', '筒子と索子が交互', (R) => R.wall.suitRotation, ['p', 's']],
+  ['chinitsu3', '裏は青と黄の2色', (R) => R.wall.backColors.colors, ['blue', 'yellow']],
+  ['chinitsu3', '5枚目以降もカンに足せる', (R) => R.win.kanBeyondFour, true],
+  ['chinitsu3', '七対子の8枚使い', (R) => R.local.chiitoiMultiPair, true],
+  ['chinitsu3', '大車輪あり', (R) => R.localYaku.some((y) => y.id === 'daisharin' && y.enabled), true],
+  ['chinitsu3', '背一色あり', (R) => R.localYaku.some((y) => y.id === 'seiiisou' && y.enabled), true],
+  ['mighty3', '4枚使い七対子あり', (R) => R.local.chiitoiMultiPair, true],
+  ['mighty3', '手牌が1枚少ない', (R) => R.local.shouhaiMighty.count, 1],
+  ['jewel4', '宝石牌5種類', (R) => R.specialTiles.length, 5],
+  ['jewel4', 'ジュエルは1翻', (R) => (R.localYaku.find((y) => y.id === 'jewel') || {}).han, 1],
+  ['jewel4', '宝石箱は役満', (R) => (R.localYaku.find((y) => y.id === 'jewelbox') || {}).yakuman, 1],
+  ['goto_standard', '常時ドラ2枚', (R) => R.dora.indicators, 2],
+  ['goto_standard', '北抜きあり', (R) => R.sanma.northMode, 'nuki'],
+  ['goto_standard', '華牌は春夏秋冬', (R) => R.flowers.tiles.length, 4],
 ];
 for (const [id, label, get, want] of CLAIMS) {
   const R = resolveRules(getPreset(id).rules);
