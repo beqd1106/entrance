@@ -36,6 +36,7 @@ jobs:
           node test/run-server-tests.js
           node test/check-presets.js
           node test/check-rule-coverage.js
+          node test/check-settings-effect.js
           node test/sim.js 5
 
       - name: Web資産を配置
