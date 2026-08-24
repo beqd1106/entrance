@@ -1403,8 +1403,11 @@ function dieEl(pips) {
     for (let k = 0; k < i + 1; k++) face.appendChild(h('i.pip'));
     cube.appendChild(face);
   });
-  cube.style.setProperty('--turn', FACE_TURN[pips] || FACE_TURN[1]);
-  return h('div.die', cube);
+  // 出目を渡さないときは「まだ振っていない」姿。
+  // 面を正面に向けると 1 が出たように見えてしまうので、角をこちらに向ける。
+  const idle = !FACE_TURN[pips];
+  cube.style.setProperty('--turn', idle ? 'rotateX(-24deg) rotateY(34deg)' : FACE_TURN[pips]);
+  return h('div.die', { class: idle ? 'die-idle' : '' }, cube);
 }
 
 function diceView(rolls) {
@@ -1432,15 +1435,30 @@ function diceView(rolls) {
   };
 
   const roll = h('button.btn.btn-brass.btn-sm', { text: 'サイコロを振る' });
-  roll.addEventListener('click', () => {
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
     roll.disabled = true;
     roll.textContent = '転がしています…';
     showRoll(0);
     setTimeout(() => { roll.remove(); }, 900);
-  });
+  };
+  roll.addEventListener('click', go);
   box.appendChild(roll);
-  // 押さずに閉じても分かるよう、目だけは並べておく
-  for (const pips of rolls[0] || []) stage.appendChild(dieEl(pips));
+  // 振る前は目を伏せておく。出目を先に並べてしまうと、
+  // ボタンを押す前に結果が分かってしまい、振る意味が無くなる。
+  for (const _ of rolls[0] || []) stage.appendChild(dieEl(0));
+  total.textContent = '押すと振れます';
+  // 押さずに閉じる人もいるので、少し待って自分で振る。
+  // ただし数え始めるのは「画面に出てから」。この箱は結果画面が組み立てられる
+  // 時点で作られ、実際に表示されるのは和了の演出が終わってからなので、
+  // 作った瞬間から数えると、開いたときにはもう振り終わっていた。
+  const armWhenShown = () => {
+    if (!box.isConnected) { setTimeout(armWhenShown, 120); return; }
+    setTimeout(go, 3500);
+  };
+  armWhenShown();
   return box;
 }
 

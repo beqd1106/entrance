@@ -1991,6 +1991,12 @@ textarea { resize: vertical; min-height: 56px; }
   transition: transform .55s cubic-bezier(.2, .9, .25, 1);
 }
 .dice-stage.rolling .die-cube { animation: dieTumble .9s cubic-bezier(.3, .7, .3, 1) both; }
+/* まだ振っていないサイコロ。角をこちらに向けて、静かに揺らしておく */
+.die-idle .die-cube { transform: var(--turn); animation: dieIdle 2.6s ease-in-out infinite; }
+@keyframes dieIdle {
+  0%, 100% { transform: rotateX(-24deg) rotateY(34deg); }
+  50% { transform: rotateX(-16deg) rotateY(52deg); }
+}
 /* 2つめは少しずらして転がす。同時だと作り物っぽく見える */
 .dice-stage.rolling .die:nth-child(2) .die-cube { animation-delay: .08s; }
 @keyframes dieTumble {
@@ -2034,6 +2040,7 @@ textarea { resize: vertical; min-height: 56px; }
 .dice-total { font-size: 13px; font-weight: 700; letter-spacing: .04em; min-height: 18px; }
 @media (prefers-reduced-motion: reduce) {
   .dice-stage.rolling .die-cube { animation: none; }
+  .die-idle .die-cube { animation: none; }
 }
 
 /* --- 対局画面をポップに ---------------------------------------------- */
