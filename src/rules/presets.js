@@ -511,8 +511,13 @@ export const PRESETS = [
       // カンは4回で打ち切らない。すでにカンした牌の5枚目以降も足せる
       // （足すたびにドラ表示牌が増える。無くなったら山から取る）
       win: { kanBeyondFour: true },
-      // 牌の裏の色がそろえば背一色。役満は役満どまりのルールなので1倍で持つ
-      localYaku: [{ id: 'seiiisou', enabled: true, yakuman: 1 }],
+      // 役満は役満どまりのルールなので、どちらも1倍で持つ。
+      // 大車輪はこの店では既定で入っている（1色しか使わないので狙える）。
+      // 筒子の回は大車輪、索子の回は大竹林として成立する。
+      localYaku: [
+        { id: 'seiiisou', enabled: true, yakuman: 1 },
+        { id: 'daisharin', enabled: true, yakuman: 1 },
+      ],
       bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },
     },
   },
