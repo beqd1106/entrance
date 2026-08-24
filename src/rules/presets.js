@@ -131,11 +131,14 @@ export const PRESETS = [
     name: '一般三麻',
     category: '標準',
     tags: ['三麻', '北抜き', 'ツモ損なし'],
-    description: '35000持ち40000返しの三人麻雀。萬子2〜8抜き・北は抜きドラ・ツモ損なし。',
+    description: '35000持ち40000返しの三人麻雀。萬子2〜8抜き・北は抜きドラ・ツモ損なし。'
+      + '本場は1本1000点、ノーテン罰符は場に2000点（三麻は四麻より重い刻みが一般的）。',
     rules: {
       meta: { id: 'standard3', name: '一般三麻' },
       game: { players: 3, length: 'east_south' },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
+      // 三麻は本場もノーテン罰符も四麻より重い。四麻の既定（300/3000）は合わない
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], honbaPoints: 1000 },
+      ryuukyoku: { notenPenalty: 2000 },
       sanma: { tsumoLoss: false },
       dora: { red: { '5p': 1, '5s': 1 } },
     },
@@ -145,11 +148,13 @@ export const PRESETS = [
     name: '関東三麻風',
     category: '地域',
     tags: ['三麻', 'ツモ損あり', '東風'],
-    description: '東風戦・ツモ損あり・北は抜きドラ。テンポの速い関東系の三麻。',
+    description: '東風戦・ツモ損あり・北は抜きドラ。テンポの速い関東系の三麻。'
+      + '本場は1本1000点、ノーテン罰符は場に2000点。ツモ損は1000点以下を切り上げ。',
     rules: {
       meta: { id: 'kanto3', name: '関東三麻風' },
       game: { players: 3, length: 'east' },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10] },
+      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], honbaPoints: 1000 },
+      ryuukyoku: { notenPenalty: 2000 },
       sanma: { tsumoLoss: true },
       dora: { red: { '5p': 1, '5s': 1 } },
     },
@@ -397,7 +402,11 @@ export const PRESETS = [
     rules: {
       meta: { id: 'zenaka3', name: '全赤三麻風' },
       game: { players: 3, length: 'east' },
-      scoring: { startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10], roundUpMangan: true },
+      scoring: {
+        startingPoints: 35000, returnPoints: 40000, uma: [15, -5, -10],
+        roundUpMangan: true, honbaPoints: 1000,
+      },
+      ryuukyoku: { notenPenalty: 2000 },
       sanma: { tsumoLoss: false },
       dora: { indicators: 1, red: { '5p': 4, '5s': 4 } },
       bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1 },
@@ -455,7 +464,8 @@ export const PRESETS = [
     tags: ['三麻', '清一色ゲーム', '2セット混ぜ', '1種8枚', '色が交互'],
     description: '全自動卓の2セットを混ぜて打つ三人麻雀。萬子は使わず、筒子だけの回と索子だけの回を交互に打ちます。'
       + 'その色を1種8枚入れるので、手はいつも清一色。牌の裏が青と黄の2色になり、裏がそろうと背一色（役満）。'
-      + 'カンは4回で打ち切らず、カンした牌の5枚目以降も足せます（足すたびにドラが増えます）。',
+      + 'カンは4回で打ち切らず、カンした牌の5枚目以降も足せます（足すたびにドラが増えます）。'
+      + '14翻で数え役満、以降2翻ごとに5倍満・6倍満…と伸びますが、本物の役満は役満どまりです。',
     rules: {
       meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
       game: { players: 3, length: 'east' },
@@ -476,6 +486,10 @@ export const PRESETS = [
       scoring: {
         startingPoints: 35000, returnPoints: 40000,
         uma: [0, 1, -3], umaZeroSum: true, roundUpMangan: true,
+        // 14翻で数え役満。以降は2翻ごとに5倍満・6倍満・7倍満…と伸びる。
+        // 伸びるのは数え役満だけで、本物の役満は役満どまり（4倍満まで）。
+        countedYakumanHan: 14, countedYakumanStepHan: 2,
+        maxYakumanMultiplier: 1,
       },
       // 5筒・5索はすべてドラ。赤2枚・金2枚は祝儀牌として残す。
       dora: {
@@ -494,8 +508,8 @@ export const PRESETS = [
       // カンは4回で打ち切らない。すでにカンした牌の5枚目以降も足せる
       // （足すたびにドラ表示牌が増える。無くなったら山から取る）
       win: { kanBeyondFour: true },
-      // 牌の裏の色がそろえばダブル役満
-      localYaku: [{ id: 'seiiisou', enabled: true }],
+      // 牌の裏の色がそろえば背一色。役満は役満どまりのルールなので1倍で持つ
+      localYaku: [{ id: 'seiiisou', enabled: true, yakuman: 1 }],
       bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },
     },
   },

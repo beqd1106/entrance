@@ -1024,12 +1024,13 @@ it('同じ牌が8枚あるルールでは5枚目以降も待ちとして数え�
   no(waits(counts, 0).includes(codeToType('5m')), '通常ルールでは待ちに入らない');
 });
 
-it('背一色：牌の裏の色がそろえばダブル役満', () => {
+it('背一色：牌の裏の色がそろえば役満', () => {
   const rules = resolveRules(getPreset('chinitsu3').rules);
   const hand = withBack(mk('1p 1p 1p 2p 3p 4p 5p 6p 7p 8p 8p 8p 9p 9p'), 'blue');
   const res = evaluate(baseCtx({ hand, winTile: hand[13], rules, tsumo: true }));
   ok(res.isYakuman, '役満として成立する');
-  ok(res.yaku.some((y) => y.name === '背一色' && y.yakuman === 2), 'ダブル役満');
+  // この店は役満どまり（4倍満まで）なので、背一色も1倍で持つ
+  ok(res.yaku.some((y) => y.name === '背一色' && y.yakuman === 1), '役満1倍');
 });
 
 it('背一色：裏の色が混ざっていれば成立しない', () => {
@@ -1113,6 +1114,58 @@ it('6枚のカンは、ドラなら6枚ぶん数える', () => {
   };
   const d = countDora(ctx);
   eq(d.dora, 6, '1筒がドラなら、6枚のカンは6枚ぶん数える');
+});
+
+it('暗槓に足すぶんは暗槓のまま（槍槓されない）', () => {
+  const { e, p } = chinitsuEngineWith(codeToType('1p'), 6);
+  e.act(0, { type: 'kan', kind: 'ankan', t: codeToType('1p') });
+  ok(p.melds[0].concealed, '暗槓である');
+  e.act(0, { type: 'kan', kind: 'kanadd', t: codeToType('1p') });
+  // 槍槓の待ちに入らず、そのまま自分の手番に戻る
+  eq(e.pending.kind, 'turn', '槍槓の受け答えにならない');
+  eq(e.pending.seat, 0, '自分の手番のまま');
+});
+
+it('明槓に足すぶんは加槓と同じ扱い（槍槓の機会がある）', () => {
+  const t = codeToType('1p');
+  const { e, p } = chinitsuEngineWith(t, 6);
+  // ポン→加槓で明槓を作ってから、5枚目を足す
+  e.act(0, { type: 'kan', kind: 'ankan', t });
+  // いま作ったのは暗槓なので、明槓として扱えるよう伏せを外す
+  p.melds[0].concealed = false;
+  e.act(0, { type: 'kan', kind: 'kanadd', t });
+  // 待っている人がいなければ手番に戻る。いれば槍槓の受け答えになる。
+  ok(e.pending.kind === 'turn' || (e.pending.kind === 'claim' && e.pending.chankan),
+    '手番に戻るか、槍槓の受け答えになる');
+  eq(p.melds[0].tiles.length, 5, '5枚目は入っている');
+});
+
+it('清一色ゲーム：14翻で数え役満、2翻ごとに5倍満・6倍満と伸びる', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  const at = (han) => basePoints({ han, fu: 30, yakuman: 0 }, r);
+  eq(at(13).limitName, '三倍満', '13翻はまだ三倍満');
+  eq(at(14).limitName, '数え役満', '14翻で数え役満');
+  eq(at(14).base, 8000, '数え役満は8000');
+  eq(at(16).limitName, '5倍満', '16翻で5倍満');
+  eq(at(16).base, 10000, '5倍満は10000');
+  eq(at(18).limitName, '6倍満', '18翻で6倍満');
+  eq(at(20).limitName, '7倍満', '20翻で7倍満');
+});
+
+it('清一色ゲーム：本物の役満は複合しても役満どまり', () => {
+  const r = resolveRules(getPreset('chinitsu3').rules);
+  for (const y of [1, 2, 3]) {
+    const b = basePoints({ han: 0, fu: 30, yakuman: y }, r);
+    eq(b.base, 8000, `役満×${y} でも8000`);
+    eq(b.limitName, '役満', `役満×${y} でも「役満」`);
+  }
+});
+
+it('ふつうのルールでは、数え役満は伸びず役満も倍になる', () => {
+  const r = resolveRules(getPreset('standard4').rules);
+  eq(r.scoring.countedYakumanStepHan, 0, '伸ばさない');
+  eq(r.scoring.maxYakumanMultiplier, 0, '上限なし');
+  eq(basePoints({ han: 0, fu: 30, yakuman: 2 }, r).base, 16000, 'ダブル役満は16000');
 });
 
 it('ふつうのルールでは、カンに足す選択肢は出ない', () => {

@@ -61,12 +61,23 @@ export function basePoints(hand, rules, rankUp = 0) {
   }
 
   if (hand.yakuman > 0) {
-    base = 8000 * hand.yakuman;
-    name = hand.yakuman > 1 ? `${hand.yakuman}倍役満` : '役満';
-    level = 4 + (hand.yakuman - 1);
+    // 役満は役満どまり（4倍満まで）という店がある。伸びるのは数え役満だけ。
+    const cap = S.maxYakumanMultiplier || 0;
+    const mult = cap > 0 ? Math.min(hand.yakuman, cap) : hand.yakuman;
+    base = 8000 * mult;
+    name = mult > 1 ? `${mult}倍役満` : '役満';
+    level = 4 + (mult - 1);
   } else {
     const han = hand.han;
-    if (han >= S.countedYakumanHan && S.countedYakuman) { base = 8000; name = '数え役満'; level = 4; }
+    if (han >= S.countedYakumanHan && S.countedYakuman) {
+      // 数え役満から先も伸ばすルール（14翻で数え役満、以降2翻ごとに
+      // 5倍満・6倍満…）。満貫1つぶん＝2000点ずつ増える。
+      const step = S.countedYakumanStepHan || 0;
+      const up = step > 0 ? Math.floor((han - S.countedYakumanHan) / step) : 0;
+      base = 8000 + 2000 * up;
+      name = up > 0 ? `${4 + up}倍満` : '数え役満';
+      level = 4 + up;
+    }
     else if (han >= 11) { base = 6000; name = '三倍満'; level = 3; }
     else if (han >= 8) { base = 4000; name = '倍満'; level = 2; }
     else if (han >= 6) { base = 3000; name = '跳満'; level = 1; }

@@ -652,6 +652,19 @@ export class GameEngine {
       if (idx < 0) return { error: '足す牌を持っていません' };
       const [tile] = p.hand.splice(idx, 1);
       meld.tiles.push(tile);
+      // 暗槓に足すぶんは暗槓のままなので、槍槓はできない。
+      // 明槓に足すぶんは加槓と同じ扱いなので、槍槓の機会がある。
+      if (!meld.concealed) {
+        const chankan = this.collectRonCandidates(seat, tile, { chankan: true });
+        if (chankan.length) {
+          this.pushEvent({ type: 'chankanChance', seat });
+          this.pending = {
+            kind: 'claim', tile, from: seat, chankan: true, kanadd: true,
+            candidates: chankan, responses: new Map(),
+          };
+          return { ok: true };
+        }
+      }
     } else {
       return { error: '不正な槓' };
     }
@@ -828,7 +841,8 @@ export class GameEngine {
     if (pd.chankan) {
       // 搶槓されなかった → 槓成立を続行
       const p = this.players[pd.from];
-      this.kanCount++;
+      // カンに足しただけのときは面子が増えていないので、回数も増やさない
+      if (!pd.kanadd) this.kanCount++;
       for (const q of this.players) q.ippatsu = false;
       if (R.dora.kanDora) {
         const t = this.wall.revealDora();

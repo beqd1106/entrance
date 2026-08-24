@@ -44,6 +44,18 @@ export const DEFAULT_RULES = {
     roundUpMangan: false,       // 切り上げ満貫
     countedYakuman: true,       // 数え役満
     countedYakumanHan: 13,      // 数え役満開始翻数
+    /**
+     * 役満の倍数の上限。0なら上限なし（ダブル役満・トリプル役満がそのまま出る）。
+     * 1にすると、複合しても二倍役満でも、支払いは役満どまり（＝4倍満）になる。
+     * 数え役満だけが伸びるルール（清一色ゲーム）で使う。
+     */
+    maxYakumanMultiplier: 0,
+    /**
+     * 数え役満から先の伸ばし方。
+     * 0 なら数え役満で頭打ち。2 なら2翻ごとに1倍ずつ増えて
+     * 5倍満・6倍満・7倍満…と伸びる（打点が高くなるルール向け）。
+     */
+    countedYakumanStepHan: 0,
     doubleYakuman: true,        // ダブル役満（国士十三面・四暗単騎・大四喜・純正九蓮）
     multipleYakuman: true,      // 役満複合
     doubleWindPairFu: false,    // 連風牌の雀頭を4符にする
