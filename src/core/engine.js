@@ -1098,6 +1098,14 @@ export class GameEngine {
         base: bp.base,
         tsumo: isTsumo,
         doraDetail: win.doraDetail,
+        // 何がドラだったのかを結果画面で見せる。枚数（ドラ3）だけだと、
+        // どの牌が効いたのかが分からない。表示牌と、それが指すドラの両方を渡す。
+        doraIndicators: this.wall.doraIndicators.map((t) => this.tileInfo(t)),
+        uraIndicators: R.dora.ura && p.riichi
+          ? this.wall.uraIndicators
+            .slice(0, R.dora.kanUra ? this.wall.uraIndicators.length : R.dora.indicators)
+            .map((t) => this.tileInfo(t))
+          : [],
         uraCount,
         rankUp: eff.rankUp,
         extraHan: eff.extraHan,

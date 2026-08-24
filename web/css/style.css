@@ -615,6 +615,17 @@ body.playing .nav { display: none; }
 .ed-delete { color: var(--ink-4); }
 .ed-delete.is-armed { color: var(--brass); border-color: var(--brass); font-weight: 700; }
 
+/* 結果画面のドラ。表示牌と、それが指すドラを並べて出す */
+.dora-lines { display: grid; gap: 6px; margin: 8px 0 4px; }
+.dora-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dora-label {
+  flex: 0 0 auto; min-width: 5.2em; font-size: 11px; color: var(--ink-4);
+  letter-spacing: .04em;
+}
+.dora-line.ura .dora-label { color: var(--brass); }
+.dora-arrow { color: var(--ink-4); font-size: 12px; }
+.dora-line .tile.is-dora { outline: 2px solid var(--brass-2); outline-offset: 1px; }
+
 .room-rules { display: grid; gap: 8px; }
 .room-rule { display: grid; gap: 2px; }
 .room-rule b { font-size: 13px; }

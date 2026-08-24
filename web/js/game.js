@@ -9,7 +9,7 @@ import { lookupPreset, findPresetAny } from './custom.js';
 import { recordPlay } from './dashboard.js';
 import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
-import { codeToType, typeName, tileFaceKey } from '../../src/core/tiles.js';
+import { codeToType, typeName, tileFaceKey, doraNext } from '../../src/core/tiles.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
 import { currentTable, clearTable } from './online.js';
@@ -1380,6 +1380,22 @@ function winHandView(d) {
     for (const m of d.meldsView) mr.appendChild(meldTiles(m, d.seat));
     box.appendChild(mr);
   }
+  // 何がドラだったのか。「ドラ3」とだけ出しても、どの牌が効いたのかは
+  // 分からない。表示牌と、それが指すドラを並べて見せる。
+  const doraRow = (label, list, cls) => {
+    if (!list || !list.length) return null;
+    return h(`div.dora-line${cls || ''}`,
+      h('span.dora-label', { text: label }),
+      h('div.row.gap-4', list.map((t) => tileEl(t, { size: 'xs' }))),
+      h('span.dora-arrow', { text: '→' }),
+      h('div.row.gap-4', list.map((t) => tileEl(
+        { t: doraNext(t.t), name: typeName(doraNext(t.t)) }, { size: 'xs', cls: 'is-dora' },
+      ))));
+  };
+  const dora = h('div.dora-lines',
+    doraRow('ドラ表示', d.doraIndicators),
+    doraRow('裏ドラ表示', d.uraIndicators, '.ura'));
+  if (dora.children.length) box.appendChild(dora);
   return box;
 }
 
