@@ -5,7 +5,7 @@
 import { GameEngine } from '../../src/core/engine.js';
 import { decide } from '../../src/core/ai.js';
 import { resolveRules, deepMerge } from '../../src/rules/defaults.js';
-import { lookupPreset } from './custom.js';
+import { lookupPreset, findPresetAny } from './custom.js';
 import { recordPlay } from './dashboard.js';
 import { rememberTable } from './recent.js';
 import { STORES } from '../../src/data/stores.js';
@@ -32,6 +32,21 @@ function savePref(key, value) {
 
 export function renderGame(root, params) {
   const presetId = params.preset || 'standard4';
+  // 知らないルール番号なら、黙って一般四麻を始めない。
+  // このアプリは「その店のルールで打つ」ためのものなので、
+  // 別のルールで始まってしまうのがいちばん困る。
+  // （オンライン卓は部屋がルールの中身ごと持ってくるので、この確認から外す）
+  if (!params.room && !findPresetAny(presetId)) {
+    root.appendChild(h('section.wrap', { style: { padding: '48px 0' } },
+      h('div.card.card-pad',
+        h('h2', { style: { marginTop: 0 }, text: 'このルールは見つかりませんでした' }),
+        h('p.muted', { text: `「${presetId}」というルールはありません。`
+          + '自分で作ったルールなら、この端末から消えているのかもしれません。' }),
+        h('div.row.gap-8', { style: { marginTop: '14px' } },
+          h('a.btn.btn-primary', { href: '#/table', text: '卓を立てる' }),
+          h('a.btn.btn-ghost', { href: '#/rules', text: 'ルールを見る' })))));
+    return () => {};
+  }
   // オンライン卓は、部屋を作った人のルールをそのまま使う。
   // 自作ルールは相手の端末には無いので、部屋が持ってきた中身を優先する。
   const table = params.room ? currentTable() : null;

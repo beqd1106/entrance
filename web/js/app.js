@@ -1,7 +1,7 @@
 /**
  * app.js - ルーター＋ホーム／店舗検索／店舗ページ／ルール比較
  */
-import { STORES, FILTERS, getStore } from '../../src/data/stores.js';
+import { STORES, FILTERS, getStore, findStore } from '../../src/data/stores.js';
 import { ALL_PRESETS, PRESETS } from '../../src/rules/presets.js';
 import { lookupPreset, allPresetsWithCustom } from './custom.js';
 import { resolveRules } from '../../src/rules/defaults.js';
@@ -666,6 +666,18 @@ function jpDate(v) {
 }
 
 function viewStore(id) {
+  // 知らない店舗番号なら、先頭の店を出さずに「見つからない」と言う。
+  // 黙って別の店を出すと、見ている人はその店だと思い込んでしまう。
+  if (!findStore(id)) {
+    app.appendChild(h('section.wrap', { style: { padding: '48px 0' } },
+      h('div.card.card-pad',
+        h('h2', { style: { marginTop: 0 }, text: 'この店舗は見つかりませんでした' }),
+        h('p.muted', { text: `「${id}」という店舗はありません。名前が変わったか、リンクが古いのかもしれません。` }),
+        h('div.row.gap-8', { style: { marginTop: '14px' } },
+          h('a.btn.btn-primary', { href: '#/stores', text: '店舗をさがす' }),
+          h('a.btn.btn-ghost', { href: '#//', text: 'ホームへ' })))));
+    return;
+  }
   const s = resolveStore(id);
   const r = rulesOf(s.presetId);
   const v = validateRules(r);

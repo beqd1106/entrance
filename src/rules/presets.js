@@ -888,3 +888,13 @@ export const ALL_PRESETS = [...PRESETS, ...STORE_PRESETS];
 export function getPreset(id) {
   return ALL_PRESETS.find((p) => p.id === id) || PRESETS[0];
 }
+
+/**
+ * 見つからなければ null を返す版。
+ * getPreset は見つからないと一般四麻を返すので、消した自作ルールへの
+ * 古いリンクを開いても、別のルールで黙って始まってしまう。
+ * このアプリは「その店のルールで打つ」ためのものなので、それはいちばん困る。
+ */
+export function findPreset(id) {
+  return ALL_PRESETS.find((p) => p.id === id) || null;
+}

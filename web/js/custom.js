@@ -2,7 +2,7 @@
  * custom.js - 店舗が保存したカスタムルールの永続化（デモではブラウザのlocalStorage）
  * 本番では店舗アカウントに紐づくレコードとしてサーバへ保存する想定。
  */
-import { ALL_PRESETS, getPreset } from '../../src/rules/presets.js';
+import { ALL_PRESETS, getPreset, findPreset } from '../../src/rules/presets.js';
 
 const KEY = 'houserule.customPresets.v1';
 
@@ -47,6 +47,13 @@ export function lookupPreset(id) {
   const custom = loadCustomPresets().find((p) => p.id === id);
   if (custom) return custom;
   return getPreset(id);
+}
+
+/** 見つからなければ null を返す版（自作ルールも含めて探す） */
+export function findPresetAny(id) {
+  const custom = loadCustomPresets().find((p) => p.id === id);
+  if (custom) return custom;
+  return findPreset(id);
 }
 
 export function allPresetsWithCustom() {

@@ -210,3 +210,13 @@ export const FILTERS = [
 export function getStore(id) {
   return STORES.find((s) => s.id === id) || STORES[0];
 }
+
+/**
+ * 見つからなければ null を返す版。
+ * getStore は見つからないと先頭の店を返すので、古いリンクや打ち間違いでも
+ * 別の店がその店として出てしまい、見ている人は気づけない。
+ * 「その店を出す」画面ではこちらを使う。
+ */
+export function findStore(id) {
+  return STORES.find((s) => s.id === id) || null;
+}
