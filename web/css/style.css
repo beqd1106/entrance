@@ -455,7 +455,9 @@ body.playing .nav { display: none; }
 }
 .seat-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
 /* 名前は、リーチや割れ目の札が入っても点数を押し出さないよう縮める */
-.seat-head .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 名前は誰の席かを見分ける唯一の手がかり。席が細くなると「C…」まで
+   潰れて CPU1 と CPU3 の区別がつかなくなるので、最低幅を持たせる。 */
+.seat-head .grow { min-width: 4.2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seat-wind {
   width: 21px; height: 21px; border-radius: 4px; display: grid; place-items: center;
   background: rgba(255, 255, 255, 0.92); color: var(--ink); font-family: var(--tile-serif); font-size: 12px; font-weight: 700;
@@ -1008,6 +1010,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-right { justify-items: start; }
   /* 中央の案内は小さく。ここが大きいと河が中心から離れる */
   .center-info { padding: 5px 12px; gap: 2px; border-radius: 12px; }
+  .center-info { max-width: 220px; }
   /* 卓は正方形に近い形にまとめる。横に広げると4人の河が散って、
      1つの卓を囲んでいるように見えない（天鳳・雀魂はどれも正方形に近い）。
      ただし小さすぎても読めないので、高さいっぱいまで使う。 */
