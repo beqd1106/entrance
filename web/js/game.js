@@ -1323,6 +1323,71 @@ function floatChips(deltas) {
   });
 }
 
+/**
+ * サイコロチャンス。数字を並べるだけだと、当たった手応えが無い。
+ * 自分でボタンを押して転がして、出目が止まるところまで見せる。
+ *
+ * 出目そのものは対局の計算で決まっている（ここで抽選はしない）。
+ * 見せ方だけを担う。
+ */
+function dieEl(pips) {
+  // 1の目が正面。転がしたあと、その目が正面に来るように向きを決める
+  const FACE_TURN = {
+    1: 'rotateX(0deg) rotateY(0deg)',
+    2: 'rotateY(90deg)',
+    3: 'rotateX(90deg)',
+    4: 'rotateX(-90deg)',
+    5: 'rotateY(-90deg)',
+    6: 'rotateY(180deg)',
+  };
+  const FACE_CLASS = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'];
+  const cube = h('div.die-cube');
+  FACE_CLASS.forEach((c, i) => {
+    const face = h(`div.die-face.${c}`);
+    for (let k = 0; k < i + 1; k++) face.appendChild(h('i.pip'));
+    cube.appendChild(face);
+  });
+  cube.style.setProperty('--turn', FACE_TURN[pips] || FACE_TURN[1]);
+  return h('div.die', cube);
+}
+
+function diceView(rolls) {
+  const box = h('div.dice-box');
+  box.appendChild(h('div.label', { text: 'サイコロチャンス' }));
+  const stage = h('div.dice-stage');
+  const total = h('div.dice-total');
+  box.appendChild(stage);
+  box.appendChild(total);
+
+  const showRoll = (idx) => {
+    clear(stage);
+    const r = rolls[idx] || [];
+    for (const pips of r) stage.appendChild(dieEl(pips));
+    stage.classList.add('rolling');
+    setTimeout(() => {
+      stage.classList.remove('rolling');
+      const sum = r.reduce((a, b) => a + b, 0);
+      total.textContent = rolls.length > 1
+        ? `${idx + 1}回目：${r.join('・')}（計${sum}）`
+        : `${r.join('・')}（計${sum}）`;
+      // ゾロ目で振り直しになった回は、続けて次を見せる
+      if (idx + 1 < rolls.length) setTimeout(() => showRoll(idx + 1), 700);
+    }, 900);
+  };
+
+  const roll = h('button.btn.btn-brass.btn-sm', { text: 'サイコロを振る' });
+  roll.addEventListener('click', () => {
+    roll.disabled = true;
+    roll.textContent = '転がしています…';
+    showRoll(0);
+    setTimeout(() => { roll.remove(); }, 900);
+  });
+  box.appendChild(roll);
+  // 押さずに閉じても分かるよう、目だけは並べておく
+  for (const pips of rolls[0] || []) stage.appendChild(dieEl(pips));
+  return box;
+}
+
 /** 点棒の増減を、その席の上に浮かせる */
 function floatPoints(deltas) {
   if (!deltas || !G.dom.board) return;
@@ -1417,9 +1482,7 @@ function showKyokuResult() {
             h('div.tiny', { class: f.matched ? '' : 'muted', text: f.matched ? '一致' : '不一致' }))))));
       }
       if (d.diceRolls && d.diceRolls.length) {
-        body.appendChild(h('div', { style: { margin: '10px 0' } },
-          h('div.label', { text: 'サイコロチャンス' }),
-          h('div.num', { text: d.diceRolls.map((r) => r.join('・')).join(' → ') })));
+        body.appendChild(diceView(d.diceRolls));
       }
       if (d.bonusDetail.length) {
         body.appendChild(h('div.tiny.muted', { text: d.bonusDetail.join(' / ') }));
@@ -1440,8 +1503,11 @@ function showKyokuResult() {
   const table = h('div.kv');
   e.players.forEach((p, i) => {
     const d = res.deltas[i] || 0;
-    table.appendChild(h('dt', { text: p.name }));
-    table.appendChild(h('dd', h('span', { class: d >= 0 ? 'pt-plus' : 'pt-minus', text: signed(d) }),
+    // 自分の行はすぐ見つかるようにする。並びの中から名前を探すのは手間
+    const mine = i === G.mySeat ? '.is-me' : '';
+    table.appendChild(h(`dt${mine}`, { text: p.name }));
+    table.appendChild(h(`dd${mine}`,
+      h('span', { class: d >= 0 ? 'pt-plus' : 'pt-minus', text: signed(d) }),
       h('span.muted.tiny', { text: ` → ${fmt(p.points)}点` })));
   });
   body.appendChild(table);

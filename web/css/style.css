@@ -1839,6 +1839,114 @@ textarea { resize: vertical; min-height: 56px; }
 .net-bar.is-down { color: #ffd7d1; background: rgba(120, 34, 27, .95); border-color: rgba(216, 72, 58, .55); }
 .net-bar-text { flex: 1 1 auto; }
 
+/* 結果シートの自分の行。並びの中から名前を探さなくて済むようにする */
+.kv dt.is-me, .kv dd.is-me {
+  background: rgba(255, 209, 102, .16);
+  font-weight: 700;
+}
+.kv dt.is-me { border-radius: 6px 0 0 6px; }
+.kv dd.is-me { border-radius: 0 6px 6px 0; }
+
+/* 横持ちは画面が低い。結果シートが少しはみ出してスクロールバーが出ていた */
+@media (orientation: landscape) and (max-height: 560px) {
+  .sheet { max-height: calc(100dvh - 16px); }
+  .sheet-head { padding: 8px 16px; }
+  .sheet-head h3 { font-size: 15px; }
+  .sheet-foot { padding: 8px 16px; }
+  .kv { grid-template-columns: 92px 1fr; row-gap: 2px; font-size: 12.5px; }
+  .win-hand { margin: 6px 0; }
+  /* 横持ちは高さが足りず、和了の内訳が下に流れてスクロールしていた。
+     2段組みにして、和了形は横いっぱい、残りを左右に振り分ける。
+     雀魂の結果表示と同じで、1画面で全部見えるほうが読みやすい。 */
+  .sheet-body {
+    padding: 10px 16px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4px 20px; align-content: start;
+  }
+  .sheet-body > .win-hand,
+  .sheet-body > .win-head,
+  .sheet-body > .kv { grid-column: 1 / -1; }
+  .sheet-body > .dice-box { margin: 4px 0; }
+  /* 和了形は14枚ある。2段組みの幅に入らないので折り返して、
+     横スクロールが出ないようにする */
+  .sheet-body { overflow-x: hidden; }
+  /* 和了形は14枚。2段組みの幅に入らないので折り返す。
+     nowrap と overflow-x が基本指定に入っているので、両方外す */
+  .win-hand { padding: 6px 8px; margin-bottom: 8px; overflow-x: visible; }
+  .win-hand .hand-row { flex-wrap: wrap; justify-content: center; }
+  .win-hand .tile { --tw: 22px; }
+  .dice-stage { min-height: 46px; }
+  .die { width: 34px; height: 34px; }
+  .die-face { padding: 4px; }
+  .die-face .pip { width: 6px; height: 6px; }
+  .die-face.f1 { transform: translateZ(17px); }
+  .die-face.f6 { transform: rotateY(180deg) translateZ(17px); }
+  .die-face.f2 { transform: rotateY(-90deg) translateZ(17px); }
+  .die-face.f5 { transform: rotateY(90deg) translateZ(17px); }
+  .die-face.f3 { transform: rotateX(-90deg) translateZ(17px); }
+  .die-face.f4 { transform: rotateX(90deg) translateZ(17px); }
+}
+
+/* --- サイコロチャンス --------------------------------------------------
+   数字を並べるだけだと当たった手応えが無い。立方体を転がして見せる。 */
+.dice-box { margin: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.dice-stage {
+  display: flex; gap: 18px; justify-content: center;
+  perspective: 520px; min-height: 62px; align-items: center;
+}
+.die { width: 46px; height: 46px; }
+.die-cube {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transform: var(--turn);
+  transition: transform .55s cubic-bezier(.2, .9, .25, 1);
+}
+.dice-stage.rolling .die-cube { animation: dieTumble .9s cubic-bezier(.3, .7, .3, 1) both; }
+/* 2つめは少しずらして転がす。同時だと作り物っぽく見える */
+.dice-stage.rolling .die:nth-child(2) .die-cube { animation-delay: .08s; }
+@keyframes dieTumble {
+  0% { transform: rotateX(0) rotateY(0) scale(.9); }
+  35% { transform: rotateX(400deg) rotateY(320deg) scale(1.12); }
+  70% { transform: rotateX(760deg) rotateY(680deg) scale(1.02); }
+  100% { transform: var(--turn) scale(1); }
+}
+.die-face {
+  position: absolute; inset: 0; border-radius: 8px;
+  background: linear-gradient(160deg, #fffdf6, #efe6d3);
+  border: 1px solid rgba(0, 0, 0, .16);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .07);
+  display: grid; padding: 6px; gap: 2px;
+  backface-visibility: visible;
+}
+.die-face .pip {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #c1372c; align-self: center; justify-self: center;
+}
+/* 目の並び。1〜6をそれっぽい配置にする */
+.die-face.f1 { grid-template: 1fr / 1fr; place-items: center; }
+.die-face.f2 { grid-template: 1fr 1fr / 1fr; }
+.die-face.f3 { grid-template: 1fr 1fr 1fr / 1fr; }
+.die-face.f4, .die-face.f6 { grid-template: repeat(3, 1fr) / 1fr 1fr; }
+.die-face.f4 .pip:nth-child(3) { grid-row: 3; }
+.die-face.f4 .pip:nth-child(4) { grid-row: 3; }
+.die-face.f5 { grid-template: repeat(3, 1fr) / repeat(3, 1fr); }
+.die-face.f5 .pip:nth-child(1) { grid-area: 1 / 1; }
+.die-face.f5 .pip:nth-child(2) { grid-area: 1 / 3; }
+.die-face.f5 .pip:nth-child(3) { grid-area: 2 / 2; }
+.die-face.f5 .pip:nth-child(4) { grid-area: 3 / 1; }
+.die-face.f5 .pip:nth-child(5) { grid-area: 3 / 3; }
+/* 立方体の6面を組む（46px の半分＝23px 手前へ） */
+.die-face.f1 { transform: translateZ(23px); }
+.die-face.f6 { transform: rotateY(180deg) translateZ(23px); }
+.die-face.f2 { transform: rotateY(-90deg) translateZ(23px); }
+.die-face.f5 { transform: rotateY(90deg) translateZ(23px); }
+.die-face.f3 { transform: rotateX(-90deg) translateZ(23px); }
+.die-face.f4 { transform: rotateX(90deg) translateZ(23px); }
+.dice-total { font-size: 13px; font-weight: 700; letter-spacing: .04em; min-height: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .dice-stage.rolling .die-cube { animation: none; }
+}
+
 /* --- 対局画面をポップに ---------------------------------------------- */
 /* 中央の案内。白い箱が浮いていたので、卓に馴染む温かい札にする */
 .center-info {
