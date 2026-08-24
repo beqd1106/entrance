@@ -144,9 +144,14 @@ export function settleWin({
     return { deltas, detail };
   }
 
+  // 本場は「場に○○点」。ここを人数×100で決め打ちしていたため、
+  // 三麻の1000点・五等サンマの2000点といった設定が効いていなかった。
+  const honbaTotal = honba * (S.honbaPoints ?? 300);
+  const honbaEach = playerCount > 1 ? ceil100(honbaTotal / (playerCount - 1)) : 0;
+
   if (!tsumo) {
     const mult = isDealer ? 6 : 4;
-    const honbaAmount = honba * 100 * (playerCount - 1);
+    const honbaAmount = honbaTotal;
     const amount = ceil100(base * mult) + (W.honbaExempt ? 0 : honbaAmount);
     const paid = pay(loser, winner, amount) + (W.honbaExempt ? honbaAmount : 0);
     if (W.honbaExempt && honbaAmount) { deltas[loser] -= honbaAmount; deltas[winner] += honbaAmount; }
@@ -167,7 +172,7 @@ export function settleWin({
       else totalMult = presentMult;
     }
     for (const sh of shares) {
-      const amount = ceil100(base * sh.mult * scale) + honba * 100;
+      const amount = ceil100(base * sh.mult * scale) + honbaEach;
       const paid = pay(sh.seat, winner, amount);
       detail.payments.push({ from: sh.seat, to: winner, amount: paid });
     }

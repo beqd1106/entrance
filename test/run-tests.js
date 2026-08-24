@@ -1205,6 +1205,24 @@ it('ふつうのルールでは、カンに足す選択肢は出ない', () => {
   eq(r.win.kanBeyondFour, false, '既定では足せない');
 });
 
+describe('本場の点数');
+
+it('本場は設定した「場に○○点」で動く（人数×100の決め打ちではない）', () => {
+  const cases = [['standard4', 300], ['standard3', 1000], ['goto_standard', 2000]];
+  for (const [id, want] of cases) {
+    const r = resolveRules(getPreset(id).rules);
+    eq(r.scoring.honbaPoints, want, `${id} の設定`);
+    const n = r.game.players;
+    const arg = { base: 2000, winner: 0, dealerSeat: 2, playerCount: n, rules: r, kyotaku: 0, wareme: null };
+    const ron0 = settleWin({ ...arg, loser: 1, tsumo: false, honba: 0 });
+    const ron1 = settleWin({ ...arg, loser: 1, tsumo: false, honba: 1 });
+    eq(ron1.deltas[0] - ron0.deltas[0], want, `${id} のロン1本場`);
+    const tsu0 = settleWin({ ...arg, loser: null, tsumo: true, honba: 0 });
+    const tsu1 = settleWin({ ...arg, loser: null, tsumo: true, honba: 1 });
+    eq(tsu1.deltas[0] - tsu0.deltas[0], want, `${id} のツモ1本場`);
+  }
+});
+
 describe('出典で確認した値の固定');
 
 // 説明文に書いていない値は、食い違い検査では守れない。
