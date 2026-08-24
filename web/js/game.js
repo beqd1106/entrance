@@ -161,7 +161,11 @@ function buildDom(root) {
   // 見たいときだけ上の帯のボタンで開く。
   // 向聴の表示は卓の外に浮いていて、卓と手牌のあいだに空きを作っていた。
   // 手元の情報なので、手牌の側へ寄せる
-  G.dom.main = h('div.table-main.side-closed',
+  // 開いたまま前回を終えていれば開いた状態で始める。
+  // ここで印を付けずにいたころは、覚えている設定は「開」なのに
+  // 画面は閉じたままで、ボタンだけ「ルールを閉じる」と出ていた。
+  // 押しても見た目が変わらず、もう一度押してやっと開く状態だった。
+  G.dom.main = h('div.table-main', { class: G.sideOpen ? '' : 'side-closed' },
     h('div.board-scroll', G.dom.board),
     h('div.side-panel', G.dom.ruleCard, G.dom.logbox));
   const shell = h('div.table-shell',
