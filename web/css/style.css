@@ -1043,10 +1043,19 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 左脇のメニューは卓の上に重ねる。108px を常時空けておくと
      そのぶん卓が小さくなる（メニューは滅多に触らない） */
   .table-top { background: rgba(10, 24, 19, .62); }
-  /* 脇のメニューは卓に重ねる。ただし卓がその下まで広がると
-     左の席が隠れるので、卓の幅を抑えて重ならないようにする。 */
-  .board-scroll { padding-left: 0; }
-  .board { max-width: min(620px, 100% - 118px); }
+  /* 脇のメニューのぶんは、卓の幅から引くのではなく board-scroll の
+     余白で空ける。卓の max-width で「100% - 118px」と引いていたとき、
+     board-scroll のグリッド列が中身なり（393px）だったため
+     100% が 828px ではなく 393px を指し、828px 使える画面で卓が
+     275px まで縮んでいた。 */
+  /* 列は目いっぱい伸ばし、卓は max-width と margin auto で真ん中に置く。
+     justify-content: center だと列が中身なりになり、卓は 620px まで
+     広がれず 393px で止まっていた。 */
+  .board-scroll {
+    padding-left: 112px; justify-content: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .board { max-width: min(620px, 100%); margin-inline: auto; }
   /* 点数は勝負そのもの。名前より大きく、はっきり出す */
   .seat-pts { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0; }
   .seat-bp { font-size: 11px; }
@@ -1592,7 +1601,7 @@ textarea { resize: vertical; min-height: 56px; }
   .table-top .act span:not(.mark), .table-top .chip-btn span:not(.mark) { display: none; }
   .table-top .act, .table-top .chip-btn { padding: 7px 4px; gap: 0; }
   .table-top .chip-brass { display: none; }
-  .board { max-width: min(620px, 100% - 60px); }
+  .board-scroll { padding-left: 54px; }
 }
 
 /* 卓の枠は、ふだんは卓のひとまわり外側（-14px）に置いている。
