@@ -809,7 +809,10 @@ function drawTop(s) {
   const item = (k, v) => h('div.top-stat', h('div.k', { text: k }), h('div.v', { text: v }));
   // どこから来たかは分からないので、来た道を戻す。履歴が無いときはホームへ。
   // 狭い横持ちでは文字を畳んで矢印だけにするので、印と語を分けて持たせる
-  const back = h('button.chip.chip-btn.game-back', { type: 'button' },
+  // 狭い横持ちでは文字を畳んで矢印だけにする。畳むと読み上げからも
+  // 消えてしまうので、名前は title にも持たせておく。
+  const back = h('button.chip.chip-btn.game-back',
+    { type: 'button', title: 'ひとつ前の画面にもどる', 'aria-label': 'もどる' },
     h('span.mark', { text: '←' }), h('span', { text: 'もどる' }));
   back.addEventListener('click', () => {
     if (history.length > 1) history.back();
@@ -844,7 +847,7 @@ function drawTop(s) {
   // 速度や打ち方の設定は、卓の上に並べるとスマホで5段になり、
   // 卓そのものが画面の下に押し出されていた。ひとまとめにして、
   // 押したときだけ開く。
-  const gear = h('button.act.act-gear', { title: '速度と打ち方の設定' },
+  const gear = h('button.act.act-gear', { title: '速度と打ち方の設定', 'aria-label': '設定' },
     icon('settings', 13), h('span', { text: '設定' }));
   gear.addEventListener('click', () => showTableSettings());
   top.appendChild(gear);
@@ -852,7 +855,8 @@ function drawTop(s) {
   // 打っている最中に「この店のルールは何だったか」を確かめるためのボタン。
   // 卓を広く使うため右の欄は既定で畳んであるので、ここが入口になる。
   // 何が出るかが一目で分かるよう、印と「ルール」の語を並べて出す。
-  const side = h('button.act.act-rule', { title: 'この卓のルールと、いまの局の履歴を見る' },
+  const side = h('button.act.act-rule',
+    { title: 'この卓のルールと、いまの局の履歴を見る', 'aria-label': 'ルールを見る' },
     icon('rule', 14),
     h('span', { text: G.sideOpen ? 'ルールを閉じる' : 'ルールを見る' }));
   if (G.sideOpen) side.classList.add('on');
@@ -866,7 +870,10 @@ function drawTop(s) {
 
   // デバッグは検証用。ふだんは出さない（URLに debug=1 を付けたときだけ）
   if (G.debugAvailable) {
-    const dbg = h('button.act', { style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' } }, icon('bug', 13), h('span', { text: 'デバッグ' }));
+    const dbg = h('button.act', {
+      title: '検証用の操作を開く', 'aria-label': 'デバッグ',
+      style: { padding: '4px 10px', fontSize: '11px', fontWeight: '500' },
+    }, icon('bug', 13), h('span', { text: 'デバッグ' }));
     dbg.addEventListener('click', () => {
       G.debugOpen = !G.debugOpen;
       G.dom.debug.classList.toggle('hide', !G.debugOpen);
