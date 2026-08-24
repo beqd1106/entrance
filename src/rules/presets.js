@@ -518,7 +518,13 @@ export const PRESETS = [
         { id: 'seiiisou', enabled: true, yakuman: 1 },
         { id: 'daisharin', enabled: true, yakuman: 1 },
       ],
-      bonus: { enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2 },
+      // 役満の祝儀はツモ25枚オール・出50枚。
+      // 供託は本数、祝儀は枚数で数える。ツモは全員が枚数ぶん払い（tsumoAll）、
+      // ロンは放銃者が2倍払う（25×2＝50枚）。
+      bonus: {
+        enabled: true, label: 'BP（ゲーム内ポイント・非換金）', aka: 1, gold: 2,
+        yakuman: 25, yakumanRonMultiplier: 2, tsumoAll: true,
+      },
     },
   },
   {

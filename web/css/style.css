@@ -567,8 +567,15 @@ body.playing .nav { display: none; }
   width: calc(var(--tw) * 1.38); height: var(--tw);
   transform: none; writing-mode: horizontal-tb;
 }
+/* 中身は回すだけだと縦長のまま箱からはみ出し、その行だけ高さが増える
+   （河がその1行ぶん切れて見えた）。位置を固定して、並びに影響させない。 */
 .meld .tile.side > *,
-.discards .tile.side > * { transform: rotate(-90deg); }
+.discards .tile.side > * {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--tw); height: calc(var(--tw) * 1.38);
+  margin: calc(var(--tw) * -0.69) 0 0 calc(var(--tw) * -0.5);
+  transform: rotate(-90deg);
+}
 /* 倒した牌は下の段にそろえる（実際の卓と同じ見え方） */
 .discards .tile.side { align-self: end; }
 .center-info {
@@ -1105,7 +1112,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      8列にすると16枚まで2段で済み、そのぶん牌を大きくできる。
      幅は余っている（中央と左右を足しても597pxのうち500px弱）。 */
   .seat > .discards { grid-template-columns: repeat(8, auto); }
-  .seat .tile { --tw: 22px; }
+  .seat .tile { --tw: 25px; }
   .seat-left .tile, .seat-right .tile { --tw: 19px; }
   /* 4つの河を中央に寄せて、卓を囲む形にする。
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
@@ -1128,7 +1135,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-bottom { align-items: start; }
   .seat-top > .seat-head, .seat-bottom > .seat-head { grid-area: head; justify-self: end; }
   .seat-top > .discards, .seat-bottom > .discards { grid-area: river; margin-top: 0; }
-  .seat-top > .melds, .seat-bottom > .melds { grid-area: meld; justify-self: start; margin-top: 0; }
+  /* 鳴き・暗槓・抜きドラは卓の外側（右端）に置く。天鳳と同じ置き方で、
+     河のとなりに割り込ませない。 */
+  .seat-top > .melds, .seat-bottom > .melds { grid-area: meld; justify-self: end; margin-top: 0; }
   /* 左右の席も、中身を中央側へ寄せる */
   .seat-left { justify-items: end; }
   .seat-right { justify-items: start; }
@@ -1146,11 +1155,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      ただし河は最後まで18〜20枚（6列なら3〜4段）になる。
      大きくしすぎると終盤に下の段が切れて、いちばん見たい直前の捨て牌が
      見えなくなる。3段が確実に入る大きさに合わせる。 */
-  .seat .tile { --tw: 22px; }
-  .seat-left .tile, .seat-right .tile { --tw: 22px; }
+  .seat .tile { --tw: 25px; }
+  .seat-left .tile, .seat-right .tile { --tw: 25px; }
   /* 17枚を超えると3段になるので、そのぶんだけ一段小さくする。
      以前は11枚で15pxまで落としていた（6列で4段になるため）。 */
-  .seat .discards.dense .tile { --tw: 18px; }
+  .seat .discards.dense .tile { --tw: 20px; }
   /* 中央は最小限に。ここを削ったぶんが4人の河の高さになる */
   .center-info { padding: 4px 10px; }
   .center-kyoku { font-size: 15px; }
