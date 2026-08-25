@@ -616,9 +616,13 @@ body.playing .nav { display: none; }
 /* 自分の鳴き・暗槓・抜きドラ・華牌の置き場所。
    鳴くまで空でも枠だけ出しておき、毎回どこに出るか探さなくて済むようにする。 */
 /* 自分の鳴き・暗槓・抜きドラ・華牌は、手牌と同じ大きさで手牌の右に並べる
-   （天鳳・雀魂と同じ置き方）。手牌との間だけ空けて、ひと続きに見せない。 */
+   （天鳳・雀魂と同じ置き方）。
+   並びに入れると、鳴くたびに手牌が左へずれて切りたい牌の位置が変わる。
+   浮かせて右端に置き、手牌は鳴いても動かないようにする。 */
+.bottom-bar .hand-row { position: relative; }
 .hand-melds {
-  margin: 0 0 0 18px; flex-wrap: nowrap; align-items: flex-end; gap: 10px;
+  position: absolute; right: 4px; bottom: 0; margin: 0;
+  flex-wrap: nowrap; align-items: flex-end; gap: 10px;
 }
 .hand-melds .tile { --tw: 34px; }
 .hand-melds .nuki-label { font-size: 10px; }
@@ -1185,7 +1189,15 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     /* 左右の列は「回したあとの幅」で決める。auto にすると回す前の幅
        （6列＝165px）で場所を取ってしまい、右の河が画面の外へ出た。
        回したあとの幅は段数×34.5px なので、4段（24枚）でも入る130pxにする。 */
-    grid-template-columns: 130px minmax(0, 1fr) 130px;
+    /* 中央の列を 1fr にすると、中央の箱より広くなったぶんだけ左右の河が
+       外へ押し出される（実測で中央から111px離れ、上下の15pxと揃わずに
+       バラバラに浮いて見えた）。中央は中身なりにして、卓ごと真ん中に置く。 */
+    /* 左右の列は、回した河の幅（段数×34.5px）ぶんだけ取る。
+       広く取ると河が中央から離れて浮いて見える（1frのときは111px、
+       112pxでも74px離れていた。上下は15pxなので揃わない）。
+       段が増えたぶんは外側（牌山の側）へはみ出させる＝実際の卓と同じ。 */
+    grid-template-columns: 72px auto 72px;
+    justify-content: center;
     /* 席の並びも卓の形に戻す。
        iPhone SE の横持ち（667px幅）は「狭い画面」の指定にも当てはまるため、
        縦に積む並び（5段）が残ったまま横持ちの3列が重なり、
@@ -1228,6 +1240,9 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     position: absolute; top: 50%; left: 50%; margin: 0;
     grid-template-columns: repeat(6, auto);
   }
+  /* 席の真ん中にそろえる。回すと見た目の幅は「段数×34.5px」になり、
+     回す前の箱（6列＝150px）とは別物。位置を凝った式で寄せようとすると
+     かえって暴れるので、席の幅そのものを見た目に合わせて細くしてある。 */
   .board .seat-left > .discards { transform: translate(-50%, -50%) rotate(-90deg); }
   .board .seat-right > .discards { transform: translate(-50%, -50%) rotate(90deg); }
 
@@ -1251,19 +1266,25 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
      切れて直前の捨て牌が見えなくなっていた。左右の席は元から横並びで、
      だから切れていない。天鳳・雀魂も名札は河の横（卓の角）にある。 */
-  .seat-top, .seat-bottom {
-    display: grid; column-gap: 6px;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-areas: 'head river meld';
+  /* 上下の席は「河だけ」の幅にする。名札を横に並べていたころは、
+     名札と鳴きのぶんで席が380pxになり、中央の列がそのまま380pxに広がって、
+     左右の河が中央から104px も外へ押し出されていた（上下は15px）。
+     名札は流れから外して、卓の外側の辺に置く。 */
+  .seat-top, .seat-bottom { position: relative; display: block; }
+  .seat-top > .seat-head, .seat-bottom > .seat-head {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    margin: 0; white-space: nowrap;
   }
-  /* 上の席は河を下端＝中央寄りに、下の席は上端＝中央寄りに置く */
-  .seat-top { align-items: end; }
-  .seat-bottom { align-items: start; }
-  .seat-top > .seat-head, .seat-bottom > .seat-head { grid-area: head; justify-self: end; }
-  .seat-top > .discards, .seat-bottom > .discards { grid-area: river; margin-top: 0; }
-  /* 鳴き・暗槓・抜きドラは卓の外側（右端）に置く。天鳳と同じ置き方で、
-     河のとなりに割り込ませない。 */
-  .seat-top > .melds, .seat-bottom > .melds { grid-area: meld; justify-self: end; margin-top: 0; }
+  .seat-top > .seat-head { top: 0; }
+  .seat-bottom > .seat-head { bottom: 0; }
+  /* 河は中央寄りの辺にそろえる（上の席は下端、下の席は上端） */
+  .seat-top > .discards, .seat-bottom > .discards {
+    position: absolute; left: 50%; transform: translateX(-50%); margin: 0;
+  }
+  .seat-top > .discards { bottom: 0; }
+  .seat-bottom > .discards { top: 0; }
+  /* 対面の鳴きは河の外側に。自分のぶんは手牌の右へ移してある */
+  .seat-top > .melds { position: absolute; right: 0; top: 0; margin: 0; }
   /* 左右の席も、中身を中央側へ寄せる */
   .seat-left { justify-items: end; }
   .seat-right { justify-items: start; }
