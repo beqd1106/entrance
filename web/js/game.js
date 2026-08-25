@@ -998,13 +998,22 @@ function drawBoard(s) {
         : null,
       s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
   board.appendChild(center);
+  // 牌山。雀魂・天鳳は卓のまわりに伏せ牌を並べていて、これがあるだけで
+  // 「卓」に見える。横持ちは高さが足りないので上下には置けないが、
+  // 左右は席の外側が空いているのでそこに立てる。
+  // 残り枚数を左右で分けて出すので、飾りではなく実際に減っていく。
+  const remain = Math.max(0, s.wallRemaining);
+  const half = Math.ceil(remain / 2);
+  const seg = (n) => h('div.wall-stack', Array.from(
+    { length: Math.min(n, 22) }, () => h('div.wall-tile')));
+  board.appendChild(h('div.wall-side.wall-left', { 'aria-hidden': 'true' }, seg(half)));
+  board.appendChild(h('div.wall-side.wall-right', { 'aria-hidden': 'true' }, seg(remain - half)));
   // 自分の捨て牌・副露はbottomエリアへ
   const me = s.players[G.mySeat];
   // 自分の席も、自分の番なら光らせる（他家と同じ扱いにする）
   const myTurn = actingSeat() === G.mySeat && !s.finished && s.phase !== 'kyokuEnd';
   board.appendChild(h('div.seat.seat-bottom', { class: `${me.riichi ? 'riichi' : ''} ${myTurn ? 'active' : ''}` },
     seatHead(me, s),
-    meldsEl(me, true),
     discardsEl(me)));
 }
 
@@ -1252,6 +1261,14 @@ function drawMy(s) {
   for (let i = 0; i < (me.mighty || 0); i++) {
     hand.appendChild(h('div.tile.tile-lg.mighty-tile', { title: '何にでもなる牌（切れません）' },
       h('div.tile-face', h('span.mighty-mark', { text: '萬能' }))));
+  }
+  // 鳴き・暗槓・抜きドラ・華牌は、手牌と同じ大きさで手牌の右に並べる。
+  // 天鳳も雀魂もこの置き方で、卓の中に小さく別枠を作ってはいない。
+  // 自分の持ちものは一列にまとまっているほうが、手の形を掴みやすい。
+  const mine = meldsEl(me, false);
+  if (mine) {
+    mine.classList.add('hand-melds');
+    hand.appendChild(mine);
   }
 }
 

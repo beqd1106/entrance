@@ -546,17 +546,17 @@ body.playing .nav { display: none; }
 .melds { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 /* 自分の鳴き・暗槓・抜きドラ・華牌の置き場所。
    鳴くまで空でも枠だけ出しておき、毎回どこに出るか探さなくて済むようにする。 */
-.my-melds {
-  align-items: flex-end; align-content: flex-end;
-  padding: 5px 8px; border-radius: 10px;
-  background: rgba(255, 255, 255, .05);
-  border: 1px dashed rgba(255, 255, 255, .16);
+/* 自分の鳴き・暗槓・抜きドラ・華牌は、手牌と同じ大きさで手牌の右に並べる
+   （天鳳・雀魂と同じ置き方）。手牌との間だけ空けて、ひと続きに見せない。 */
+.hand-melds {
+  margin: 0 0 0 18px; flex-wrap: nowrap; align-items: flex-end; gap: 10px;
 }
-.my-melds-cap {
-  width: 100%; font-size: 9.5px; letter-spacing: .1em;
-  color: rgba(255, 255, 255, .55); margin-bottom: 1px;
+.hand-melds .tile { --tw: 34px; }
+.hand-melds .nuki-label { font-size: 10px; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .hand-melds { margin-left: 14px; gap: 8px; }
+  .hand-melds .tile { --tw: 30px; }
 }
-.my-melds-empty { font-size: 10.5px; color: rgba(255, 255, 255, .38); }
 .meld { display: flex; gap: 1px; align-items: flex-end; }
 /* 鳴いた牌は横に倒す。回すだけだと元の縦長の場所を占めたままなので、
    隣の牌に重なる。倒した後の見た目どおりの大きさを箱にも与える。 */
@@ -688,6 +688,28 @@ body.playing .nav { display: none; }
   0% { transform: translate(0, 0) rotate(0deg) scale(.7); opacity: 0; }
   18% { opacity: 1; }
   100% { transform: translate(var(--dx), var(--dy)) rotate(200deg) scale(1); opacity: 0; }
+}
+
+/* 牌山。卓のまわりに伏せ牌が積んであると「卓」に見える。
+   横持ちは高さが足りないので上下には置かず、席の外側が空いている
+   左右にだけ立てる。残り枚数を左右で分けて出すので実際に減っていく。 */
+/* 「.board > *」が position: relative を当てているので、そこに勝つ書き方にする。
+   升目の枠に入ってしまうと、席がその枚数ぶん押しやられて卓が崩れる。 */
+.board > .wall-side {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 0; pointer-events: none;
+  display: flex; align-items: center;
+}
+.board > .wall-left { left: 0; }
+.board > .wall-right { right: 0; }
+.wall-stack { display: flex; flex-direction: column; gap: 2px; }
+.wall-tile {
+  width: 16px; height: 7px; border-radius: 2px;
+  background: linear-gradient(180deg, #2a8a70, #16624e);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 1px 2px rgba(0, 0, 0, .28);
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .wall-tile { width: 14px; height: 6px; }
 }
 
 .room-rules { display: grid; gap: 8px; }
