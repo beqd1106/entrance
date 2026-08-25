@@ -479,9 +479,22 @@ body.playing .nav { display: none; }
 /* 箱の中は局と本場だけ。狭いので詰めて出す */
 .center-info .center-kyoku { line-height: 1.1; }
 .center-info .center-sub { font-size: 9px; line-height: 1.2; }
+/* 脇のメニューは普段畳んでおく。畳むと取っ手だけが残り、卓が広く使える。 */
+.menu-grip {
+  width: 34px; height: 34px; flex: 0 0 auto; align-self: flex-start;
+  border-radius: 10px; cursor: pointer;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .3);
+  color: #f4fbf7; font-size: 17px; line-height: 1;
+  display: grid; place-items: center;
+}
+.table-top.folded > *:not(.menu-grip) { display: none; }
+.table-top.folded { width: auto; max-width: none; padding: 4px; background: none; border: 0; }
+
 /* ドラ表示牌は卓の左上。打つあいだじゅう見るものなので大きいまま。 */
+/* ドラは卓の左下。左上だと左の席の名札とぶつかる（左の席は卓の高さ
+   いっぱいを使うので、名札が上端に来る）。 */
 .board > .dora-corner {
-  position: absolute; left: 0; top: 0; z-index: 2;
+  position: absolute; left: 0; bottom: 0; z-index: 2;
   display: flex; align-items: center; gap: 7px;
   padding: 4px 9px; border-radius: 10px;
   background: rgba(6, 20, 15, .55);
@@ -1166,14 +1179,20 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     row-gap: 4px;
     /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
        「卓を囲んでいる」形に見えなくなる（河は中央側へ寄せてある） */
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    /* 左右の席は卓の高さいっぱいを使う。河をその人の向きに回すと
+       6列＝150pxぶん縦に伸びるので、1段（82px）には収まらない。
+       3段ぶん（257px）を与えれば、牌を小さくせずに回せる。 */
+    /* 左右の列は「回したあとの幅」で決める。auto にすると回す前の幅
+       （6列＝165px）で場所を取ってしまい、右の河が画面の外へ出た。
+       回したあとの幅は段数×34.5px なので、4段（24枚）でも入る130pxにする。 */
+    grid-template-columns: 130px minmax(0, 1fr) 130px;
     /* 席の並びも卓の形に戻す。
        iPhone SE の横持ち（667px幅）は「狭い画面」の指定にも当てはまるため、
        縦に積む並び（5段）が残ったまま横持ちの3列が重なり、
        左の席が0pxに潰れて何も見えなくなっていた。 */
     /* 上下の席は3列ぶん使う。名札を河の横に置くための幅がいる。
        中央の1列（157px）に押し込めると、名札が河に重なる。 */
-    grid-template-areas: 'top top top' 'left center right' 'bottom bottom bottom';
+    grid-template-areas: 'left top right' 'left center right' 'left bottom right';
   }
 
   /* 席の見出しも縦を食う。横持ちでは1行に詰める */
@@ -1188,13 +1207,29 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      上家＝180度、右＝90度、左＝−90度。自分（下）はそのまま。
      回した後の大きさを親に伝えられないので、河は席の中で位置を固定し、
      中央側の辺に寄せる。 */
-  /* 対面の河は180度回して、その人の向きに合わせる（雀魂・天鳳と同じ）。
-     上下に回すだけなので場所は変わらず、ただで参考どおりになる。 */
+  /* 河はその人の向きに合わせて回す（雀魂・天鳳と同じ）。
+     対面は180度、左は−90度、右は90度。自分（下）はそのまま。 */
   .seat-top > .discards { transform: rotate(180deg); }
-  /* 左右は回していない。回すと6列＝150px ぶん縦に伸びるが、
-     1席の高さは82pxしか無く、名札にも重なる。牌を小さくすれば入るが、
-     それは「河の牌が読めない」といういちばんの不満に戻ることになる。
-     縦に余裕のある画面（iPad等）で改めて検討する。 */
+  /* 左右の席は縦長。回した河は「回す前の形」で場所を取るので、
+     そのまま並べると名札に重なる（回転は見た目だけで、並びには効かない）。
+     河は席の真ん中に浮かせ、名札は上端に置いて、場所の取り合いをなくす。 */
+  .seat-left, .seat-right { position: relative; overflow: visible; display: block; }
+  /* 名札は河の上。上端ぴったりに置くと、卓の左上のドラ表示とぶつかる。
+     名札は「誰か」だけを示すので、点数を外したぶん幅も要らない。 */
+  /* 名札は河の上。河は席の真ん中に浮いていて上端から52pxのところに来るので、
+     そこに掛からない高さに置く。 */
+  .seat-left > .seat-head, .seat-right > .seat-head {
+    position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+    margin: 0; white-space: nowrap; max-width: 100%;
+  }
+  /* あとから来る「8列」の指定に勝つよう、親からたどる書き方にする。
+     8列のままだと1列に伸びて、回すと画面の外まで届く。 */
+  .board .seat-left > .discards, .board .seat-right > .discards {
+    position: absolute; top: 50%; left: 50%; margin: 0;
+    grid-template-columns: repeat(6, auto);
+  }
+  .board .seat-left > .discards { transform: translate(-50%, -50%) rotate(-90deg); }
+  .board .seat-right > .discards { transform: translate(-50%, -50%) rotate(90deg); }
 
   /* 河は8列で折り返す。天鳳・雀魂は6列だが、あちらは卓が画面いっぱいで
      牌そのものが大きい。こちらは横持ちの高さ（1席あたり83px）が先に効くので、
@@ -1279,10 +1314,13 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 列は目いっぱい伸ばし、卓は max-width と margin auto で真ん中に置く。
      justify-content: center だと列が中身なりになり、卓は 620px まで
      広がれず 393px で止まっていた。 */
+  /* メニューは取っ手だけなので、空ける幅も取っ手ぶんでよい */
   .board-scroll {
-    padding-left: 112px; justify-content: stretch;
+    padding-left: 44px; justify-content: stretch;
     grid-template-columns: minmax(0, 1fr);
   }
+  /* 開いているあいだだけ、メニューぶんを空ける */
+  body:has(.table-top:not(.folded)) .board-scroll { padding-left: 112px; }
   .board { max-width: min(620px, 100%); margin-inline: auto; }
   /* 点数は勝負そのもの。名前より大きく、はっきり出す */
   .seat-pts { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0; }
@@ -1847,7 +1885,8 @@ textarea { resize: vertical; min-height: 56px; }
   .table-top .act span:not(.mark), .table-top .chip-btn span:not(.mark) { display: none; }
   .table-top .act, .table-top .chip-btn { padding: 7px 4px; gap: 0; }
   .table-top .chip-brass { display: none; }
-  .board-scroll { padding-left: 54px; }
+  .board-scroll { padding-left: 44px; }
+  body:has(.table-top:not(.folded)) .board-scroll { padding-left: 54px; }
 }
 
 /* 卓の枠は、ふだんは卓のひとまわり外側（-14px）に置いている。

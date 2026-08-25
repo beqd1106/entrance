@@ -71,6 +71,8 @@ export function renderGame(root, params) {
     autoTsumogiri: loadPref('autoTsumogiri', true),
     // 卓を広く使うため、右の欄（ルールと履歴）は既定で畳んでおく
     sideOpen: loadPref('sideOpen', false),
+    // 脇のメニューは畳んだ状態で始める（卓を広く使う）
+    menuOpen: false,
     selectedTileId: null,
     // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
     // 画面はこの席を下辺に置いて描く（engine の席番号はどの端末でも同じ）。
@@ -820,6 +822,16 @@ function setSideOpen(open) {
 
 function drawTop(s) {
   const top = clear(G.dom.top);
+  // 脇のメニューは普段は畳んでおく。ふだん触らないものが常に卓の横に
+  // 出ていると、そのぶん卓が狭くなる。押したときだけ開く。
+  top.classList.toggle('folded', !G.menuOpen);
+  const grip = h('button.menu-grip', { type: 'button',
+    title: G.menuOpen ? 'メニューを閉じる' : 'メニューを開く',
+    'aria-label': G.menuOpen ? 'メニューを閉じる' : 'メニューを開く',
+    'aria-expanded': G.menuOpen ? 'true' : 'false' },
+  h('span.mark', { text: G.menuOpen ? '×' : '≡' }));
+  grip.addEventListener('click', () => { G.menuOpen = !G.menuOpen; draw(); });
+  top.appendChild(grip);
   // 卓の中央にも同じ内容が出るので、狭い画面ではこちらを隠す（.top-stat）
   const item = (k, v) => h('div.top-stat', h('div.k', { text: k }), h('div.v', { text: v }));
   // どこから来たかは分からないので、来た道を戻す。履歴が無いときはホームへ。
@@ -988,7 +1000,11 @@ function drawBoard(s) {
     const on = (acting != null ? acting === p.seat : s.turn === p.seat) && !s.finished;
     return h(`div.cscore.cscore-${pos}`, { class: on ? 'on' : '' },
       h('span.cscore-wind', { text: p.wind || '' }),
-      h('span.cscore-pts', { text: fmt(p.points) }));
+      h('span.cscore-pts', { text: fmt(p.points) }),
+      // チップ（BP）も同じところに。名札と2か所に散らすと見比べにくい
+      G.rules.bonus.enabled && p.bonus
+        ? h('span.cscore-bp', { class: p.bonus > 0 ? 'plus' : 'minus', text: signed(p.bonus) })
+        : null);
   };
   const center = h('div.board-center',
     h('div.center-info',
@@ -1071,6 +1087,8 @@ function seatHead(p, s) {
   const waited = actingSeat();
   const isTurn = (waited != null ? waited === p.seat : s.turn === p.seat)
     && !s.finished && s.phase !== 'kyokuEnd';
+  // 点数とチップは卓の中央にまとめた。名札は「誰か」だけを示す。
+  // 同じ数字を2か所に出すと、どちらを見ればいいのか迷う。
   return h('div.seat-head',
     h('div.seat-wind', { class: p.isDealer ? 'dealer' : '', text: p.wind }),
     isTurn ? h('div.turn-dot') : null,
@@ -1081,8 +1099,7 @@ function seatHead(p, s) {
     h('div.grow', { style: { fontSize: '12.5px' } }, p.name),
     p.riichi ? h('span.badge-riichi', { text: p.openRiichi ? 'オープン' : 'リーチ' }) : null,
     s.wareme === p.seat ? h('span.badge-wareme', { text: '割れ目' }) : null,
-    h('div.seat-pts', { text: fmt(p.points) }),
-    G.rules.bonus.enabled ? chipTag(p.bonus) : null);
+  );
 }
 
 /** 抜いた牌を種類ごとにまとめて表示（北・ガリ・華牌を混同させない） */
@@ -1214,10 +1231,11 @@ function drawMy(s) {
     }
   }
   // 自分の向聴数（初心者が「今どこまで来ているか」を掴めるように）
-  const tag = me.shanten === null ? null
+  // 向聴数（「2向聴」など）は出さない。麻雀を打つ人には要らない情報で、
+  // 卓の外に札が浮いているぶん画面も狭くなる。テンパイだけは知らせる。
+  const tag = me.shanten === null || me.shanten > 0 ? null
     : me.shanten < 0 ? { text: '和了', cls: 'tenpai' }
-      : me.shanten === 0 ? { text: 'テンパイ', cls: 'tenpai' }
-        : { text: `${me.shanten}向聴`, cls: '' };
+      : { text: 'テンパイ', cls: 'tenpai' };
   if (tag) {
     const row = h('div.row.center.gap-8', { style: { marginTop: '6px' } },
       h('div.shanten-tag', { class: tag.cls, text: tag.text }));
