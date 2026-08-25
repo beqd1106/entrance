@@ -1259,8 +1259,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
   .seat-left > .discards { justify-content: end; }
   .seat-right > .discards { justify-content: start; }
-  /* 三麻は上の段に誰もいない。等分のままだと卓の1/3が空の緑になる */
-  .board.p3 { grid-template-rows: 0 minmax(0, 1fr) minmax(0, 1fr); }
+  /* 三麻は対面がいない。上の段を潰していたころは、中央の箱が
+     残り2段の真ん中＝卓の上寄りに来て、左右の席とも噛み合わなかった。
+     左右の席が卓の高さいっぱいを使う今の作りでは、3段を等分にして
+     中央を卓の真ん中に置くほうが揃う。 */
+  .board.p3 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
 
   /* 上下の席は「名札｜河｜鳴き」を横に並べる。
      名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
@@ -1283,8 +1286,14 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   }
   .seat-top > .discards { bottom: 0; }
   .seat-bottom > .discards { top: 0; }
-  /* 対面の鳴きは河の外側に。自分のぶんは手牌の右へ移してある */
+  /* 他家の鳴きは、その席の外側の隅に置く。
+     位置を決めていなかったころは、席（display:block）のふつうの流れで
+     上端に来て、浮かせてある名札とぴったり重なっていた。 */
   .seat-top > .melds { position: absolute; right: 0; top: 0; margin: 0; }
+  .seat-left > .melds { position: absolute; left: 0; bottom: 0; margin: 0; }
+  .seat-right > .melds { position: absolute; right: 0; bottom: 0; margin: 0; }
+  /* 左右の席は幅が狭いので、鳴きの牌は一段小さく */
+  .seat-left > .melds .tile, .seat-right > .melds .tile { --tw: 19px; }
   /* 左右の席も、中身を中央側へ寄せる */
   .seat-left { justify-items: end; }
   .seat-right { justify-items: start; }
