@@ -73,6 +73,7 @@ export function renderGame(root, params) {
     sideOpen: loadPref('sideOpen', false),
     // 脇のメニューは畳んだ状態で始める（卓を広く使う）
     menuOpen: false,
+    felt: loadPref('felt', 'felt'),
     selectedTileId: null,
     // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
     // 画面はこの席を下辺に置いて描く（engine の席番号はどの端末でも同じ）。
@@ -131,6 +132,7 @@ export function renderGame(root, params) {
   rememberTable({ presetId, name: preset.name, event: params.event || null });
   // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
   document.body.classList.add('playing');
+  applyFelt(G.felt);
   buildDom(root);
   // オンラインの卓は、案内を挟まずそのまま始める。
   // 部屋主が開始を押したあとに全員が確認を閉じる作りだと、読んでいる間も
@@ -914,8 +916,41 @@ function drawTop(s) {
  * 速度と打ち方の設定。
  * 卓の上に常時並べるほど頻繁に触るものではないので、ここにまとめる。
  */
+/** 卓の布。店ごとの雰囲気に合わせて選べるようにしてある */
+const FELTS = [
+  { id: 'felt', label: '青海波（緑）' },
+  { id: 'felt-ai', label: '麻の葉（藍）' },
+  { id: 'felt-en', label: '組子（墨）' },
+  { id: 'felt-sakura', label: '桜（淡紅）' },
+];
+
+/** 選んだ布を敷く。画面のどこからでも呼べるよう、body に持たせる */
+function applyFelt(id) {
+  const pick = FELTS.find((f) => f.id === id) || FELTS[0];
+  document.documentElement.style.setProperty('--felt-img', `url('../img/${pick.id}.webp')`);
+}
+
 function showTableSettings() {
   const body = h('div.sheet-body');
+
+  // 卓の布
+  const feltRow = h('div.row.gap-4.wrapflex');
+  FELTS.forEach((f) => {
+    const b = h('button.act', { type: 'button', text: f.label });
+    if (f.id === G.felt) b.classList.add('on');
+    b.addEventListener('click', () => {
+      G.felt = f.id;
+      savePref('felt', f.id);
+      applyFelt(f.id);
+      showTableSettings();
+    });
+    feltRow.appendChild(b);
+  });
+  body.appendChild(h('div.set-row',
+    h('div',
+      h('div.set-title', { text: '卓の布' }),
+      h('div.set-desc', { text: '見た目だけの設定です。対局には影響しません。' })),
+    feltRow));
 
   const speedRow = h('div.row.gap-4.wrapflex');
   SPEEDS.forEach((x) => {
