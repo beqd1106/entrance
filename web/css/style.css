@@ -458,7 +458,59 @@ body.playing .nav { display: none; }
   .seat-left .tile, .seat-right .tile { --tw: 18px; }
 }
 .seat-bottom { grid-area: bottom; }
-.board-center { grid-area: center; display: grid; place-items: center; min-height: 0; }
+.board-center { grid-area: center; display: grid; place-items: center; min-height: 0; position: relative; }
+/* 中央の箱の四辺に出す各自の点数。雀魂と同じで、その人の向きに合わせる。
+   誰がいくら持っているかを、名札まで目を動かさずに見比べられる。 */
+/* 点数は中央の箱の中（四辺の内側）に置く。外に出すと河に重なる。 */
+.cscores { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+/* 四辺に点数を置くぶん、箱に余白を持たせる。
+   ドラは箱の外（卓の左上）に出したので、背は伸びない。 */
+/* 四辺に点数を置くので、箱に決まった大きさを持たせる。
+   （あとから来る指定に負けないよう、親からたどる書き方にする） */
+.board-center > .center-info {
+  position: relative; gap: 1px;
+  padding: 18px 30px; min-height: 72px; min-width: 150px;
+  justify-content: center;
+}
+/* 箱の中は局と本場だけ。狭いので詰めて出す */
+.center-info .center-kyoku { line-height: 1.1; }
+.center-info .center-sub { font-size: 9px; line-height: 1.2; }
+/* ドラ表示牌は卓の左上。打つあいだじゅう見るものなので大きいまま。 */
+.board > .dora-corner {
+  position: absolute; left: 0; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 9px; border-radius: 10px;
+  background: rgba(6, 20, 15, .55);
+  border: 1px solid rgba(255, 255, 255, .16);
+}
+.board > .dora-corner .dora-cap { color: rgba(255, 255, 255, .7); }
+/* 緑の卓の上に置くので、白い紙の中と同じ色では読めない。
+   暗い札に白い文字を載せる。いま打っている人は朱で示す。 */
+.cscore {
+  position: absolute; display: flex; align-items: center; gap: 5px;
+  padding: 2px 7px; border-radius: 999px;
+  font-size: 10.5px; white-space: nowrap;
+  color: rgba(255, 255, 255, .88);
+  background: rgba(6, 20, 15, .62);
+  border: 1px solid rgba(255, 255, 255, .14);
+}
+.cscore.on {
+  color: #fff; font-weight: 700;
+  background: rgba(176, 44, 34, .82); border-color: rgba(255, 190, 180, .5);
+}
+.cscore-wind {
+  width: 13px; height: 13px; border-radius: 3px; flex: 0 0 auto;
+  display: grid; place-items: center; font-size: 9px;
+  background: rgba(255, 255, 255, .16);
+}
+.cscore-pts { font-family: var(--mono); }
+.cscore-bottom { left: 50%; bottom: 0; transform: translateX(-50%); }
+.cscore-top { left: 50%; top: 0; transform: translateX(-50%) rotate(180deg); }
+/* 左右は回すと横幅ぶん中央の箱に食い込むので、箱の外まで押し出す。
+   回した後の幅（＝札の高さ）は 20px ほどなので、その半分＋余白ぶん動かす。 */
+.cscore-left { left: 0; top: 50%; transform: translate(-32%, -50%) rotate(-90deg); }
+.cscore-right { right: 0; top: 50%; transform: translate(32%, -50%) rotate(90deg); }
+
 .seat {
   background: none; border: 1px solid transparent;
   border-radius: var(--r-m); padding: 6px; transition: 0.2s var(--ease);

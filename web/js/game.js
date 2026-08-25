@@ -979,16 +979,23 @@ function drawBoard(s) {
     if (pos === 'bottom') continue;
     board.appendChild(seatEl(p, s, `seat-${pos}`));
   }
-  // 中央
+  // 中央。雀魂は箱の四辺に各自の点数を、その人の向きで出している。
+  // 誰がいくら持っているかを、名札まで目を動かさずに見比べられる。
+  const scoreSide = (pos) => {
+    const p = s.players.find((q) => seatPos(n, q.seat) === pos);
+    if (!p) return null;
+    const acting = actingSeat();
+    const on = (acting != null ? acting === p.seat : s.turn === p.seat) && !s.finished;
+    return h(`div.cscore.cscore-${pos}`, { class: on ? 'on' : '' },
+      h('span.cscore-wind', { text: p.wind || '' }),
+      h('span.cscore-pts', { text: fmt(p.points) }));
+  };
   const center = h('div.board-center',
     h('div.center-info',
+      h('div.cscores',
+        scoreSide('top'), scoreSide('right'), scoreSide('bottom'), scoreSide('left')),
       h('div.center-kyoku', { text: `${s.round.windName}${s.round.kyoku}局` }),
       h('div.center-sub', { text: `${s.round.honba}本場 ／ 残り ${s.wallRemaining}枚` }),
-      // ドラ表示牌。何がドラかは打つあいだじゅう気にするものなので、
-      // 見出しを付けて大きく出す（以前は sm=22px で、局の文字より小さかった）。
-      h('div.dora-box',
-        h('span.dora-cap', { text: 'ドラ' }),
-        h('div.row.gap-4', s.dora.map((d) => tileEl(d, { size: 'md', cls: 'dora-ind' })))),
       // 供託のリーチ棒。卓の真ん中に出ていないと、場にいくら乗っているかが
       // 分からない。天鳳・雀魂はどちらも卓の中央に置いている。
       s.round.kyotaku
@@ -998,6 +1005,12 @@ function drawBoard(s) {
         : null,
       s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
   board.appendChild(center);
+  // ドラ表示牌は中央の箱から出して、卓の左上に置く。
+  // 雀魂も中央の箱には局と点数だけを入れていて、ドラは王牌のところにある。
+  // 箱に入れたままだと四辺の点数ぶん背が伸びて、上下の河に重なった。
+  board.appendChild(h('div.dora-corner', { 'aria-hidden': 'false' },
+    h('span.dora-cap', { text: 'ドラ' }),
+    h('div.row.gap-4', s.dora.map((d) => tileEl(d, { size: 'md', cls: 'dora-ind' })))));
   // 牌山。雀魂・天鳳は卓のまわりに伏せ牌を並べていて、これがあるだけで
   // 「卓」に見える。横持ちは高さが足りないので上下には置けないが、
   // 左右は席の外側が空いているのでそこに立てる。
