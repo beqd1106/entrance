@@ -331,8 +331,12 @@ body.playing .nav { display: none; }
   position: relative;
   height: calc(100dvh - var(--nav-h));
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px;
+  /* 卓の布。雀魂のように絵柄のある布にする。真ん中は無地に近く作って
+     あるので、牌の読みやすさは落ちない。読めなくても困らないよう、
+     絵が無いときの色（下のグラデーション）も残してある。 */
   background:
     radial-gradient(120% 80% at 50% -20%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
+    url('../img/felt.webp') center / cover no-repeat,
     radial-gradient(130% 100% at 50% 0%, var(--felt-2) 0%, var(--felt) 48%, var(--felt-3) 100%);
   color: #f2efe6; padding: 10px 12px 12px; overflow: hidden;
 }
