@@ -195,7 +195,7 @@ export class GameEngine {
       });
       const rep = atDeal ? this.wall.draw() : this.wall.drawReplacement();
       if (!rep) {
-        // 補充牌が尽きた（海底での花牌ツモ）→ その場で流局
+      // 補充牌が尽きた（海底での花牌ツモ）→ その場で流局
         p.drawn = null;
         if (!atDeal) this.endKyokuByDraw();
         return;
@@ -617,7 +617,11 @@ export class GameEngine {
         // 四北のサイコロトリガー
         if (p.kita.length >= 4) this.pendingDiceTriggers = [...(this.pendingDiceTriggers || []), 'fourKita'];
         const rep = this.wall.drawReplacement();
-        if (!rep) { this.endKyokuByDraw(); return { ok: true }; }
+        // 補充が尽きたらここで流局する。このとき、いま抜いた・カンした牌は
+        // もう手牌から抜けているので、ツモ牌の指し先を消しておく。
+        // 残したままだと、画面が手に無い牌をツモ牌として並べ、
+        // 押しても切れない（選択肢に無いのでグレーになる）。
+        if (!rep) { p.drawn = null; this.endKyokuByDraw(); return { ok: true }; }
         p.hand.push(rep);
         p.drawn = rep;
         p.hand = sortTiles(p.hand);
@@ -701,7 +705,11 @@ export class GameEngine {
       if (t) this.pushEvent({ type: 'kanDora', tile: this.tileInfo(t) });
     }
     const rep = this.wall.drawReplacement();
-    if (!rep) { this.endKyokuByDraw(); return { ok: true }; }
+    // 補充が尽きたらここで流局する。このとき、いま抜いた・カンした牌は
+    // もう手牌から抜けているので、ツモ牌の指し先を消しておく。
+    // 残したままだと、画面が手に無い牌をツモ牌として並べ、
+    // 押しても切れない（選択肢に無いのでグレーになる）。
+    if (!rep) { p.drawn = null; this.endKyokuByDraw(); return { ok: true }; }
     p.hand.push(rep);
     p.drawn = rep;
     p.hand = sortTiles(p.hand);
@@ -868,7 +876,11 @@ export class GameEngine {
         if (t) this.pushEvent({ type: 'kanDora', tile: this.tileInfo(t) });
       }
       const rep = this.wall.drawReplacement();
-      if (!rep) { this.endKyokuByDraw(); return { ok: true }; }
+      // 補充が尽きたらここで流局する。このとき、いま抜いた・カンした牌は
+      // もう手牌から抜けているので、ツモ牌の指し先を消しておく。
+      // 残したままだと、画面が手に無い牌をツモ牌として並べ、
+      // 押しても切れない（選択肢に無いのでグレーになる）。
+      if (!rep) { p.drawn = null; this.endKyokuByDraw(); return { ok: true }; }
       p.hand.push(rep); p.drawn = rep; p.hand = sortTiles(p.hand);
       this.lastWasRinshan = true;
       this.pushEvent({ type: 'draw', seat: pd.from, tile: this.tileInfo(rep), replacement: true });
@@ -933,7 +945,11 @@ export class GameEngine {
 
     if (action.type === 'kan') {
       const rep = this.wall.drawReplacement();
-      if (!rep) { this.endKyokuByDraw(); return { ok: true }; }
+      // 補充が尽きたらここで流局する。このとき、いま抜いた・カンした牌は
+      // もう手牌から抜けているので、ツモ牌の指し先を消しておく。
+      // 残したままだと、画面が手に無い牌をツモ牌として並べ、
+      // 押しても切れない（選択肢に無いのでグレーになる）。
+      if (!rep) { p.drawn = null; this.endKyokuByDraw(); return { ok: true }; }
       p.hand.push(rep); p.drawn = rep; p.hand = sortTiles(p.hand);
       this.lastWasRinshan = true;
       this.pushEvent({ type: 'draw', seat, tile: this.tileInfo(rep), replacement: true });

@@ -955,6 +955,31 @@ it('中をポンしていたら清老頭にならない', () => {
 });
 
 // ===========================================================================
+// 抜きドラやカンのあと、補充の牌が尽きてその場で流局した局では、
+// 抜いた牌が手牌から消えているのに「いまツモった牌」の指し先が残っていた。
+// 画面はその牌を手牌の右端に並べるが、切る選択肢には無いのでグレーのまま動かない。
+// ロケット三麻風の seed373193 が、北を抜いた直後に山が尽きる局。
+it('補充が尽きて流局しても、ツモ牌の指し先が残らない', () => {
+  const rules = resolveRules(getPreset('rocket3').rules);
+  const players = Array.from({ length: rules.game.players }, (_, i) => ({
+    name: `CPU${i}`, isCpu: true, level: ['normal', 'normal', 'expert', 'beginner'][i] || 'normal',
+  }));
+  for (const seed of [373193, 1315554]) {
+    const engine = new GameEngine({ rules, seed, players });
+    engine.startKyoku();
+    let guard = 0;
+    let dangling = null;
+    while (!engine.finished && guard++ < 200) {
+      const r = engine.advance(decide, 20000);
+      for (const p of engine.players) {
+        if (p.drawn && !p.hand.some((t) => t.id === p.drawn.id)) dangling = `${p.name}/${p.drawn.t}`;
+      }
+      if (r.kyokuEnd && !engine.finished) engine.nextKyoku();
+    }
+    ok(dangling === null, `seed${seed}：手牌に無いツモ牌が残っていない（${dangling}）`);
+  }
+});
+
 describe('拡張：ローカル役');
 
 it('大車輪・三連刻・一色三順・五門斉が採用設定で成立する', () => {
