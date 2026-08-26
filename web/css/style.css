@@ -808,10 +808,16 @@ body.playing .nav { display: none; }
 .board > .wall-left { left: 0; }
 .board > .wall-right { right: 0; }
 .wall-stack { display: flex; flex-direction: column; gap: 2px; }
+/* 牌山は「積んだ牌の背」に見せる。緑の帯にしていたころは、
+   卓の脇に光る棒が立っているようにしか見えなかった。
+   天鳳も雀魂も、卓を囲んでいるのは牌そのもの。 */
 .wall-tile {
   width: 16px; height: 7px; border-radius: 2px;
-  background: linear-gradient(180deg, #2a8a70, #16624e);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 1px 2px rgba(0, 0, 0, .28);
+  background: linear-gradient(180deg, #f3ead6 0%, #e6d9bd 55%, #cbbb96 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    inset 0 -1px 0 rgba(120, 98, 60, .45),
+    0 1px 2px rgba(0, 0, 0, .35);
 }
 @media (orientation: landscape) and (max-height: 560px) {
   .wall-tile { width: 14px; height: 6px; }
@@ -2520,15 +2526,22 @@ textarea { resize: vertical; min-height: 56px; }
 }
 
 /* --- 対局画面をポップに ---------------------------------------------- */
-/* 中央の案内。白い箱が浮いていたので、卓に馴染む温かい札にする */
+/* 中央の案内。天鳳も雀魂も、ここは卓に埋め込まれた小さな黒い札で、
+   白い札にすると卓の真ん中に紙が置いてあるように浮いて見える。
+   四方の河に囲まれる位置なので、暗いほうが河の牌も引き立つ。 */
 .center-info {
-  background: linear-gradient(180deg, #fffdf7, #f6eedd);
-  border: 2px solid rgba(255, 255, 255, .9);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .28), inset 0 -2px 0 rgba(0, 0, 0, .06);
-  color: #23302b;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .07), transparent 42%),
+    linear-gradient(180deg, #232a2c, #12181a);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .10),
+    inset 0 -2px 6px rgba(0, 0, 0, .5),
+    0 6px 18px rgba(0, 0, 0, .35);
+  color: #e9efec;
 }
-.center-kyoku { color: #1d2b25; }
-.center-sub { color: rgba(35, 48, 43, .68); }
+.center-kyoku { color: #f4d58a; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.center-sub { color: rgba(233, 239, 236, .62); }
 
 /* 席の札。名前と点数を1つのまとまりに見せる */
 .seat-head {
