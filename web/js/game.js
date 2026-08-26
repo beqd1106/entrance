@@ -17,7 +17,9 @@ import { play as sfx, soundEnabled } from './sound.js';
 import { currentTable, clearTable } from './online.js';
 import { sendAct, resync, leaveRoom, onMessage, disconnect, connect, status as netStatus } from './net.js';
 
-const SPEEDS = [{ label: 'ゆっくり', v: 620 }, { label: '標準', v: 330 }, { label: '速い', v: 120 }];
+/* CPUが考えているように見せる待ち時間。速いと、切られた牌を目で追う前に
+   次の人が打ってしまい、何が起きたか分からないまま局が進む。 */
+const SPEEDS = [{ label: 'ゆっくり', v: 950 }, { label: '標準', v: 560 }, { label: '速い', v: 260 }];
 
 let G = null;
 
@@ -67,7 +69,7 @@ export function renderGame(root, params) {
   G = {
     presetId, preset, store, rules, event,
     engine: null, waiting: null, mode: 'idle', riichiIds: null, riichiOpen: false,
-    speed: 330, timer: null, log: [], debugOpen: false,
+    speed: loadPref('speed', 560), timer: null, log: [], debugOpen: false,
     confirmDiscard: loadPref('confirmDiscard', true),
     autoTsumogiri: loadPref('autoTsumogiri', true),
     // 卓を広く使うため、右の欄（ルールと履歴）は既定で畳んでおく
@@ -974,7 +976,7 @@ function showTableSettings() {
   SPEEDS.forEach((x) => {
     const b = h('button.act', { text: x.label });
     if (x.v === G.speed) b.classList.add('on');
-    b.addEventListener('click', () => { G.speed = x.v; draw(); showTableSettings(); });
+    b.addEventListener('click', () => { G.speed = x.v; savePref('speed', x.v); draw(); showTableSettings(); });
     speedRow.appendChild(b);
   });
   body.appendChild(h('div.set-row',
@@ -1644,14 +1646,25 @@ function callBanner(text, tone, who) {
   // 種類ごとの絵。リーチはリーチ棒、カンは4枚並び（両端が伏せ）。
   // 鳴き（ポン・チー）は絵を出さない：出番が多く、毎回絵が出ると煩い。
   const ART = { riichi: 'img/ui/riichi.webp', kan: 'img/ui/kan.webp' };
+  // リーチは局の流れが変わる宣言なので、他とは別格の見せ方にする。
+  // 小さな帯を一瞬出すだけでは、他家のリーチを見落としたまま打ってしまう。
+  if (tone === 'riichi') {
+    const big = h('div.riichiban',
+      h('img.riichiban-art', { src: 'img/ui/riichi-big.webp', alt: 'リーチ', loading: 'eager' }),
+      who ? h('span.riichiban-who', { text: who }) : null);
+    host.appendChild(big);
+    setTimeout(() => big.classList.add('out'), 1500);
+    setTimeout(() => big.remove(), 1900);
+    return;
+  }
   const el = h(`div.callban.callban-${tone}`,
     h('span.callban-burst', { 'aria-hidden': 'true' }),
     ART[tone] ? h('img.callban-art', { src: ART[tone], alt: '', loading: 'eager' }) : null,
     who ? h('span.callban-who', { text: who }) : null,
     h('span.callban-word', { text }));
   host.appendChild(el);
-  setTimeout(() => el.classList.add('out'), 820);
-  setTimeout(() => el.remove(), 1150);
+  setTimeout(() => el.classList.add('out'), 1100);
+  setTimeout(() => el.remove(), 1450);
 }
 
 /**

@@ -560,11 +560,15 @@ body.playing .nav { display: none; }
 }
 .cscore-pts { font-family: var(--mono); }
 .cscore-bottom { left: 50%; bottom: 0; transform: translateX(-50%); }
-.cscore-top { left: 50%; top: 0; transform: translateX(-50%) rotate(180deg); }
+/* 対面の点数は回さない。その人に向けて180度回すと、こちらからは
+   数字がひっくり返って読めず、壊れているようにしか見えない。 */
+.cscore-top { left: 50%; top: 0; transform: translateX(-50%); }
 /* 左右は回すと横幅ぶん中央の箱に食い込むので、箱の外まで押し出す。
-   回した後の幅（＝札の高さ）は 20px ほどなので、その半分＋余白ぶん動かす。 */
-.cscore-left { left: 0; top: 50%; transform: translate(-32%, -50%) rotate(-90deg); }
-.cscore-right { right: 0; top: 50%; transform: translate(32%, -50%) rotate(90deg); }
+   回した後の幅（＝札の高さ）は 20px ほどなので、その半分＋余白ぶん動かす。
+   回す向きはその人の向き（河や鳴きと同じ）。左は時計回り、右は反時計回り。
+   逆にしていたので、左右とも180度ひっくり返って見えていた。 */
+.cscore-left { left: 0; top: 50%; transform: translate(-32%, -50%) rotate(90deg); }
+.cscore-right { right: 0; top: 50%; transform: translate(32%, -50%) rotate(-90deg); }
 
 .seat {
   background: none; border: 1px solid transparent;
@@ -829,19 +833,22 @@ body.playing .nav { display: none; }
   border-radius: 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
-/* 伏せた牌を横に積んだ帯。1枚ずつ要素にすると四辺で数百個になるので模様で描く */
+/* 伏せた牌を積んだ帯。1枚ずつ要素にすると四辺で数百個になるので、
+   牌を並べて撮った画を継ぎ目なく繰り返す。
+   縞模様で描いていたころは、牌ではなく塗り分けた棒にしか見えなかった。 */
 .board > .wall-top, .board > .wall-bottom {
-  left: 30px; right: 30px; height: 9px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .35), rgba(0, 0, 0, .22)),
-    repeating-linear-gradient(90deg, #efe4cc 0 5px, #b09d78 5px 6px);
+  left: 30px; right: 30px; height: 12px;
+  background: url('../img/wall-h.webp') center / auto 100% repeat-x;
 }
 .board > .wall-left, .board > .wall-right {
   top: 30px; bottom: 30px; width: 12px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, .35), rgba(0, 0, 0, .22)),
-    repeating-linear-gradient(0deg, #efe4cc 0 5px, #b09d78 5px 6px);
+  background: url('../img/wall-v.webp') center / 100% auto repeat-y;
 }
+/* 卓の面より少し浮いて見えるよう、内側に落ちる影を足す */
+.board > .wall-top { box-shadow: 0 2px 4px rgba(0, 0, 0, .38); }
+.board > .wall-bottom { box-shadow: 0 -2px 4px rgba(0, 0, 0, .38); }
+.board > .wall-left { box-shadow: 2px 0 4px rgba(0, 0, 0, .38); }
+.board > .wall-right { box-shadow: -2px 0 4px rgba(0, 0, 0, .38); }
 .board > .wall-top { top: 0; }
 .board > .wall-bottom { bottom: 0; }
 .board > .wall-left { left: 0; }
@@ -3872,6 +3879,35 @@ body.op-mode::before { display: none; }
   animation: callSweep .62s var(--ease) .06s both;
 }
 @keyframes callSweep { to { transform: translateX(100%); } }
+/* リーチだけは大きく出す。局の流れが変わる宣言なので、
+   小さな帯を一瞬出すだけだと他家のリーチを見落としたまま打ってしまう。 */
+.riichiban {
+  position: absolute; left: 50%; top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 75; pointer-events: none; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  animation: riichiIn .42s cubic-bezier(.2, 1.5, .4, 1) both;
+  transition: opacity .38s var(--ease), transform .38s var(--ease);
+}
+.riichiban.out { opacity: 0; transform: translate(-50%, calc(-50% - 10px)) scale(1.04); }
+.riichiban-art {
+  width: min(62vw, 420px); height: auto;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, .55));
+}
+.riichiban-who {
+  font-size: 12px; letter-spacing: .14em; font-weight: 700;
+  color: #ffe6b8; text-shadow: 0 2px 6px rgba(0, 0, 0, .8);
+}
+@keyframes riichiIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.6) rotate(-6deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .riichiban-art { width: min(46vw, 330px); }
+  .riichiban { top: 44%; }
+}
+@media (prefers-reduced-motion: reduce) { .riichiban { animation: none; } }
+
 /* 局のはじまり。副露の表示より落ち着いた見せ方にして、
    「始まった」ことだけを静かに知らせる */
 .kyokuban {
