@@ -637,11 +637,17 @@ body.playing .nav { display: none; }
    枚数が変わるたびに全体が左右にずれ、切りたい牌の位置が動いていた。
    左そろえなら左端が動かないので、同じ牌はいつも同じあたりにある。
    参考にした雀魂も、手牌は左から並べて鳴きを右端に置いている。 */
-.bottom-bar .hand-row { position: relative; justify-content: flex-start; padding-right: 86px; }
+/* 手牌は絶対に折り返さない。折り返せるようにしていたころは、
+   画面の幅ぎりぎりのときにツモ牌（間隔を空けるぶん幅を食う）だけが
+   2段目へ落ち、手牌の左下に離れて出ていた。 */
+.bottom-bar .hand-row { position: relative; justify-content: flex-start; flex-wrap: nowrap; }
+/* 鳴き・抜きドラは手牌の右端に続けて置く。場所を決め打ちで空けて
+   そこに押し込んでいたころは、2つめの鳴きが枠から溢れて
+   1つめが見えなくなっていた（幅82px・はみ出しは隠す指定だった）。
+   左そろえの手牌は鳴きが増えても左端が動かないので、空けておく必要がない。 */
 .hand-melds {
-  position: absolute; right: 4px; bottom: 0; margin: 0;
-  width: 82px; justify-content: flex-end;
-  flex-wrap: nowrap; align-items: flex-end; gap: 8px; overflow: hidden;
+  margin: 0 0 0 auto; flex: 0 0 auto;
+  flex-wrap: nowrap; align-items: flex-end; gap: 8px;
 }
 /* 鳴きは手牌より一段小さく。手牌と場所を取り合わないための妥協。
    北抜きは手牌が減らない（補充を引く）ので、場所を空けておかないと重なる。 */
@@ -649,7 +655,12 @@ body.playing .nav { display: none; }
 .hand-melds .nuki-label { font-size: 10px; }
 @media (orientation: landscape) and (max-height: 560px) {
   .hand-melds { gap: 6px; }
-  .hand-melds .tile { --tw: 23px; }
+  .hand-melds .tile { --tw: calc(23px * var(--hand-scale, 1)); }
+  /* 14枚＋ツモ牌の間隔＋鳴きが1段に収まる大きさを、画面の幅から決める。
+     決め打ちの46pxだと、機種によっては最後の1枚が入らず折り返していた。 */
+  .bottom-bar .hand-row .tile-lg {
+    --tw: calc(min(46px, calc((100vw - 176px) / 14)) * var(--hand-scale, 1));
+  }
 }
 .meld { display: flex; gap: 1px; align-items: flex-end; }
 /* 鳴いた牌は横に倒す。回すだけだと元の縦長の場所を占めたままなので、
@@ -1341,13 +1352,23 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-top > .seat-head, .seat-bottom > .seat-head {
     left: auto; right: 0; transform: translate(calc(100% + 6px), 0);
   }
+  /* 自分の名札は卓の左下。参考（雀魂）も自分だけ左下に置いている。
+     四隅のうちここだけが空くのは、鳴きの帯が左は下から上、右は上から下へ
+     伸びる並びだから。空いたぶんドラ表示は右下へ移す。 */
+  .seat-bottom > .seat-head {
+    left: 0; right: auto; transform: translate(calc(-100% - 8px), 0);
+  }
+  .board > .dora-corner { left: auto; right: 68px; }
   .seat-top > .seat-head { top: 0; }
   .seat-bottom > .seat-head { bottom: 0; }
   /* 河は中央寄りの辺にそろえる（上の席は下端、下の席は上端） */
   .seat-top > .discards, .seat-bottom > .discards {
     position: absolute; left: 50%; transform: translateX(-50%); margin: 0;
   }
-  .seat-top > .discards { bottom: 0; }
+  /* 対面の河は180度回す。ここで transform をもう一度書かないと、
+     上の rotate(180deg) が「位置をそろえる指定」に丸ごと消される
+     （同じ強さなら後ろが勝つ）。実機で対面の河だけ回っていなかった。 */
+  .seat-top > .discards { bottom: 0; transform: translateX(-50%) rotate(180deg); }
   .seat-bottom > .discards { top: 0; }
   /* 他家の鳴きは席の中には置かない。席の列は72pxしかなく、
      そこに置くと河・名札・向かいの鳴きと総当たりでぶつかる（実測で4件）。
@@ -1364,11 +1385,21 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   }
   /* 3つ鳴かれても帯が長くなりすぎないよう、一段小さくする。
      17pxのままだと、せまい機種で帯が卓の左下のドラ表示まで届いていた。 */
-  .board > .side-melds .tile { --tw: 15px; }
-  /* 左の人：卓の左のふちに縦。上から下へ伸びる。
-     回すと見た目の箱は基点より外（左）へ21pxずれるので、
-     left の値は「帯の右端」の位置になる。 */
-  .side-melds-left { left: 42px; top: 54px; transform-origin: top left; transform: rotate(90deg); }
+  /* 鳴きや抜きドラが増えるほど帯は長くなる。卓のふちに収まらないぶんは
+     JS（fitSideMelds）が測って縮める。何枚並ぶかはCSSからは見えない。 */
+  .board > .side-melds .tile { --tw: calc(15px * var(--meld-scale, 1)); }
+  .board > .side-melds { gap: calc(8px * var(--meld-scale, 1)); }
+  /* 鳴きはその人の右手側に置く（雀魂・天鳳と同じ）。
+     左の人は右手が画面の下を向くので、卓の左下から上へ伸ばす。
+     右の人は右手が上を向くので、右上から下へ伸ばす。
+     回した帯は「基点から内側へ」出るので、伸びる向きは基点で決まる。
+       基点が上端 → 下へ伸びる／基点が下端 → 上へ伸びる。
+     基点を下端にすると見た目の箱は基点の右に出るので、
+     位置は right で「帯の左端」を指定する。 */
+  .side-melds-left {
+    right: calc(100% - 21px); bottom: 54px;
+    transform-origin: bottom right; transform: rotate(90deg);
+  }
   /* 右の人：卓の右のふちに縦。上から下へ伸びる */
   .side-melds-right { right: 42px; top: 54px; transform-origin: top right; transform: rotate(-90deg); }
   /* 対面：卓の上のふちに横。左へ伸びる。

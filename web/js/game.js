@@ -1116,6 +1116,39 @@ function drawBoard(s) {
   board.appendChild(h('div.seat.seat-bottom', { class: `${me.riichi ? 'riichi' : ''} ${myTurn ? 'active' : ''}` },
     seatHead(me, s),
     discardsEl(me)));
+  fitSideMelds(board);
+}
+
+/**
+ * 他家の鳴きの帯を、卓のふちに収まる大きさにする。
+ *
+ * 帯は鳴いた数だけ長くなる。抜きドラや華牌も同じ帯に並ぶので、
+ * 三麻では北を8枚抜いただけで面子より長くなる。
+ * 何枚並ぶかはCSSからは見えないので、置いたあとに測って縮める。
+ */
+function fitSideMelds(board) {
+  const bb = board.getBoundingClientRect();
+  const hit = (a, b) => !(a.right <= b.left || b.right <= a.left
+    || a.bottom <= b.top || b.bottom <= a.top);
+  // 左右はそれぞれ決まった隅から伸びるので先に決める。
+  // 対面の帯は上のふちを左へ伸びていき、左の帯とぶつかりうるので最後に合わせる。
+  const order = ['left', 'right', 'top'];
+  const done = [];
+  for (const pos of order) {
+    const strip = board.querySelector(`:scope > .side-melds-${pos}`);
+    if (!strip) continue;
+    strip.style.removeProperty('--meld-scale');
+    const bad = () => {
+      const r = strip.getBoundingClientRect();
+      if (r.top < bb.top || r.bottom > bb.bottom || r.left < bb.left || r.right > bb.right) return true;
+      return done.some((o) => hit(r, o.getBoundingClientRect()));
+    };
+    // 0.5倍まで。それ以上小さくすると何を鳴いたのか読めない
+    for (let k = 0.9; bad() && k >= 0.5; k -= 0.05) {
+      strip.style.setProperty('--meld-scale', String(k));
+    }
+    done.push(strip);
+  }
 }
 
 /**
@@ -1284,6 +1317,31 @@ function seatEl(p, s, cls) {
   return el;
 }
 
+/**
+ * 手牌の段を1行に収める。
+ *
+ * 手牌は折り返さない決まりにしてあるので、入りきらないぶんは
+ * 画面の外へ出る。北を抜いたり鳴いたりすると、手牌の枚数はそのままで
+ * 右の持ちものだけが増えるので、幅は場面ごとに変わる。
+ * CSSの計算式では鳴きの枚数までは見られないため、置いたあとに測って縮める。
+ */
+function fitHandRow(hand) {
+  hand.style.removeProperty('--hand-scale');
+  const room = () => {
+    const kids = [...hand.children].filter((el) => el.getBoundingClientRect().width > 0);
+    if (!kids.length) return 0;
+    const first = kids[0].getBoundingClientRect();
+    const last = kids[kids.length - 1].getBoundingClientRect();
+    return hand.getBoundingClientRect().width - (last.right - first.left);
+  };
+  if (room() >= 0) return;
+  // 0.6倍まで。それ以上小さくすると牌の絵が読めなくなる
+  for (let k = 0.95; k >= 0.6; k -= 0.05) {
+    hand.style.setProperty('--hand-scale', String(k));
+    if (room() >= 0) return;
+  }
+}
+
 function drawMy(s) {
   const me = s.players[G.mySeat];
   clear(G.dom.myArea);
@@ -1373,6 +1431,7 @@ function drawMy(s) {
     mine.classList.add('hand-melds');
     hand.appendChild(mine);
   }
+  fitHandRow(hand);
 }
 
 function onTileClick(t) {
