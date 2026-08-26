@@ -86,11 +86,6 @@ export function tileEl(info, opts = {}) {
     ? h('div.tile-face', h('img.tile-img', { src, alt: '', draggable: 'false', loading: 'eager' }))
     : h('div.tile-face', { html: tileFaceSVG(info.t) });
   const el = h(`div.${cls.join('.')}`, Object.assign({ title: info.name || '' }, opts.attrs), inner);
-  // 筒子・索子は柄を数えないと分からない。角に小さく数字を出す（萬子は漢数字があるので不要）
-  const t = info.t;
-  if (typeof t === 'number' && t >= 9 && t < 27) {
-    el.appendChild(h('span.tile-idx', { 'aria-hidden': 'true', text: String((t % 9) + 1) }));
-  }
   if (opts.onClick) el.addEventListener('click', opts.onClick);
   return el;
 }

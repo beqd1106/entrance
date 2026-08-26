@@ -216,21 +216,6 @@ body.playing .nav { display: none; }
 }
 /* 筒子・索子の角に置く数字。柄を数えなくても何の牌か分かるようにする。
    絵柄の上に重ねず、白い縁で浮かせて、慣れている人の邪魔をしない濃さにする */
-.tile-idx {
-  position: absolute; top: 3%; left: 7%;
-  font-family: var(--sans); font-weight: 800; line-height: 1;
-  /* 河の25px でも読める下限を持たせる。柄を数えなくても牌が分かることを優先する */
-  font-size: max(9px, calc(var(--tw) * 0.32));
-  color: rgba(28, 30, 33, 0.86);
-  /* 絵柄の上に乗るので、白い座布団で浮かせる */
-  background: rgba(255, 253, 248, 0.92);
-  border-radius: 3px;
-  padding: 0 2px;
-  z-index: 2;
-  pointer-events: none;
-}
-.tile-xs .tile-idx, .tile.back .tile-idx { display: none; }
-.tile.side .tile-idx { display: none; }
 /* 赤牌・金牌は牌面の色そのものを変える */
 .tile.red .tile-face .ink, .tile.red .tile-face .blue, .tile.red .tile-face .green { fill: var(--red); }
 .tile.red { border-color: #d8a49e; background: linear-gradient(#fffaf8, #f4e6e2); }
@@ -828,23 +813,27 @@ body.playing .nav { display: none; }
    左右にだけ立てる。残り枚数を左右で分けて出すので実際に減っていく。 */
 /* 「.board > *」が position: relative を当てているので、そこに勝つ書き方にする。
    升目の枠に入ってしまうと、席がその枚数ぶん押しやられて卓が崩れる。 */
+/* 牌山は天鳳と同じ見え方にする。あちらは伏せた牌を2段に積んでいて、
+   こちらからは「黒い背」と、その卓側に「牌の白い小口」が細く見える。
+   黒だけだと布に沈み、白だけだと明るい枠になる。2つで1本。 */
 .board > .wall-side {
   position: absolute; z-index: 0; pointer-events: none;
-  border-radius: 3px;
-  /* 牌の背は天鳳と同じ濃色。卓の布も濃いので、そのままだと布に沈む。
-     ふちに細い明かりを入れて、卓の上に牌が積んであることを分からせる。 */
-  outline: 1px solid rgba(255, 255, 255, .13);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .22);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
 }
+/* 小口は必ず卓の内側（中央を向く辺）に出す */
+.board > .wall-top { border-bottom: 3px solid #e8e2d2; }
+.board > .wall-bottom { border-top: 3px solid #e8e2d2; }
+.board > .wall-left { border-right: 3px solid #e8e2d2; }
+.board > .wall-right { border-left: 3px solid #e8e2d2; }
 /* 伏せた牌を積んだ帯。1枚ずつ要素にすると四辺で数百個になるので、
    牌を並べて撮った画を継ぎ目なく繰り返す。
    縞模様で描いていたころは、牌ではなく塗り分けた棒にしか見えなかった。 */
 .board > .wall-top, .board > .wall-bottom {
-  left: 30px; right: 30px; height: 8px;
+  left: 30px; right: 30px; height: 6px; box-sizing: content-box;
   background: url('../img/wall-h.webp') center / auto 100% repeat-x;
 }
 .board > .wall-left, .board > .wall-right {
-  top: 30px; bottom: 30px; width: 12px;
+  top: 30px; bottom: 30px; width: 12px; box-sizing: content-box;
   background: url('../img/wall-v.webp') center / 100% auto repeat-y;
 }
 /* 卓の面より少し浮いて見えるよう、内側に落ちる影を足す */
@@ -1322,8 +1311,8 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 対面の伏せ牌は、牌山の帯のすぐ下に薄く1本。河3段のぶんを引くと
      ここに使える高さは6pxしかない（卓の上端から数えて 帯8px／河16px）。
      牌の絵を敷いてあるので、薄くても「牌が並んでいる」ようには見える。 */
-  .back-hand-top { top: 8px; left: 50%; transform: translateX(-50%); z-index: 2; }
-  .back-hand-top .back-tile { width: 11px; height: 6px; }
+  .back-hand-top { top: 9px; left: 50%; transform: translateX(-50%); z-index: 2; }
+  .back-hand-top .back-tile { width: 11px; height: 5px; }
   .back-hand-left, .back-hand-right { top: 50%; flex-direction: column; }
   .back-hand-left { left: 41px; transform: translateY(-50%); }
   .back-hand-right { right: 41px; transform: translateY(-50%); }
