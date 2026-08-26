@@ -1045,6 +1045,15 @@ function drawBoard(s) {
     const pos = seatPos(n, p.seat);
     if (pos === 'bottom') continue;
     board.appendChild(seatEl(p, s, `seat-${pos}`));
+    // 横持ちでは、鳴いた牌は卓の外側の余白（牌山の外）に置く。
+    // 席の列は72pxしかなく、そこに置くと河や名札とぶつかる。
+    // 席の中に置いたままだと外へ出せない（席を基準に位置が決まるため）ので、
+    // 卓の直下にもう1つ出して、どちらを見せるかはCSSで切り替える。
+    const side = meldsEl(p);
+    if (side) {
+      side.classList.add('side-melds', `side-melds-${pos}`);
+      board.appendChild(side);
+    }
   }
   // 中央。雀魂は箱の四辺に各自の点数を、その人の向きで出している。
   // 誰がいくら持っているかを、名札まで目を動かさずに見比べられる。

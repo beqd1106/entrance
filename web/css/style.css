@@ -497,10 +497,18 @@ body.playing .nav { display: none; }
 .table-top.folded { width: auto; max-width: none; padding: 4px; background: none; border: 0; }
 
 /* ドラ表示牌は卓の左上。打つあいだじゅう見るものなので大きいまま。 */
+/* 他家の鳴きは、席の中と卓の直下の2か所に出している。
+   卓の直下のほう（.side-melds）は横持ちの置き方でしか使わないので、
+   ふだんは出さない。出したままだと、縦持ちで卓の升目に居座って
+   席の並びを1つぶんずらしてしまう。 */
+.board > .side-melds { display: none; }
+
 /* ドラは卓の左下。左上だと左の席の名札とぶつかる（左の席は卓の高さ
-   いっぱいを使うので、名札が上端に来る）。 */
+   いっぱいを使うので、名札が上端に来る）。
+   左端ちょうどだと、左の人の鳴きの帯（卓の左のふち）の真下に来て、
+   3つ鳴かれたときに帯の下端と重なる。帯より内側へずらしておく。 */
 .board > .dora-corner {
-  position: absolute; left: 0; bottom: 0; z-index: 2;
+  position: absolute; left: 52px; bottom: 0; z-index: 2;
   display: flex; align-items: center; gap: 7px;
   padding: 4px 9px; border-radius: 10px;
   background: rgba(6, 20, 15, .55);
@@ -1196,7 +1204,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        auto でも直らない（左右の席が3行をまたいでいるので中身なりに伸びない）。
        箱に入る96pxを先に取れば、河のいる行は必ず箱の外側になる。
        残り2行は90pxずつあり、河（35px）＋名札（30px）に足りる。 */
-    grid-template-rows: minmax(0, 1fr) 96px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 84px minmax(0, 1fr);
     /* 三麻は対面がいない。上の段は詰めて、そのぶんを残る3席に回す */
     row-gap: 4px;
     /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
@@ -1214,7 +1222,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        広く取ると河が中央から離れて浮いて見える（1frのときは111px、
        112pxでも74px離れていた。上下は15pxなので揃わない）。
        段が増えたぶんは外側（牌山の側）へはみ出させる＝実際の卓と同じ。 */
-    grid-template-columns: 72px auto 72px;
+    /* 左右の列は、回した河が入るだけの幅を取る。72pxのころは、
+       河が3段まで伸びると回した幅が106pxになって列からはみ出し、
+       内側では中央の箱に、外側では自分の名札に重なっていた。 */
+    grid-template-columns: 96px auto 96px;
     justify-content: center;
     /* 席の並びも卓の形に戻す。
        iPhone SE の横持ち（667px幅）は「狭い画面」の指定にも当てはまるため、
@@ -1261,8 +1272,19 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-left > .seat-head, .seat-right > .seat-head {
     position: absolute; top: 50%; margin: 0; white-space: nowrap;
   }
-  .seat-left > .seat-head { left: 0; transform: translate(-104%, -50%); }
-  .seat-right > .seat-head { right: 0; transform: translate(104%, -50%); }
+  /* 名札は席の列のすぐ外側に掛ける。列の外＝余白には、外から順に
+     牌山（14px）・鳴きの帯（23px）が並ぶので、名札はその内側に収める。
+     幅を止めておかないと、名前が長い人のときに鳴きの帯へ食い込む。 */
+  /* 余白（狭い機種で108px）には、外から牌山14px・鳴きの帯23pxが入る。
+     名札はその残りに収める。広く取ると鳴きの帯へ食い込む。 */
+  .seat-left > .seat-head, .seat-right > .seat-head { max-width: 54px; }
+  /* 余白に余裕がある機種では、名前を切らずに出せるだけ広げる。
+     54pxはいちばん狭い機種（余白108px）に合わせた下限。 */
+  @media (min-width: 760px) {
+    .seat-left > .seat-head, .seat-right > .seat-head { max-width: 70px; }
+  }
+  .seat-left > .seat-head { left: 0; transform: translate(calc(-100% - 8px), -50%); }
+  .seat-right > .seat-head { right: 0; transform: translate(calc(100% + 8px), -50%); }
   /* あとから来る「8列」の指定に勝つよう、親からたどる書き方にする。
      8列のままだと1列に伸びて、回すと画面の外まで届く。 */
   .board .seat-left > .discards, .board .seat-right > .discards {
@@ -1284,8 +1306,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      15pxでは何の牌か読めず、これが「画面が見づらい」の正体だった。
      8列にすると16枚まで2段で済み、そのぶん牌を大きくできる。
      幅は余っている（中央と左右を足しても597pxのうち500px弱）。 */
-  .seat > .discards { grid-template-columns: repeat(8, auto); }
-  .seat .tile { --tw: 25px; }
+  /* 河は6列。8列にしていたころは、上下の河が中央の列（160px）より
+     47px広くなって左右の席まで届き、他家の河どうしが重なっていた。
+     6列なら132pxで列に収まり、18枚で3段＝91pxと、席の段（93px）にも入る。 */
+  .seat > .discards { grid-template-columns: repeat(6, auto); }
+  .seat .tile { --tw: 22px; }
   .seat-left .tile, .seat-right .tile { --tw: 19px; }
   /* 4つの河を中央に寄せて、卓を囲む形にする。
      外側に散っていると「4人で1つの卓を囲んでいる」ように見えない。 */
@@ -1295,7 +1320,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      残り2段の真ん中＝卓の上寄りに来て、左右の席とも噛み合わなかった。
      左右の席が卓の高さいっぱいを使う今の作りでは、3段を等分にして
      中央を卓の真ん中に置くほうが揃う。 */
-  .board.p3 { grid-template-rows: minmax(0, 1fr) 96px minmax(0, 1fr); }
+  .board.p3 { grid-template-rows: minmax(0, 1fr) 84px minmax(0, 1fr); }
 
   /* 上下の席は「名札｜河｜鳴き」を横に並べる。
      名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
@@ -1310,6 +1335,12 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     position: absolute; left: 50%; transform: translateX(-50%);
     margin: 0; white-space: nowrap;
   }
+  /* 上下の名札は列の右どなりへ出す。列の真ん中に置いていたころは、
+     河が3段まで伸びると河の1段目とそのまま重なっていた。
+     右どなりは、左右の席の河（列の中）とも鳴きの帯（さらに外）とも当たらない。 */
+  .seat-top > .seat-head, .seat-bottom > .seat-head {
+    left: auto; right: 0; transform: translate(calc(100% + 6px), 0);
+  }
   .seat-top > .seat-head { top: 0; }
   .seat-bottom > .seat-head { bottom: 0; }
   /* 河は中央寄りの辺にそろえる（上の席は下端、下の席は上端） */
@@ -1318,16 +1349,36 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   }
   .seat-top > .discards { bottom: 0; }
   .seat-bottom > .discards { top: 0; }
-  /* 他家の鳴きは、その席の外側の隅に置く。
-     位置を決めていなかったころは、席（display:block）のふつうの流れで
-     上端に来て、浮かせてある名札とぴったり重なっていた。 */
-  .seat-top > .melds { position: absolute; right: 0; top: 0; margin: 0; }
-  /* 鳴きはその人から見た手前側に置く。左の人は下向き（画面の下）、
-     右の人は上向き（画面の上）が手前になる。 */
-  .seat-left > .melds { position: absolute; left: 0; bottom: 0; margin: 0; }
-  .seat-right > .melds { position: absolute; right: 0; top: 0; margin: 0; }
-  /* 左右の席は幅が狭いので、鳴きの牌は一段小さく */
-  .seat-left > .melds .tile, .seat-right > .melds .tile { --tw: 19px; }
+  /* 他家の鳴きは席の中には置かない。席の列は72pxしかなく、
+     そこに置くと河・名札・向かいの鳴きと総当たりでぶつかる（実測で4件）。
+     卓の直下に出した控えのほう（.side-melds）を、牌山の外側の余白に置く。 */
+  .seat-top > .melds, .seat-left > .melds, .seat-right > .melds { display: none; }
+
+  /* 鳴いた牌は、その人の向きに合わせて回して卓のふちに並べる（雀魂と同じ）。
+     回した要素は「回す前の場所」を取るので、伸びる向きは回転の基点で決める。
+     基点をこう置くと、どれも「決めた角から内側へ伸びる」形になり、
+     鳴きが増えても名札や牌山の側へはみ出さない。 */
+  .board > .side-melds {
+    position: absolute; margin: 0; z-index: 3;
+    display: flex; flex-wrap: nowrap; gap: 8px; align-items: flex-start;
+  }
+  /* 3つ鳴かれても帯が長くなりすぎないよう、一段小さくする。
+     17pxのままだと、せまい機種で帯が卓の左下のドラ表示まで届いていた。 */
+  .board > .side-melds .tile { --tw: 15px; }
+  /* 左の人：卓の左のふちに縦。上から下へ伸びる。
+     回すと見た目の箱は基点より外（左）へ21pxずれるので、
+     left の値は「帯の右端」の位置になる。 */
+  .side-melds-left { left: 42px; top: 54px; transform-origin: top left; transform: rotate(90deg); }
+  /* 右の人：卓の右のふちに縦。上から下へ伸びる */
+  .side-melds-right { right: 42px; top: 54px; transform-origin: top right; transform: rotate(-90deg); }
+  /* 対面：卓の上のふちに横。左へ伸びる。
+     対面の河（6列＝137px）の左端は中央から68.5px。
+     そのすぐ外（76px）から始めれば、河とは重ならず、
+     せまい機種でも卓の外へはみ出さない。 */
+  .side-melds-top {
+    left: calc(50% - 76px); top: 36px;
+    transform-origin: top left; transform: rotate(180deg);
+  }
   /* 左右の席も、中身を中央側へ寄せる */
   .seat-left { justify-items: end; }
   .seat-right { justify-items: start; }
@@ -1345,8 +1396,8 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      ただし河は最後まで18〜20枚（6列なら3〜4段）になる。
      大きくしすぎると終盤に下の段が切れて、いちばん見たい直前の捨て牌が
      見えなくなる。3段が確実に入る大きさに合わせる。 */
-  .seat .tile { --tw: 25px; }
-  .seat-left .tile, .seat-right .tile { --tw: 25px; }
+  .seat .tile { --tw: 22px; }
+  .seat-left .tile, .seat-right .tile { --tw: 22px; }
   /* 17枚を超えると3段になるので、そのぶんだけ一段小さくする。
      以前は11枚で15pxまで落としていた（6列で4段になるため）。 */
   .seat .discards.dense .tile { --tw: 20px; }
