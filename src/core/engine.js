@@ -640,6 +640,19 @@ export class GameEngine {
     }
   }
 
+  /**
+   * ツモ牌の指し先を手牌と合わせる。
+   *
+   * カンした牌がそのまま「いまツモった牌」だったとき、その牌は面子へ移るので
+   * 手牌からは消える。ふつうは直後に嶺上牌を引いて指し先が更新されるが、
+   * 搶槓で和了られた・山が尽きた場合はそこで局が終わり、指し先だけが残る。
+   * 残ると、画面が手に無い牌をツモ牌として並べ、押しても切れない
+   * （切る選択肢に無いのでグレーのまま動かない）。
+   */
+  syncDrawn(p) {
+    if (p.drawn && !p.hand.some((t) => t.id === p.drawn.id)) p.drawn = null;
+  }
+
   doKan(seat, action) {
     const p = this.players[seat];
     const R = this.rules;
@@ -647,12 +660,14 @@ export class GameEngine {
       const tiles = p.hand.filter((t) => t.t === action.t).slice(0, 4);
       if (tiles.length < 4) return { error: '暗槓できません' };
       p.hand = p.hand.filter((t) => !tiles.includes(t));
+      this.syncDrawn(p);
       p.melds.push({ kind: 'kan', tiles, concealed: true, from: seat, calledTile: tiles[0] });
     } else if (action.kind === 'kakan') {
       const meld = p.melds.find((m) => m.kind === 'pon' && m.tiles[0].t === action.t);
       if (!meld) return { error: '加槓できません' };
       const idx = p.hand.findIndex((t) => t.t === action.t);
       const [tile] = p.hand.splice(idx, 1);
+      this.syncDrawn(p);
       meld.kind = 'kan';
       meld.concealed = false;
       meld.tiles.push(tile);
@@ -674,6 +689,7 @@ export class GameEngine {
       const idx = p.hand.findIndex((t) => t.t === action.t);
       if (idx < 0) return { error: '足す牌を持っていません' };
       const [tile] = p.hand.splice(idx, 1);
+      this.syncDrawn(p);
       meld.tiles.push(tile);
       // 暗槓に足すぶんは暗槓のままなので、槍槓はできない。
       // 明槓に足すぶんは加槓と同じ扱いなので、槍槓の機会がある。

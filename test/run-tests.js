@@ -960,11 +960,22 @@ it('中をポンしていたら清老頭にならない', () => {
 // 画面はその牌を手牌の右端に並べるが、切る選択肢には無いのでグレーのまま動かない。
 // ロケット三麻風の seed373193 が、北を抜いた直後に山が尽きる局。
 it('補充が尽きて流局しても、ツモ牌の指し先が残らない', () => {
-  const rules = resolveRules(getPreset('rocket3').rules);
+  runNoDanglingDrawn('rocket3', [373193, 1315554]);
+});
+
+// カンした牌がそのまま「いまツモった牌」だったとき、その牌は面子へ移って
+// 手牌から消える。ふつうは直後に嶺上牌を引いて指し先が更新されるが、
+// 搶槓で和了られるとそこで局が終わり、指し先だけが残っていた。
+it('搶槓で局が終わっても、ツモ牌の指し先が残らない', () => {
+  runNoDanglingDrawn('mighty3', [753305, 1378906]);
+});
+
+function runNoDanglingDrawn(presetId, seeds) {
+  const rules = resolveRules(getPreset(presetId).rules);
   const players = Array.from({ length: rules.game.players }, (_, i) => ({
     name: `CPU${i}`, isCpu: true, level: ['normal', 'normal', 'expert', 'beginner'][i] || 'normal',
   }));
-  for (const seed of [373193, 1315554]) {
+  for (const seed of seeds) {
     const engine = new GameEngine({ rules, seed, players });
     engine.startKyoku();
     let guard = 0;
@@ -976,9 +987,9 @@ it('補充が尽きて流局しても、ツモ牌の指し先が残らない', (
       }
       if (r.kyokuEnd && !engine.finished) engine.nextKyoku();
     }
-    ok(dangling === null, `seed${seed}：手牌に無いツモ牌が残っていない（${dangling}）`);
+    ok(dangling === null, `${presetId} seed${seed}：手牌に無いツモ牌が残っていない（${dangling}）`);
   }
-});
+}
 
 describe('拡張：ローカル役');
 
