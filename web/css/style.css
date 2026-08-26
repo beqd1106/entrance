@@ -471,9 +471,15 @@ body.playing .nav { display: none; }
    ドラは箱の外（卓の左上）に出したので、背は伸びない。 */
 /* 四辺に点数を置くので、箱に決まった大きさを持たせる。
    （あとから来る指定に負けないよう、親からたどる書き方にする） */
+/* 四辺に点数を置くので、その厚みぶんの余白を確実に取る。
+   足りないと、局の文字と点数が重なる（実機で重なっていた）。
+   回した点数が角で切れないよう、はみ出しも許す。 */
 .board-center > .center-info {
-  position: relative; gap: 1px;
-  padding: 18px 30px; min-height: 72px; min-width: 150px;
+  position: relative; gap: 2px; overflow: visible;
+  /* 上下の余白は、四辺に置いた点数の札（高さ19px）が文字に重ならない分だけ。
+     26pxまで取っていたころは、供託が出た局で箱が110pxになり、
+     中央の行（96px）からはみ出して自分の河に重なった。 */
+  padding: 21px 34px; min-height: 84px; min-width: 160px;
   justify-content: center;
 }
 /* 箱の中は局と本場だけ。狭いので詰めて出す */
@@ -504,9 +510,9 @@ body.playing .nav { display: none; }
 /* 緑の卓の上に置くので、白い紙の中と同じ色では読めない。
    暗い札に白い文字を載せる。いま打っている人は朱で示す。 */
 .cscore {
-  position: absolute; display: flex; align-items: center; gap: 5px;
-  padding: 2px 7px; border-radius: 999px;
-  font-size: 10.5px; white-space: nowrap;
+  position: absolute; display: flex; align-items: center; gap: 4px;
+  padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; line-height: 1.5; white-space: nowrap;
   color: rgba(255, 255, 255, .88);
   background: rgba(6, 20, 15, .62);
   border: 1px solid rgba(255, 255, 255, .14);
@@ -516,8 +522,8 @@ body.playing .nav { display: none; }
   background: rgba(176, 44, 34, .82); border-color: rgba(255, 190, 180, .5);
 }
 .cscore-wind {
-  width: 13px; height: 13px; border-radius: 3px; flex: 0 0 auto;
-  display: grid; place-items: center; font-size: 9px;
+  width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto;
+  display: grid; place-items: center; font-size: 8.5px;
   background: rgba(255, 255, 255, .16);
 }
 .cscore-pts { font-family: var(--mono); }
@@ -619,16 +625,23 @@ body.playing .nav { display: none; }
    （天鳳・雀魂と同じ置き方）。
    並びに入れると、鳴くたびに手牌が左へずれて切りたい牌の位置が変わる。
    浮かせて右端に置き、手牌は鳴いても動かないようにする。 */
-.bottom-bar .hand-row { position: relative; }
+/* 手牌は左そろえ。真ん中にそろえていたころは、鳴いたり北を抜いたりして
+   枚数が変わるたびに全体が左右にずれ、切りたい牌の位置が動いていた。
+   左そろえなら左端が動かないので、同じ牌はいつも同じあたりにある。
+   参考にした雀魂も、手牌は左から並べて鳴きを右端に置いている。 */
+.bottom-bar .hand-row { position: relative; justify-content: flex-start; padding-right: 86px; }
 .hand-melds {
   position: absolute; right: 4px; bottom: 0; margin: 0;
-  flex-wrap: nowrap; align-items: flex-end; gap: 10px;
+  width: 82px; justify-content: flex-end;
+  flex-wrap: nowrap; align-items: flex-end; gap: 8px; overflow: hidden;
 }
-.hand-melds .tile { --tw: 34px; }
+/* 鳴きは手牌より一段小さく。手牌と場所を取り合わないための妥協。
+   北抜きは手牌が減らない（補充を引く）ので、場所を空けておかないと重なる。 */
+.hand-melds .tile { --tw: 26px; }
 .hand-melds .nuki-label { font-size: 10px; }
 @media (orientation: landscape) and (max-height: 560px) {
-  .hand-melds { margin-left: 14px; gap: 8px; }
-  .hand-melds .tile { --tw: 30px; }
+  .hand-melds { gap: 6px; }
+  .hand-melds .tile { --tw: 23px; }
 }
 .meld { display: flex; gap: 1px; align-items: flex-end; }
 /* 鳴いた牌は横に倒す。回すだけだと元の縦長の場所を占めたままなので、
@@ -1178,7 +1191,12 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
        上下の河は3段（56px）＋札（22px）で78px要るので、最後の段が
        切れて「直前に何を切ったか」が見えなくなっていた。
        等分なら1行79pxで、4人とも河が最後まで出る。 */
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    /* 中央の行は高さを決め打ちで取る。3等分にしていたころは、供託や割れ目が
+       出て箱が伸びたぶんが下の行へはみ出し、自分の河と重なっていた。
+       auto でも直らない（左右の席が3行をまたいでいるので中身なりに伸びない）。
+       箱に入る96pxを先に取れば、河のいる行は必ず箱の外側になる。
+       残り2行は90pxずつあり、河（35px）＋名札（30px）に足りる。 */
+    grid-template-rows: minmax(0, 1fr) 96px minmax(0, 1fr);
     /* 三麻は対面がいない。上の段は詰めて、そのぶんを残る3席に回す */
     row-gap: 4px;
     /* 中央は中身ぶんだけ。ここを広く取ると、左右の河が中心から離れて
@@ -1228,12 +1246,23 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .seat-left, .seat-right { position: relative; overflow: visible; display: block; }
   /* 名札は河の上。上端ぴったりに置くと、卓の左上のドラ表示とぶつかる。
      名札は「誰か」だけを示すので、点数を外したぶん幅も要らない。 */
-  /* 名札は河の上。河は席の真ん中に浮いていて上端から52pxのところに来るので、
-     そこに掛からない高さに置く。 */
-  .seat-left > .seat-head, .seat-right > .seat-head {
-    position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
-    margin: 0; white-space: nowrap; max-width: 100%;
+  /* 名札はどの布の上でも読めるようにする。濃紺や墨の布だと、
+     薄い暗色のままでは布に埋もれて「誰がどこに座っているか」が見えない。 */
+  .board .seat-head {
+    background: rgba(8, 20, 16, .78);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 999px; padding: 3px 10px; margin: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
   }
+
+  /* 左右の名札は、その人が座っている側（卓の外側）の中段に置く。
+     上端にそろえていたころは、左右の人の札が対面の人と一緒に上に並んで、
+     誰がどこに座っているのか分からなかった。 */
+  .seat-left > .seat-head, .seat-right > .seat-head {
+    position: absolute; top: 50%; margin: 0; white-space: nowrap;
+  }
+  .seat-left > .seat-head { left: 0; transform: translate(-104%, -50%); }
+  .seat-right > .seat-head { right: 0; transform: translate(104%, -50%); }
   /* あとから来る「8列」の指定に勝つよう、親からたどる書き方にする。
      8列のままだと1列に伸びて、回すと画面の外まで届く。 */
   .board .seat-left > .discards, .board .seat-right > .discards {
@@ -1243,8 +1272,11 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   /* 席の真ん中にそろえる。回すと見た目の幅は「段数×34.5px」になり、
      回す前の箱（6列＝150px）とは別物。位置を凝った式で寄せようとすると
      かえって暴れるので、席の幅そのものを見た目に合わせて細くしてある。 */
-  .board .seat-left > .discards { transform: translate(-50%, -50%) rotate(-90deg); }
-  .board .seat-right > .discards { transform: translate(-50%, -50%) rotate(90deg); }
+  /* 左の人は右を向いて座っている＝その人から見た「上」は画面の右。
+     牌の上（0,-1）を右（1,0）へ向けるので時計回り90度。右の人はその逆。
+     ここを逆にしていたので、左右の牌が180度ひっくり返って見えていた。 */
+  .board .seat-left > .discards { transform: translate(-50%, -50%) rotate(90deg); }
+  .board .seat-right > .discards { transform: translate(-50%, -50%) rotate(-90deg); }
 
   /* 河は8列で折り返す。天鳳・雀魂は6列だが、あちらは卓が画面いっぱいで
      牌そのものが大きい。こちらは横持ちの高さ（1席あたり83px）が先に効くので、
@@ -1263,7 +1295,7 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      残り2段の真ん中＝卓の上寄りに来て、左右の席とも噛み合わなかった。
      左右の席が卓の高さいっぱいを使う今の作りでは、3段を等分にして
      中央を卓の真ん中に置くほうが揃う。 */
-  .board.p3 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  .board.p3 { grid-template-rows: minmax(0, 1fr) 96px minmax(0, 1fr); }
 
   /* 上下の席は「名札｜河｜鳴き」を横に並べる。
      名札を河の上に積むと、その22pxぶん河の高さが減り、終盤に最後の段が
@@ -1290,8 +1322,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
      位置を決めていなかったころは、席（display:block）のふつうの流れで
      上端に来て、浮かせてある名札とぴったり重なっていた。 */
   .seat-top > .melds { position: absolute; right: 0; top: 0; margin: 0; }
+  /* 鳴きはその人から見た手前側に置く。左の人は下向き（画面の下）、
+     右の人は上向き（画面の上）が手前になる。 */
   .seat-left > .melds { position: absolute; left: 0; bottom: 0; margin: 0; }
-  .seat-right > .melds { position: absolute; right: 0; bottom: 0; margin: 0; }
+  .seat-right > .melds { position: absolute; right: 0; top: 0; margin: 0; }
   /* 左右の席は幅が狭いので、鳴きの牌は一段小さく */
   .seat-left > .melds .tile, .seat-right > .melds .tile { --tw: 19px; }
   /* 左右の席も、中身を中央側へ寄せる */
@@ -1320,6 +1354,14 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .center-info { padding: 4px 10px; }
   .center-kyoku { font-size: 15px; }
   .center-sub { font-size: 9.5px; }
+  /* 横持ちでは供託と割れ目を1行に横並べにする。棒も縦積みでは背が伸びるので寝かせる。
+     ここは後ろにある既定（縦積み）に負けるので、セレクタを1つ深くして勝たせる。 */
+  .center-info .center-kyotaku {
+    flex-direction: row; gap: 6px; align-items: center; flex-wrap: nowrap;
+    margin-top: 0; max-width: 100%; overflow: hidden;
+  }
+  .center-info .center-kyotaku .sticks { flex-direction: row; gap: 2px; }
+  .center-info .center-kyotaku .center-sub { white-space: nowrap; }
   /* 席の札と河のすき間を詰めて、そのぶんを河に回す */
   .seat { padding: 2px; }
   .seat > .discards { margin-top: 2px; }
@@ -1378,9 +1420,10 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
     animation: turnPulse 1.1s ease-in-out infinite;
   }
   .center-info { min-width: 0; aspect-ratio: auto; }
-  /* それでも溢れたときは、切らずに席の中で送れるようにしておく */
-  .seat { overflow-y: auto; scrollbar-width: none; }
-  .seat::-webkit-scrollbar { display: none; }
+  /* 席の中身（名札・河・鳴き）はいま全部、席の枠の外へ浮かせて置いている。
+     ここで送れるようにしていたころは、枠の外に出したものが丸ごと切り取られ、
+     左右の名札が画面から消えていた（要素はあるのに何も描かれない）。 */
+  .seat { overflow: visible; }
   .side-card .rule-item span:first-child { flex: 0 0 56px; }
   .logbox { font-size: 10px; padding: 6px 8px; min-height: 40px; line-height: 1.5; }
   .board { gap: 5px; }

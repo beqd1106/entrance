@@ -450,8 +450,8 @@ export const PRESETS = [
       dora: { indicators: 1, ura: false, red: {} },
       // 公式ルールで採用されている役
       localYaku: [
-        // 大車輪（清一色の七対子）
-        { id: 'daisharin', enabled: true, yakuman: 1 },
+        // 大車輪。三麻なので、2〜8に限らず清一色の七対子はすべて認める
+        { id: 'daisharin', enabled: true, yakuman: 1, scope: 'chinitsu' },
         // 萬子の混一色
         { id: 'manzuhonitsu', enabled: true, yakuman: 1 },
         // お多福（5面待ち以上で、待ちの種類ぶん翻が増える）
@@ -468,6 +468,7 @@ export const PRESETS = [
     description: '全自動卓の2セットを混ぜて打つ三人麻雀。萬子は使わず、筒子だけの回と索子だけの回を交互に打ちます。'
       + 'その色を1種8枚入れるので、手はいつも清一色。牌の裏が青と黄の2色になり、裏がそろうと背一色（役満）。'
       + 'カンは4回で打ち切らず、カンした牌の5枚目以降も足せます（足すたびにドラが増えます）。'
+      + '七対子はそろえば大車輪（役満）。2〜8に限らず、清一色の七対子ならすべて認めます。'
       + '14翻で数え役満、以降2翻ごとに5倍満・6倍満…と伸びますが、本物の役満は役満どまりです。',
     rules: {
       meta: { id: 'chinitsu3', name: '清一色ゲーム風' },
@@ -516,7 +517,8 @@ export const PRESETS = [
       // 筒子の回は大車輪、索子の回は大竹林として成立する。
       localYaku: [
         { id: 'seiiisou', enabled: true, yakuman: 1 },
-        { id: 'daisharin', enabled: true, yakuman: 1 },
+        // 1色しか使わない卓なので、清一色の七対子はすべて大車輪として扱う
+        { id: 'daisharin', enabled: true, yakuman: 1, scope: 'chinitsu' },
       ],
       // 役満の祝儀はツモ25枚オール・出50枚。
       // 供託は本数、祝儀は枚数で数える。ツモは全員が枚数ぶん払い（tsumoAll）、

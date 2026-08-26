@@ -813,6 +813,16 @@ function renderLeft(left, state, onChange) {
       });
       right.appendChild(sel);
       right.appendChild(val);
+      // 形の広さが店ごとに変わる役（大車輪など）は、その選び分けも出す
+      for (const opt of def.options || []) {
+        const os = h('select', { style: { width: '150px' } });
+        const now = cur[opt.key] ?? opt.default;
+        for (const c of opt.choices) {
+          os.appendChild(h('option', { value: c.v, text: c.label, selected: c.v === now }));
+        }
+        os.addEventListener('change', () => { cur[opt.key] = os.value; onChange(); });
+        right.appendChild(os);
+      }
     }
     ly.appendChild(h('div.switch',
       h('div.grow', h('div.sw-label', { text: def.name }), h('div.sw-desc', { text: def.desc })),

@@ -13,6 +13,7 @@ import { codeToType, typeName, tileFaceKey, doraNext } from '../../src/core/tile
 import { yakumanName } from '../../src/core/score.js';
 import { LOCAL_YAKU_DEFS } from '../../src/core/yaku.js';
 import { h, clear, tileEl, tileRow, fmt, signed, icon, chip, ruleChip } from './ui.js';
+import { play as sfx, soundEnabled } from './sound.js';
 import { currentTable, clearTable } from './online.js';
 import { sendAct, resync, leaveRoom, onMessage, disconnect, connect, status as netStatus } from './net.js';
 
@@ -74,6 +75,7 @@ export function renderGame(root, params) {
     // 脇のメニューは畳んだ状態で始める（卓を広く使う）
     menuOpen: false,
     felt: loadPref('felt', 'felt'),
+    sound: loadPref('sound', true),
     selectedTileId: null,
     // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
     // 画面はこの席を下辺に置いて描く（engine の席番号はどの端末でも同じ）。
@@ -133,6 +135,7 @@ export function renderGame(root, params) {
   // 対局中だけ、横持ちでナビを隠して卓を最大化する（他の画面では隠さない）
   document.body.classList.add('playing');
   applyFelt(G.felt);
+  soundEnabled(G.sound);
   buildDom(root);
   // オンラインの卓は、案内を挟まずそのまま始める。
   // 部屋主が開始を押したあとに全員が確認を閉じる作りだと、読んでいる間も
@@ -173,7 +176,7 @@ function buildDom(root) {
   G.dom.hint = h('div.hint');
   // 自分の残り時間。オンラインのときだけ意味を持つ
   G.dom.myClock = h('div.seat-clock.my-clock', h('span.seat-clock-num'), h('i.seat-clock-bar'));
-  G.dom.hand = h('div.hand-row', { style: { justifyContent: 'center', minHeight: '52px' } });
+  G.dom.hand = h('div.hand-row', { style: { minHeight: '52px' } });
   G.dom.logbox = h('div.logbox');
   G.dom.ruleCard = h('div.side-card.rule-summary');
   G.dom.debug = h('div.debug-panel.hide');
@@ -661,17 +664,23 @@ function drainLog() {
         kyokuBanner(label, ev.honba ? `${ev.honba}本場` : `親：${nameOf(ev.dealer)}`);
         break;
       }
-      case 'discard': pushLog('', `${nameOf(ev.seat)}：${ev.tile.name} 切り${ev.riichi ? '（リーチ宣言牌）' : ''}`); break;
+      case 'draw': sfx('draw'); break;
+      case 'discard':
+        pushLog('', `${nameOf(ev.seat)}：${ev.tile.name} 切り${ev.riichi ? '（リーチ宣言牌）' : ''}`);
+        sfx('discard');
+        break;
       case 'riichi':
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
         toast(ev.open ? 'オープンリーチ' : 'リーチ', nameOf(ev.seat), 'rose');
         callBanner(ev.open ? 'オープンリーチ' : 'リーチ', 'riichi', nameOf(ev.seat));
+        sfx('riichi');
         flyRiichiStick(ev.seat);
         break;
       case 'call': {
         const label = { pon: 'ポン', chi: 'チー', kan: 'カン' }[ev.kind] || ev.kind;
         pushLog('', `${nameOf(ev.seat)}：${label}（${nameOf(ev.from)}の${ev.tile.name}）`);
         callBanner(label, 'call', nameOf(ev.seat));
+        sfx('call');
         break;
       }
       case 'kan': {
@@ -679,6 +688,7 @@ function drainLog() {
         pushLog('', `${nameOf(ev.seat)}：${label} ${typeName(ev.t)}`);
         // カンはドラが増える大きな出来事なのに、これまでログに書くだけだった
         callBanner(label, 'kan', nameOf(ev.seat));
+        sfx('kan');
         break;
       }
       case 'kanDora': pushLog('rule', `槓ドラ表示：${ev.tile.name}`); break;
@@ -698,6 +708,8 @@ function drainLog() {
       case 'abort': pushLog('sys', `途中流局：${ev.reason}`); break;
       case 'kyokuEnd': {
         const res = ev.result;
+        // 自分が和了ったときだけ明るい音。他家の和了と流局は低い音にする。
+        sfx(res.kind === 'win' && res.details.some((d) => d.seat === G.mySeat) ? 'win' : 'lose');
         if (res.kind === 'win') {
           for (const d of res.details) {
             pushLog('win', `${nameOf(d.seat)}：${d.tsumo ? 'ツモ' : 'ロン'} ${d.yakuman ? `役満` : `${d.han}翻${G.rules.scoring.useFu ? `${d.fu}符` : ''}`}${d.limitName ? `（${d.limitName}）` : ''}`);
@@ -989,6 +1001,14 @@ function showTableSettings() {
 
   // 珍しい場面（同じ牌が5枚以上そろう等）は、待っていても滅多に来ない。
   // 店のルールが思ったとおりに動くかを確かめたいとき用の操作。
+  body.appendChild(toggle('効果音', '牌を打つ音や、鳴き・リーチの音が鳴ります。',
+    G.sound, () => {
+      G.sound = !G.sound;
+      soundEnabled(G.sound);
+      savePref('sound', G.sound);
+      if (G.sound) sfx('discard');   // ONにしたその場で、どんな音か分かるように鳴らす
+    }));
+
   body.appendChild(toggle('検証用の操作を出す',
     '手牌を作って、そのルールが思ったとおりに動くか確かめられます。ふだんの対局では使いません。',
     G.debugAvailable, () => {
@@ -1049,12 +1069,20 @@ function drawBoard(s) {
       h('div.center-sub', { text: `${s.round.honba}本場 ／ 残り ${s.wallRemaining}枚` }),
       // 供託のリーチ棒。卓の真ん中に出ていないと、場にいくら乗っているかが
       // 分からない。天鳳・雀魂はどちらも卓の中央に置いている。
-      s.round.kyotaku
+      // 供託と割れ目は同じ1行に収める。別々の行にしていたころは、
+      // どちらも出ている局で箱が4行に伸びて、自分の河に重なった。
+      s.round.kyotaku || s.wareme != null
         ? h('div.center-kyotaku',
-          h('div.sticks', Array.from({ length: Math.min(s.round.kyotaku, 8) }, () => h('div.stick'))),
-          h('span.center-sub', { text: `供託 ${fmt(s.round.kyotaku * G.rules.scoring.riichiStick)}点` }))
-        : null,
-      s.wareme != null ? h('div.center-sub', { text: `割れ目：${s.players[s.wareme].name}` }) : null));
+          s.round.kyotaku
+            ? h('div.sticks', Array.from({ length: Math.min(s.round.kyotaku, 8) }, () => h('div.stick')))
+            : null,
+          s.round.kyotaku
+            ? h('span.center-sub', { text: `供託 ${fmt(s.round.kyotaku * G.rules.scoring.riichiStick)}点` })
+            : null,
+          s.wareme != null
+            ? h('span.center-sub', { text: `割れ目：${s.players[s.wareme].name}` })
+            : null)
+        : null));
   board.appendChild(center);
   // ドラ表示牌は中央の箱から出して、卓の左上に置く。
   // 雀魂も中央の箱には局と点数だけを入れていて、ドラは王牌のところにある。

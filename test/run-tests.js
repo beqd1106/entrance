@@ -978,6 +978,31 @@ it('大車輪・三連刻・一色三順・五門斉が採用設定で成立す�
   ok(yakuNames(r4).includes('五門斉'), '五門斉');
 });
 
+// 三麻の卓では「清一色の七対子はぜんぶ大車輪」と決めている店が多い。
+// 2〜8に限る書き方しかできないと、1や9を含む形が普通の清一色で終わってしまう。
+it('大車輪は「清一色の七対子すべて」に広げられる', () => {
+  const strict = resolveRules({ localYaku: [{ id: 'daisharin', enabled: true, yakuman: 1 }] });
+  const wide = resolveRules({
+    localYaku: [{ id: 'daisharin', enabled: true, yakuman: 1, scope: 'chinitsu' }],
+  });
+  const withOne = mk('1p 1p 2p 2p 3p 3p 4p 4p 5p 5p 6p 6p 7p 7p');
+  no(evaluate(baseCtx({ hand: withOne, winTile: withOne[0], rules: strict })).isYakuman,
+    '2〜8だけの設定では、1を含む形は大車輪にならない');
+  ok(evaluate(baseCtx({ hand: withOne, winTile: withOne[0], rules: wide })).isYakuman,
+    '清一色すべての設定なら、1を含む形も大車輪');
+
+  // 広げても、色が混ざった七対子まで拾ってはいけない
+  const mixed = mk('1p 1p 2p 2p 3p 3p 4p 4p 5p 5p 6p 6p 7s 7s');
+  no(evaluate(baseCtx({ hand: mixed, winTile: mixed[0], rules: wide })).isYakuman,
+    '色が混ざっていれば大車輪にならない');
+
+  // 清一色ゲームの卓は、その設定で配られている
+  const chinitsu = resolveRules(getPreset('chinitsu3').rules);
+  const nine = mk('3p 3p 4p 4p 5p 5p 6p 6p 7p 7p 8p 8p 9p 9p');
+  ok(evaluate(baseCtx({ hand: nine, winTile: nine[0], rules: chinitsu })).isYakuman,
+    '清一色ゲームでは9を含む七対子も大車輪');
+});
+
 it('ローカル役は採用していないルールでは成立しない', () => {
   const daisharin = mk('2p 2p 3p 3p 4p 4p 5p 5p 6p 6p 7p 7p 8p 8p');
   const r = evaluate(baseCtx({ hand: daisharin, winTile: daisharin[0] }));

@@ -460,19 +460,35 @@ export { isMenzen, yakuhaiCount };
 //   rules.localYaku = [{ id:'daisharin', enabled:true, han?:n, yakuman?:n }]
 // ---------------------------------------------------------------------------
 
-/** 組み込み述語。すべて (ctx, counts, sets, decomp, menzen) を受け取る */
+/**
+ * 組み込み述語。すべて (ctx, counts, sets, decomp, menzen, conf) を受け取る。
+ * conf は rules.localYaku に書かれたその役の設定そのもの。
+ * 店ごとに形の広さが変わる役は、conf を見て判定を切り替える。
+ */
 export const LOCAL_YAKU_DEFS = {
   daisharin: {
     name: '大車輪', defaultYakuman: 1,
     desc: '同じ色の2〜8の対子7つ（筒子＝大車輪／索子＝大竹林／萬子＝大数隣）',
-    test: (ctx, counts, sets, decomp, menzen) => {
+    // 三麻や清一色の卓では、2〜8に限ると滅多に出ないので、
+    // 清一色の七対子ならすべて大車輪として扱う店が多い。
+    options: [{
+      key: 'scope', label: '認める形', default: 'strict',
+      choices: [
+        { v: 'strict', label: '2〜8の対子7つだけ' },
+        { v: 'chinitsu', label: '清一色の七対子すべて' },
+      ],
+    }],
+    test: (ctx, counts, sets, decomp, menzen, conf) => {
       if (decomp !== null || !menzen) return false;
+      const any = conf && conf.scope === 'chinitsu';
       for (let s = 0; s < 3; s++) {
         let ok = true;
         for (let i = 0; i < NUM_TYPES; i++) {
           if (counts[i] === 0) continue;
-          const inRange = i >= s * 9 + 1 && i <= s * 9 + 7;
-          if (!inRange || counts[i] !== 2) { ok = false; break; }
+          // 「清一色すべて」なら1と9も認める。数の範囲だけがちがう
+          const lo = s * 9 + (any ? 0 : 1);
+          const hi = s * 9 + (any ? 8 : 7);
+          if (i < lo || i > hi || counts[i] !== 2) { ok = false; break; }
         }
         if (ok) return true;
       }
@@ -753,7 +769,7 @@ export function checkLocalYaku(ctx, counts, sets, decomp) {
     const def = LOCAL_YAKU_DEFS[conf.id];
     if (!def) continue;
     let ok = false;
-    try { ok = def.test(ctx, counts, sets, decomp, menzen); } catch { ok = false; }
+    try { ok = def.test(ctx, counts, sets, decomp, menzen, conf); } catch { ok = false; }
     if (!ok) continue;
     if (conf.menzenOnly && !menzen) continue;
     const name = conf.name || def.name;
