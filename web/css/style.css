@@ -837,7 +837,7 @@ body.playing .nav { display: none; }
    牌を並べて撮った画を継ぎ目なく繰り返す。
    縞模様で描いていたころは、牌ではなく塗り分けた棒にしか見えなかった。 */
 .board > .wall-top, .board > .wall-bottom {
-  left: 30px; right: 30px; height: 12px;
+  left: 30px; right: 30px; height: 9px;
   background: url('../img/wall-h.webp') center / auto 100% repeat-x;
 }
 .board > .wall-left, .board > .wall-right {
@@ -1305,14 +1305,18 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .board > .back-hand {
     position: absolute; z-index: 1; display: flex; gap: 1px; pointer-events: none;
   }
-  .back-tile {
-    background: linear-gradient(180deg, #efe4cc, #b09d78);
-    border-radius: 2px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 1px 2px rgba(0, 0, 0, .32);
-  }
+  /* 伏せ牌は牌山と同じもの（伏せた牌）なので、同じ画を使う。
+     1枚ずつ塗り分けていたころは、牌ではなく色の帯に見えていた。
+     牌は場所取りだけを受け持ち、絵は入れ物に敷く。 */
+  .board > .back-hand { border-radius: 2px; box-shadow: 0 2px 5px rgba(0, 0, 0, .4); }
+  .back-hand-top { background: url('../img/wall-h.webp') center / auto 100% repeat-x; }
+  .back-hand-left, .back-hand-right { background: url('../img/wall-v.webp') center / 100% auto repeat-y; }
+  .back-tile { background: none; }
   /* 対面の伏せ牌は牌山の帯に沿わせる（実際の卓でも手牌は山の手前にある）。
      帯より内側に置くと、河が3段まで伸びたとき河の1段目と重なる。 */
-  .back-hand-top { top: 5px; left: 50%; transform: translateX(-50%); z-index: 2; }
+  /* 牌山のすぐ内側に、少しだけ離して置く。重ねると山と1本につながって見え、
+     どこまでが山でどこからが手牌なのか分からなくなる。 */
+  .back-hand-top { top: 11px; left: 50%; transform: translateX(-50%); z-index: 2; }
   .back-hand-top .back-tile { width: 11px; height: 10px; }
   .back-hand-left, .back-hand-right { top: 50%; flex-direction: column; }
   .back-hand-left { left: 41px; transform: translateY(-50%); }
@@ -2031,6 +2035,22 @@ textarea { resize: vertical; min-height: 56px; }
    1位の色（.is-top）と紛れないよう、塗りではなく左の帯で示す */
 .mini-item.is-me { box-shadow: inset 4px 0 0 var(--brass); }
 .yaku-item span:last-child { font-family: var(--mono); color: var(--ink-3); }
+/* 手牌の牌は、こちらを向いて立っている。天鳳も雀魂も、面の下に
+   牌の「厚み（手前の側面）」が見えていて、それが牌らしさを作っている。
+   面だけの真っ平らな札にすると、紙のカードを並べたように見える。 */
+.bottom-bar .tile-lg {
+  background: linear-gradient(180deg,
+    #fffefa 0%, #fdfaf3 46%, #f4eee0 76%,
+    #e9dfc6 78%, #dfd2b2 88%, #cbba92 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .95) inset,
+    0 3px 4px rgba(32, 26, 14, .26),
+    0 8px 14px rgba(32, 26, 14, .14);
+}
+.bottom-bar .tile-lg .tile-face { padding-bottom: 18%; }
+/* 選ばれている牌・切れない牌でも厚みは同じに見せる */
+.bottom-bar .tile-lg.side .tile-face { padding-bottom: 4%; }
+
 /* 点棒の増減を目立たせる */
 .pt-plus, .pt-minus { font-size: 14px; }
 /* 手牌の並びに余白のリズムを付ける */
