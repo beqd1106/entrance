@@ -831,7 +831,10 @@ body.playing .nav { display: none; }
 .board > .wall-side {
   position: absolute; z-index: 0; pointer-events: none;
   border-radius: 3px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .5);
+  /* 牌の背は天鳳と同じ濃色。卓の布も濃いので、そのままだと布に沈む。
+     ふちに細い明かりを入れて、卓の上に牌が積んであることを分からせる。 */
+  outline: 1px solid rgba(255, 255, 255, .13);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .22);
 }
 /* 伏せた牌を積んだ帯。1枚ずつ要素にすると四辺で数百個になるので、
    牌を並べて撮った画を継ぎ目なく繰り返す。
@@ -845,10 +848,10 @@ body.playing .nav { display: none; }
   background: url('../img/wall-v.webp') center / 100% auto repeat-y;
 }
 /* 卓の面より少し浮いて見えるよう、内側に落ちる影を足す */
-.board > .wall-top { box-shadow: 0 2px 4px rgba(0, 0, 0, .38); }
-.board > .wall-bottom { box-shadow: 0 -2px 4px rgba(0, 0, 0, .38); }
-.board > .wall-left { box-shadow: 2px 0 4px rgba(0, 0, 0, .38); }
-.board > .wall-right { box-shadow: -2px 0 4px rgba(0, 0, 0, .38); }
+.board > .wall-top { box-shadow: 0 2px 5px rgba(0, 0, 0, .45); }
+.board > .wall-bottom { box-shadow: 0 -2px 5px rgba(0, 0, 0, .45); }
+.board > .wall-left { box-shadow: 2px 0 5px rgba(0, 0, 0, .45); }
+.board > .wall-right { box-shadow: -2px 0 5px rgba(0, 0, 0, .45); }
 .board > .wall-top { top: 0; }
 .board > .wall-bottom { bottom: 0; }
 .board > .wall-left { left: 0; }
@@ -2049,22 +2052,6 @@ textarea { resize: vertical; min-height: 56px; }
    1位の色（.is-top）と紛れないよう、塗りではなく左の帯で示す */
 .mini-item.is-me { box-shadow: inset 4px 0 0 var(--brass); }
 .yaku-item span:last-child { font-family: var(--mono); color: var(--ink-3); }
-/* 手牌の牌は、こちらを向いて立っている。天鳳も雀魂も、面の下に
-   牌の「厚み（手前の側面）」が見えていて、それが牌らしさを作っている。
-   面だけの真っ平らな札にすると、紙のカードを並べたように見える。 */
-.bottom-bar .tile-lg {
-  background: linear-gradient(180deg,
-    #fffefa 0%, #fdfaf3 46%, #f4eee0 76%,
-    #e9dfc6 78%, #dfd2b2 88%, #cbba92 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, .95) inset,
-    0 3px 4px rgba(32, 26, 14, .26),
-    0 8px 14px rgba(32, 26, 14, .14);
-}
-.bottom-bar .tile-lg .tile-face { padding-bottom: 18%; }
-/* 選ばれている牌・切れない牌でも厚みは同じに見せる */
-.bottom-bar .tile-lg.side .tile-face { padding-bottom: 4%; }
-
 /* 点棒の増減を目立たせる */
 .pt-plus, .pt-minus { font-size: 14px; }
 /* 手牌の並びに余白のリズムを付ける */
