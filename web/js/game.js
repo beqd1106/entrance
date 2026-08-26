@@ -75,6 +75,8 @@ export function renderGame(root, params) {
     // 脇のメニューは畳んだ状態で始める（卓を広く使う）
     menuOpen: false,
     felt: loadPref('felt', 'felt'),
+    // 「たったいま起きたこと」の覚え書き。描き終えたら消す（1回だけ動かすため）
+    fx: { discard: null, draw: false },
     sound: loadPref('sound', true),
     selectedTileId: null,
     // 自分がどの席か。ひとりで打つときは常に0。オンラインでは配られた席が入る。
@@ -664,10 +666,11 @@ function drainLog() {
         kyokuBanner(label, ev.honba ? `${ev.honba}本場` : `親：${nameOf(ev.dealer)}`);
         break;
       }
-      case 'draw': sfx('draw'); break;
+      case 'draw': sfx('draw'); if (ev.seat === G.mySeat) G.fx.draw = true; break;
       case 'discard':
         pushLog('', `${nameOf(ev.seat)}：${ev.tile.name} 切り${ev.riichi ? '（リーチ宣言牌）' : ''}`);
         sfx('discard');
+        G.fx.discard = ev.seat;
         break;
       case 'riichi':
         pushLog('win', `${nameOf(ev.seat)}：${ev.open ? 'オープンリーチ' : 'リーチ'}${ev.double ? '（ダブル）' : ''}`);
@@ -750,6 +753,9 @@ function draw() {
   drawMy(s);
   drawActions(s);
   drawRuleCard(s);
+  // 動かす印は使い切り。残すと、次に何か起きるたびに同じ牌が動く
+  G.fx.discard = null;
+  G.fx.draw = false;
 }
 
 /** 対局中もこの店のルールが見えるようにしておく（初来店の不安を消すのが本題） */
@@ -1054,6 +1060,11 @@ function drawBoard(s) {
       side.classList.add('side-melds', `side-melds-${pos}`);
       board.appendChild(side);
     }
+    // 他家の手牌（伏せ牌）。何を持っているかは見えないが、これが無いと
+    // 卓の四辺が空いて「対局中の卓」に見えない（天鳳も雀魂も出している）。
+    // 席の中に置くと河と場所を取り合うので、卓の直下に出して外側へ寄せる。
+    board.appendChild(h(`div.back-hand.back-hand-${pos}`, { 'aria-hidden': 'true' },
+      Array.from({ length: p.hand.length }, () => h('div.back-tile'))));
   }
   // 中央。雀魂は箱の四辺に各自の点数を、その人の向きで出している。
   // 誰がいくら持っているかを、名札まで目を動かさずに見比べられる。
@@ -1099,16 +1110,13 @@ function drawBoard(s) {
   board.appendChild(h('div.dora-corner', { 'aria-hidden': 'false' },
     h('span.dora-cap', { text: 'ドラ' }),
     h('div.row.gap-4', s.dora.map((d) => tileEl(d, { size: 'md', cls: 'dora-ind' })))));
-  // 牌山。雀魂・天鳳は卓のまわりに伏せ牌を並べていて、これがあるだけで
-  // 「卓」に見える。横持ちは高さが足りないので上下には置けないが、
-  // 左右は席の外側が空いているのでそこに立てる。
-  // 残り枚数を左右で分けて出すので、飾りではなく実際に減っていく。
-  const remain = Math.max(0, s.wallRemaining);
-  const half = Math.ceil(remain / 2);
-  const seg = (n) => h('div.wall-stack', Array.from(
-    { length: Math.min(n, 22) }, () => h('div.wall-tile')));
-  board.appendChild(h('div.wall-side.wall-left', { 'aria-hidden': 'true' }, seg(half)));
-  board.appendChild(h('div.wall-side.wall-right', { 'aria-hidden': 'true' }, seg(remain - half)));
+  // 牌山。天鳳も雀魂も、卓を囲んでいるのは伏せた牌そのもので、
+  // これがあるだけで「卓」に見える。四辺すべてに回す。
+  // 枚数を1枚ずつ並べると数百個の要素になるので、模様として描く。
+  // 残り枚数は中央の札に数字で出しているので、ここは飾りに徹する。
+  for (const side of ['top', 'right', 'bottom', 'left']) {
+    board.appendChild(h(`div.wall-side.wall-${side}`, { 'aria-hidden': 'true' }));
+  }
   // 自分の捨て牌・副露はbottomエリアへ
   const me = s.players[G.mySeat];
   // 自分の席も、自分の番なら光らせる（他家と同じ扱いにする）
@@ -1294,7 +1302,13 @@ function discardsEl(p) {
   const dense = p.discards.length > 16 ? '.dense' : '';
   const el = h(`div.discards${dense}`, p.discards.map((t) => {
     const cls = [];
-    if (t.id === lastId) cls.push('just');
+    if (t.id === lastId) {
+      cls.push('just');
+      // その牌が「たったいま置かれた」ときだけ、1回だけ滑らせる。
+      // 画面は場面が変わるたびに描き直すので、印を消さずに残すと
+      // 何かあるたびに同じ牌が動いてしまう。
+      if (G.fx.discard === p.seat) cls.push('drop');
+    }
     // リーチ宣言牌は横に倒す（どこで曲げたかが河を見れば分かる）
     if (p.riichiTileId && t.id === p.riichiTileId) cls.push('side');
     return tileEl(t, { size: 'xs', attrs: cls.length ? { class: cls.join(' ') } : null });
@@ -1417,7 +1431,11 @@ function drawMy(s) {
     return el;
   };
   tiles.forEach((t) => hand.appendChild(render(t, false)));
-  if (drawnId) hand.appendChild(render(me.drawn, true));
+  if (drawnId) {
+    const dt = render(me.drawn, true);
+    if (G.fx.draw) dt.classList.add('drawn-in');   // ツモってきた牌を1回だけ滑り込ませる
+    hand.appendChild(dt);
+  }
   // 少牌マイティ：手元にある「何にでもなる1枚」を、切れない牌として並べて見せる
   for (let i = 0; i < (me.mighty || 0); i++) {
     hand.appendChild(h('div.tile.tile-lg.mighty-tile', { title: '何にでもなる牌（切れません）' },
