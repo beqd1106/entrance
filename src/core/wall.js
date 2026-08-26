@@ -1,7 +1,7 @@
 /**
  * wall.js - 牌山の生成と管理（ルール設定から使用牌を組み立てる）
  */
-import { NUM_TYPES, T, codeToType, typeToCode } from './tiles.js';
+import { NUM_TYPES, T, codeToType, typeToCode, isFlower } from './tiles.js';
 
 /** 再現可能な乱数（デバッグ・シミュレーション用） */
 export function makeRng(seed = Date.now()) {
@@ -218,7 +218,33 @@ export class Wall {
     return null;
   }
 
+  /**
+   * ドラ表示牌をめくる。
+   *
+   * 華牌が表示牌に出ることがある（華牌も山に混ざっているため）。
+   * 華牌の「次の牌」は華牌自身になるが、華牌はツモった瞬間に手牌から
+   * 抜かれるので、そのドラは誰も持てない＝その表示牌が丸ごと死ぬ。
+   * 実測で 266局中11回（4%）起きていた。店の決めごとなので、
+   * めくり直すかどうかは dora.flowerIndicatorEffect で選べるようにする。
+   */
   revealDora() {
+    const t = this.revealDoraOnce();
+    if (!t) return t;
+    const how = (this.rules.dora && this.rules.dora.flowerIndicatorEffect) || 'none';
+    if (how !== 'redraw' || !isFlower(t.t)) return t;
+    // めくり直しは何度でも起こりうるが、王牌が尽きたらそこで諦める
+    for (let i = 0; i < 8; i++) {
+      const again = this.revealDoraOnce();
+      if (!again) return t;
+      // 表に出すのは最後の1枚だけ。途中の華牌は表示から取り除く
+      this.doraIndicators.splice(this.doraIndicators.length - 2, 1);
+      this.uraIndicators.splice(this.uraIndicators.length - 2, 1);
+      if (!isFlower(again.t)) return again;
+    }
+    return this.doraIndicators[this.doraIndicators.length - 1];
+  }
+
+  revealDoraOnce() {
     const idx = 4 + this.revealed * 2;
     if (idx + 1 < this.deadSize) {
       const tile = this.dead[idx];

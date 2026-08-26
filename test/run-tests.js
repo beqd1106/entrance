@@ -2,13 +2,13 @@
  * run-tests.js - 単体テスト（役・点数・進行・ハウスルール）
  * 使い方: node test/run-tests.js
  */
-import { codeToType, typeToCode, T, tileFaceKey } from '../src/core/tiles.js';
+import { codeToType, typeToCode, T, tileFaceKey, isFlower } from '../src/core/tiles.js';
 import { shanten, waits, countsFromTiles, isChiitoi, isKokushi, isChiiseimukou, makeHandOpts } from '../src/core/hand.js';
 import { evaluate, countDora } from '../src/core/yaku.js';
 import { basePoints, settleWin, settleNoten, finalScores } from '../src/core/score.js';
 import { GameEngine } from '../src/core/engine.js';
 import { decide } from '../src/core/ai.js';
-import { resolveRules, DEFAULT_RULES } from '../src/rules/defaults.js';
+import { resolveRules, deepMerge, DEFAULT_RULES } from '../src/rules/defaults.js';
 import { getPreset, ALL_PRESETS } from '../src/rules/presets.js';
 import { validateRules } from '../src/rules/validator.js';
 import { explainRules, diffFromBaseline, shortSummary } from '../src/rules/explain.js';
@@ -990,6 +990,41 @@ function runNoDanglingDrawn(presetId, seeds) {
     ok(dangling === null, `${presetId} seed${seed}：手牌に無いツモ牌が残っていない（${dangling}）`);
   }
 }
+
+// 華牌も山に混ざっているので、ドラ表示牌として出ることがある。
+// 華牌の「次の牌」は華牌自身だが、華牌はツモった瞬間に手牌から抜かれるので、
+// そのドラは誰も持てない＝表示牌が1枚まるごと死ぬ。実測で4%の局で起きていた。
+it('華牌がドラ表示牌になったら、めくり直す設定が効く', () => {
+  const players = Array.from({ length: 3 }, (_, i) => ({ name: `CPU${i}`, isCpu: true }));
+  const count = (rules) => {
+    let hit = 0;
+    for (let g = 0; g < 12; g++) {
+      const e = new GameEngine({ rules, seed: 900 + g * 31, players });
+      e.startKyoku();
+      let guard = 0;
+      while (!e.finished && guard++ < 60) {
+        for (const t of e.wall.doraIndicators) if (isFlower(t.t)) hit++;
+        const r = e.advance(decide, 20000);
+        if (r.kyokuEnd && !e.finished) e.nextKyoku();
+      }
+    }
+    return hit;
+  };
+  const base = getPreset('goto_standard').rules;
+  const off = resolveRules(deepMerge(base, { dora: { flowerIndicatorEffect: 'none' } }));
+  const on = resolveRules(deepMerge(base, { dora: { flowerIndicatorEffect: 'redraw' } }));
+  ok(count(off) > 0, 'めくり直さない設定では、華牌が表示牌に出る局がある');
+  eq(count(on), 0, 'めくり直す設定なら、華牌は表示牌に残らない');
+});
+
+// 華牌を使うルールはどれもこの問題を持つ。取りこぼしを防ぐため全部を見る
+it('華牌を使うルールは、どれもめくり直す決めになっている', () => {
+  for (const p of ALL_PRESETS) {
+    const r = resolveRules(p.rules);
+    if (!r.flowers.enabled) continue;
+    eq(r.dora.flowerIndicatorEffect, 'redraw', `${p.name}：華牌が表示牌に出たときの決め`);
+  }
+});
 
 describe('拡張：ローカル役');
 

@@ -26,11 +26,17 @@ const GOTO_BASE = {
   sanma: {
     removeManzu: true, northMode: 'nuki', kitaIsDora: true,
     northIsYakuhai: false, northRonOk: false, kitaBonus: 1, tsumoLoss: true,
+    // 北は抜かずに手牌へ残してもよい（役牌にはならない）。
+    // 国士だけに限る店もあるが、ここでは制限しない＝実際の動きに合わせた値。
+    kitaUsableInHand: 'always',
   },
   dora: {
     indicators: 2, ura: true, kanDora: true, kanUra: true,
     // 5筒・5索は「赤金黒黒」＝4枚のうち赤1枚・金1枚・ふつうの牌2枚
     red: { '5p': 1, '5s': 1 }, gold: { '5p': 1, '5s': 1 }, goldIsDora: true,
+    // 華牌が表示牌に出たらめくり直す。華牌はツモった瞬間に抜かれるので、
+    // そのままだと誰も持てないドラになり、表示牌が1枚まるごと死ぬ。
+    flowerIndicatorEffect: 'redraw',
   },
   flowers: {
     enabled: true,
@@ -192,7 +198,8 @@ export const PRESETS = [
       local: { openRiichi: { enabled: true, han: 1, bonus: 1 } },
       // 「ドラの真横まで引く」ため王牌が薄い。1局に打てる巡目が増える
       wall: { deadWallSize: 8 },
-      dora: { red: { '5p': 1, '5s': 1 } },
+      // 華牌が表示牌に出たらめくり直す（そのままだと誰も持てないドラになる）
+      dora: { red: { '5p': 1, '5s': 1 }, flowerIndicatorEffect: 'redraw' },
     },
   },
   // ---------------- 特殊ルール体験 ----------------
@@ -351,7 +358,11 @@ export const PRESETS = [
       ryuukyoku: { notenPenalty: 10, nagashiMangan: false },
       renchan: { dealerRepeat: 'none' },
       sanma: { removeManzu: true, northMode: 'nuki', kitaIsDora: true, tsumoLoss: false, kitaBonus: 0 },
-      dora: { indicators: 2, red: {}, gold: { '5p': 1, '5s': 1 }, goldIsDora: true },
+      dora: {
+        indicators: 2, red: {}, gold: { '5p': 1, '5s': 1 }, goldIsDora: true,
+        // 華牌が表示牌に出たらめくり直す（そのままだと誰も持てないドラになる）
+        flowerIndicatorEffect: 'redraw',
+      },
       flowers: {
         enabled: true, tiles: ['spring', 'summer', 'autumn', 'winter'], isDora: false,
         effects: {

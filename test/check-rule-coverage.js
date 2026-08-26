@@ -59,14 +59,14 @@ const NOT_IMPLEMENTED_YET = new Set([
   'game.timeLimitMinutes',           // 時間制限
   'scoring.pao',                     // パオ（責任払い）
   'win.furitenRiichi',               // フリテンリーチの許容
-  'dora.flowerIndicatorEffect',      // ドラ表示牌が花牌だったとき
   'dora.indicatorSpecialEffect',     // ドラ表示牌が特殊牌だったとき
   'local.openRiichi.allowDouble',    // ダブルオープンリーチ
   'local.openRiichi.doubleHan',
   'local.wareme.notenExempt',        // 割れ目のノーテン罰符の扱い
   'local.wareme.bonusToo',           // 割れ目を祝儀にも効かせる
   'local.kokushiAnkanRon',           // 国士の暗槓ロン
-  'sanma.kitaUsableInHand',          // 抜きドラの北を手牌でも使えるか
+  'sanma.kitaUsableInHand',          // 北を手牌でも使えるか（いまは制限していない＝'always'相当。
+                                     //   プリセット側も実際の動きに合う値を持たせてある）
   'bonus.openRiichiBonus',           // オープンリーチの祝儀
   'bonus.lastAvoid',                 // ラス回避の祝儀
 ]);
