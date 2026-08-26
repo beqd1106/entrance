@@ -813,18 +813,47 @@ body.playing .nav { display: none; }
    左右にだけ立てる。残り枚数を左右で分けて出すので実際に減っていく。 */
 /* 「.board > *」が position: relative を当てているので、そこに勝つ書き方にする。
    升目の枠に入ってしまうと、席がその枚数ぶん押しやられて卓が崩れる。 */
-/* 牌山は天鳳と同じ見え方にする。あちらは伏せた牌を2段に積んでいて、
-   こちらからは「黒い背」と、その卓側に「牌の白い小口」が細く見える。
-   黒だけだと布に沈み、白だけだと明るい枠になる。2つで1本。 */
+/* 牌山は天鳳と同じ描き方にする。
+   あちらは伏せた牌を1枚ずつ、黒い背として並べ、その卓側に牌の白い小口が
+   細く光っている。写真の質感を敷いてみたが、6pxまで縮めると潰れて
+   ただの帯になった。牌の切れ目と小口は、線で描いたほうが小さくても残る。 */
 .board > .wall-side {
   position: absolute; z-index: 0; pointer-events: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  --wall-tile: 11px;      /* 牌1枚ぶんの見た目の幅 */
+  --wall-seam: rgba(0, 0, 0, .75);
+  --wall-body: #15181d;
+  --wall-lip: #e6e0d0;
 }
-/* 小口は必ず卓の内側（中央を向く辺）に出す */
-.board > .wall-top { border-bottom: 3px solid #e8e2d2; }
-.board > .wall-bottom { border-top: 3px solid #e8e2d2; }
-.board > .wall-left { border-right: 3px solid #e8e2d2; }
-.board > .wall-right { border-left: 3px solid #e8e2d2; }
+/* 上下：牌が横に並ぶ。小口は卓の内側の辺に出す */
+.board > .wall-top, .board > .wall-bottom {
+  left: 30px; right: 30px; height: 11px;
+  background-image:
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, .07) 0 1px,
+      transparent 1px calc(var(--wall-tile) - 1px),
+      var(--wall-seam) calc(var(--wall-tile) - 1px) var(--wall-tile));
+}
+.board > .wall-top {
+  background-color: var(--wall-body);
+  border-bottom: 3px solid var(--wall-lip);
+}
+.board > .wall-bottom {
+  background-color: var(--wall-body);
+  border-top: 3px solid var(--wall-lip);
+}
+/* 左右：牌が縦に並ぶ */
+.board > .wall-left, .board > .wall-right {
+  top: 30px; bottom: 30px; width: 11px;
+  background-color: var(--wall-body);
+  background-image:
+    repeating-linear-gradient(0deg,
+      rgba(255, 255, 255, .07) 0 1px,
+      transparent 1px calc(var(--wall-tile) - 1px),
+      var(--wall-seam) calc(var(--wall-tile) - 1px) var(--wall-tile));
+}
+.board > .wall-left { border-right: 3px solid var(--wall-lip); }
+.board > .wall-right { border-left: 3px solid var(--wall-lip); }
 /* 伏せた牌を積んだ帯。1枚ずつ要素にすると四辺で数百個になるので、
    牌を並べて撮った画を継ぎ目なく繰り返す。
    縞模様で描いていたころは、牌ではなく塗り分けた棒にしか見えなかった。 */
@@ -1297,13 +1326,13 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .board > .back-hand {
     position: absolute; z-index: 1; display: flex; gap: 1px; pointer-events: none;
   }
-  /* 伏せ牌は牌山と同じもの（伏せた牌）なので、同じ画を使う。
-     1枚ずつ塗り分けていたころは、牌ではなく色の帯に見えていた。
-     牌は場所取りだけを受け持ち、絵は入れ物に敷く。 */
-  .board > .back-hand { border-radius: 2px; box-shadow: 0 2px 5px rgba(0, 0, 0, .4); }
-  .back-hand-top { background: url('../img/wall-h.webp') center / auto 100% repeat-x; }
-  .back-hand-left, .back-hand-right { background: url('../img/wall-v.webp') center / 100% auto repeat-y; }
-  .back-tile { background: none; }
+  /* 伏せ牌は牌山と同じもの（伏せた牌）なので、同じ描き方でそろえる。
+     黒い背に、卓側の辺だけ牌の白い小口を出す。 */
+  .board > .back-hand { box-shadow: 0 2px 5px rgba(0, 0, 0, .45); }
+  .back-tile { background: #15181d; border-radius: 1px; }
+  .back-hand-top { border-bottom: 2px solid #e6e0d0; }
+  .back-hand-left { border-right: 2px solid #e6e0d0; }
+  .back-hand-right { border-left: 2px solid #e6e0d0; }
   /* 対面の伏せ牌は牌山の帯に沿わせる（実際の卓でも手牌は山の手前にある）。
      帯より内側に置くと、河が3段まで伸びたとき河の1段目と重なる。 */
   /* 牌山のすぐ内側に、少しだけ離して置く。重ねると山と1本につながって見え、
@@ -1577,6 +1606,13 @@ details.adv > div { padding: 4px 16px 16px; border-top: 1px solid var(--line); }
   .center-info { min-width: 0; aspect-ratio: auto; }
   @media (min-height: 385px) {
     .seat .tile, .seat-left .tile, .seat-right .tile { --tw: 19px; }
+  }
+  /* 狭い機種（375px）は、牌山の帯と河のあいだが5pxしかない。
+     帯を1枚ぶん薄くして、対面の伏せ牌の置き場所を作る。 */
+  @media (max-height: 384px) {
+    .board > .wall-top, .board > .wall-bottom { height: 5px; }
+    .board > .back-hand-top { top: 8px; }
+    .back-hand-top .back-tile { height: 4px; }
   }
 
 

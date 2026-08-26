@@ -76,7 +76,7 @@ export function renderGame(root, params) {
     sideOpen: loadPref('sideOpen', false),
     // 脇のメニューは畳んだ状態で始める（卓を広く使う）
     menuOpen: false,
-    felt: loadPref('felt', 'felt'),
+    felt: loadPref('felt', 'felt-tenho'),
     // 「たったいま起きたこと」の覚え書き。描き終えたら消す（1回だけ動かすため）
     fx: { discard: null, draw: false },
     sound: loadPref('sound', true),
@@ -937,7 +937,11 @@ function drawTop(s) {
  * 卓の上に常時並べるほど頻繁に触るものではないので、ここにまとめる。
  */
 /** 卓の布。店ごとの雰囲気に合わせて選べるようにしてある */
+/* 布の色は牌山の見え方を決める。天鳳の卓は中間の青で、その上に黒い
+   伏せ牌が乗るから牌に見える。濃い布だと黒い牌が沈んで、卓側の白い小口
+   だけが線になって残る。既定は天鳳に寄せた青にしておく。 */
 const FELTS = [
+  { id: 'felt-tenho', label: '無地（青）' },
   { id: 'felt', label: '青海波（緑）' },
   { id: 'felt-ai', label: '麻の葉（藍）' },
   { id: 'felt-en', label: '組子（墨）' },
